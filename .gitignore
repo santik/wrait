@@ -1,14 +1,25 @@
-# Gradle files
-.gradle/
+# Built artifacts
+bin/
+gen/
+out/
 build/
+.gradle/
+.kotlin/
 
-# Local configuration file (sdk path, etc)
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+atlassian-ide-plugin.xml
+com_crashlytics_export_strings.xml
+google-services.json
+
+# Local configuration
 local.properties
+.DS_Store
 
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
+# Android Studio generated files
 captures/
 .externalNativeBuild/
 .cxx/
@@ -16,19 +27,15 @@ captures/
 *.apk
 output-metadata.json
 
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
-
 # Keystore files
 *.jks
 *.keystore
 
-# Google Services (e.g. APIs or Firebase)
-google-services.json
+# Log files
+*.log
 
 # Android Profiling
 *.hprof
+
+# Room schemas (if you want to track them, comment this out)
+# /schemas
