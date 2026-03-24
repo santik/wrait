@@ -94,7 +94,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
 
     // Security
-    implementation(libs.androidx.security.crypto)
+    implementation(libs.tink.android)
 
     // Testing
     testImplementation(libs.junit)
