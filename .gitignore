@@ -37,5 +37,9 @@ output-metadata.json
 # Android Profiling
 *.hprof
 
-# Room schemas (if you want to track them, comment this out)
-# /schemas
+# Room schemas
+# Tracked for migration history
+!/app/schemas/
+
+# Project changes documentation
+# #changes/

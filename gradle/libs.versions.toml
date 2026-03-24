@@ -1,20 +1,21 @@
 [versions]
-agp = "9.1.0"
-kotlin = "2.2.10"
+agp = "8.7.3"
+kotlin = "2.0.21"
 coreKtx = "1.15.0"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
 lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.10.0"
-composeBom = "2025.01.01"
-hilt = "2.55"
+activityCompose = "1.9.3"
+composeBom = "2024.10.01"
+hilt = "2.52"
 room = "2.6.1"
-ksp = "2.3.2"
+ksp = "2.0.21-1.0.26"
 sqlcipher = "4.5.4"
-ktor = "3.0.3"
-coroutines = "1.10.1"
-datastore = "1.1.2"
+sqlite = "2.4.0"
+ktor = "2.3.12"
+coroutines = "1.9.0"
+datastore = "1.1.1"
 securityCrypto = "1.1.0"
 testRunner = "1.6.2"
 
@@ -46,6 +47,7 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 
 # SQLCipher
 sqlcipher = { group = "net.zetetic", name = "android-database-sqlcipher", version.ref = "sqlcipher" }
+androidx-sqlite = { group = "androidx.sqlite", name = "sqlite", version.ref = "sqlite" }
 
 # Ktor
 ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
