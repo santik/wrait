@@ -1,10 +1,13 @@
 package com.wrait.app.di
 
 import android.content.Context
+import android.util.Base64
 import androidx.core.content.edit
 import androidx.room.Room
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import com.google.crypto.tink.Aead
+import com.google.crypto.tink.aead.AeadConfig
+import com.google.crypto.tink.KeyTemplates
+import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.WraitDatabase
 import dagger.Module
@@ -26,40 +29,41 @@ object DatabaseModule {
     private const val KEY_ALIAS = "wraite_db_key"
     private const val DB_PASSWORD_KEY = "db_password"
 
-    @Suppress("DEPRECATION")
     @Provides
     @Singleton
     fun provideDatabasePassword(@ApplicationContext context: Context): ByteArray {
         try {
-            val masterKey = MasterKey.Builder(context, KEY_ALIAS)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
+            AeadConfig.register()
 
-            val sharedPreferences = EncryptedSharedPreferences.create(
-                context,
-                PREFS_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
+            val keysetHandle = AndroidKeysetManager.Builder()
+                .withSharedPref(context, "tink_keyset", PREFS_NAME)
+                .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
+                .withMasterKeyUri("android-keystore://$KEY_ALIAS")
+                .build()
+                .keysetHandle
+
+            val aead: Aead = keysetHandle.getPrimitive(Aead::class.java)
+            val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
             val storedPassword = sharedPreferences.getString(DB_PASSWORD_KEY, null)
             return if (storedPassword != null) {
-                val passwordBytes = storedPassword.toByteArray(Charsets.ISO_8859_1)
+                val encryptedBytes = Base64.decode(storedPassword, Base64.NO_WRAP)
+                val passwordBytes = aead.decrypt(encryptedBytes, null)
                 if (passwordBytes.size != 32) {
                     throw IllegalStateException("Stored database password has invalid length: ${passwordBytes.size}")
                 }
                 passwordBytes
             } else {
                 val password = ByteArray(32).apply { SecureRandom().nextBytes(this) }
-                val passwordString = password.toString(Charsets.ISO_8859_1)
+                val encryptedBytes = aead.encrypt(password, null)
+                val passwordString = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP)
                 sharedPreferences.edit {
                     putString(DB_PASSWORD_KEY, passwordString)
                 }
                 password
             }
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to initialize Keystore or retrieve database password", e)
+            throw IllegalStateException("Failed to initialize Tink or retrieve database password", e)
         }
     }
 
