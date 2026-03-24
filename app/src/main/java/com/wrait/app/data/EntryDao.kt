@@ -21,6 +21,9 @@ interface EntryDao {
     @Query("SELECT * FROM entries WHERE isDraft = 1")
     suspend fun getPendingDrafts(): List<EntryEntity>
 
+    @Query("UPDATE entries SET cleanedText = :cleanedText, wordCount = :wordCount, isDraft = 0 WHERE id = :id")
+    suspend fun updateCleanedText(id: Long, cleanedText: String, wordCount: Int): Int
+
     @Query("DELETE FROM entries WHERE isDraft = 1 AND createdAt < :timestamp")
     suspend fun deleteDraftsOlderThan(timestamp: Long)
 }
