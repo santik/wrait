@@ -79,6 +79,7 @@ dependencies {
 
     // SQLCipher
     implementation(libs.sqlcipher)
+    implementation(libs.androidx.sqlite)
 
     // Ktor
     implementation(libs.ktor.client.core)
