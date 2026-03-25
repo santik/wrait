@@ -3,4 +3,6 @@
     <string name="main_button_label">wrait</string>
     <string name="main_button_description">Main action button</string>
     <string name="button_tapped_message">button tapped</string>
+    <string name="recording_status">Recording…</string>
+    <string name="mic_blocked_message">Mic access blocked, tap to open settings</string>
 </resources>
