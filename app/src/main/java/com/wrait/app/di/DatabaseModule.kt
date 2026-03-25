@@ -8,6 +8,7 @@ import com.google.crypto.tink.Aead
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import com.google.crypto.tink.RegistryConfiguration
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.WraitDatabase
 import dagger.Module
@@ -15,8 +16,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import net.sqlcipher.database.SQLiteDatabase
-import net.sqlcipher.database.SupportFactory
+import net.zetetic.database.sqlcipher.SupportOpenHelperFactory
 import java.security.SecureRandom
 import javax.inject.Singleton
 
@@ -42,7 +42,7 @@ object DatabaseModule {
                 .build()
                 .keysetHandle
 
-            val aead: Aead = keysetHandle.getPrimitive(Aead::class.java)
+            val aead: Aead = keysetHandle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
             val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
             val storedPassword = sharedPreferences.getString(DB_PASSWORD_KEY, null)
@@ -74,16 +74,16 @@ object DatabaseModule {
         databasePassword: ByteArray
     ): WraitDatabase {
         // Initialize SQLCipher native libraries
-        SQLiteDatabase.loadLibs(context)
+        System.loadLibrary("sqlcipher")
 
-        val factory = SupportFactory(databasePassword)
+        val factory = SupportOpenHelperFactory(databasePassword)
         return Room.databaseBuilder(
             context,
             WraitDatabase::class.java,
             DB_NAME
         )
             .openHelperFactory(factory)
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(true)
             .build()
     }
 
