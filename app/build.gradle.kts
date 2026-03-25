@@ -110,3 +110,4 @@ dependencies {
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
+dependencies { testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0"); androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0") }
