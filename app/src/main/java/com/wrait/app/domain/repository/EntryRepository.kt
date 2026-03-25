@@ -8,4 +8,6 @@ interface EntryRepository {
     suspend fun updateWithCleanedText(id: Long, text: String, wordCount: Int)
     fun getAllEntries(): Flow<List<Entry>>
     suspend fun getPendingDrafts(): List<Entry>
+    suspend fun deleteStaleDrafts(daysOld: Int)
+    suspend fun deleteStaleDrafts()
 }

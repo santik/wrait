@@ -14,21 +14,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.ViewModel
-import com.wrait.app.domain.repository.PreferencesRepository
 import com.wrait.app.ui.theme.WraitTheme
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.Flow
 import java.util.Locale
-import javax.inject.Inject
-
-@HiltViewModel
-class MainViewModel @Inject constructor(
-    preferencesRepository: PreferencesRepository
-) : ViewModel() {
-    val selectedLanguage: Flow<String> = preferencesRepository.selectedLanguage
-}
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {

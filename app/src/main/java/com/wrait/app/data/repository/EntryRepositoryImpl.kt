@@ -5,12 +5,15 @@ import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.mapper.toDomain
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.repository.EntryRepository
+import com.wrait.app.domain.util.TimeProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class EntryRepositoryImpl @Inject constructor(
-    private val entryDao: EntryDao
+    private val entryDao: EntryDao,
+    private val timeProvider: TimeProvider
 ) : EntryRepository {
 
     override suspend fun saveDraft(transcript: String, language: String): Long {
@@ -20,7 +23,7 @@ class EntryRepositoryImpl @Inject constructor(
             cleanedText = null,
             isDraft = true,
             language = language,
-            createdAt = System.currentTimeMillis(),
+            createdAt = timeProvider.currentTimeMillis(),
             wordCount = calculatedWordCount
         )
         return entryDao.insert(entity)
@@ -41,5 +44,15 @@ class EntryRepositoryImpl @Inject constructor(
 
     override suspend fun getPendingDrafts(): List<Entry> {
         return entryDao.getPendingDrafts().map { it.toDomain() }
+    }
+
+    override suspend fun deleteStaleDrafts(daysOld: Int) {
+        require(daysOld >= 0) { "daysOld cannot be negative" }
+        val cutoffTimestamp = timeProvider.currentTimeMillis() - TimeUnit.DAYS.toMillis(daysOld.toLong())
+        entryDao.deleteDraftsOlderThan(cutoffTimestamp)
+    }
+
+    override suspend fun deleteStaleDrafts() {
+        deleteStaleDrafts(7)
     }
 }
