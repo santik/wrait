@@ -1,6 +1,5 @@
 package com.wrait.app
 
-import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -47,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.wrait.app.data.speech.RecognizerError
-import com.wrait.app.ui.theme.WraitTheme
+import com.wrait.app.ui.theme.WrAItTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -58,9 +57,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            WraitTheme {
+            WrAItTheme {
                 val context = LocalContext.current
-                val activity = context as? Activity
+                val activity = this@MainActivity
                 val lifecycleOwner = LocalLifecycleOwner.current
                 var showBlockedMessage by remember { mutableStateOf(false) }
                 var hasRequestedPermission by remember { mutableStateOf(false) }
@@ -82,8 +81,9 @@ class MainActivity : ComponentActivity() {
                     isPermissionGranted.value = granted
                     if (granted) {
                         showBlockedMessage = false
+                        hasRequestedPermission = false
                     } else {
-                        val permanentlyDenied = hasRequestedPermission && activity != null &&
+                        val permanentlyDenied = hasRequestedPermission &&
                             !ActivityCompat.shouldShowRequestPermissionRationale(
                                 activity,
                                 android.Manifest.permission.RECORD_AUDIO
@@ -121,6 +121,7 @@ class MainActivity : ComponentActivity() {
                         viewModel.onPermissionRevoked()
                     } else {
                         showBlockedMessage = false
+                        hasRequestedPermission = false
                     }
                 }
 
@@ -136,7 +137,7 @@ class MainActivity : ComponentActivity() {
                             return@MainScreen
                         }
 
-                        val permanentlyDenied = hasRequestedPermission && activity != null &&
+                        val permanentlyDenied = hasRequestedPermission &&
                             !ActivityCompat.shouldShowRequestPermissionRationale(
                                 activity,
                                 android.Manifest.permission.RECORD_AUDIO
@@ -265,7 +266,7 @@ fun MainScreen(
 @Preview(showBackground = true)
 @Composable
 fun MainButtonPreview() {
-    WraitTheme {
+    WrAItTheme {
         MainScreen(
             recordingState = RecordingState.Idle,
             entries = emptyList(),
