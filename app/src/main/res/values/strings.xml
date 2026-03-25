@@ -5,4 +5,15 @@
     <string name="button_tapped_message">button tapped</string>
     <string name="recording_status">Recording…</string>
     <string name="mic_blocked_message">Mic access blocked, tap to open settings</string>
+    <string name="listening_status">Listening…</string>
+    <string name="processing_status">Processing…</string>
+    <string name="saved_status">Saved</string>
+    <string name="error_no_match">No speech match</string>
+    <string name="error_too_short">Too short. Speak at least 5 words.</string>
+    <string name="error_network">Network error</string>
+    <string name="error_not_available">Speech recognition not available</string>
+    <string name="error_permission">Microphone permission required</string>
+    <string name="error_generic">Speech recognition error</string>
+    <string name="saved_transcripts_title">Saved transcripts</string>
+    <string name="no_transcripts_yet">No transcripts yet</string>
 </resources>

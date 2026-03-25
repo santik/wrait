@@ -10,6 +10,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -28,10 +33,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.dimensionResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -40,11 +46,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.ui.theme.WraitTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private val viewModel: MainViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,9 +62,10 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val activity = context as? Activity
                 val lifecycleOwner = LocalLifecycleOwner.current
-                var isRecording by remember { mutableStateOf(false) }
                 var showBlockedMessage by remember { mutableStateOf(false) }
                 var hasRequestedPermission by remember { mutableStateOf(false) }
+                val recordingState by viewModel.recordingState.collectAsState()
+                val entries by viewModel.entries.collectAsState()
 
                 val isPermissionGranted = remember {
                     mutableStateOf(
@@ -73,7 +82,6 @@ class MainActivity : ComponentActivity() {
                     isPermissionGranted.value = granted
                     if (granted) {
                         showBlockedMessage = false
-                        isRecording = true
                     } else {
                         val permanentlyDenied = hasRequestedPermission && activity != null &&
                             !ActivityCompat.shouldShowRequestPermissionRationale(
@@ -110,7 +118,7 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(isPermissionGranted.value) {
                     if (!isPermissionGranted.value) {
-                        isRecording = false
+                        viewModel.onPermissionRevoked()
                     } else {
                         showBlockedMessage = false
                     }
@@ -118,12 +126,13 @@ class MainActivity : ComponentActivity() {
 
                 MainScreen(
                     modifier = Modifier.fillMaxSize(),
-                    isRecording = isRecording,
+                    recordingState = recordingState,
+                    entries = entries,
                     showBlockedMessage = showBlockedMessage,
                     onMainButtonTapped = {
                         if (isPermissionGranted.value) {
                             showBlockedMessage = false
-                            isRecording = !isRecording
+                            viewModel.onMainButtonTapped()
                             return@MainScreen
                         }
 
@@ -154,15 +163,26 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
-    isRecording: Boolean,
+    recordingState: RecordingState,
+    entries: List<EntrySummary>,
     showBlockedMessage: Boolean,
     onMainButtonTapped: () -> Unit
 ) {
     val buttonSize = dimensionResource(id = R.dimen.main_button_size)
     val buttonLabel = stringResource(id = R.string.main_button_label)
     val buttonDescription = stringResource(id = R.string.main_button_description)
-    val recordingStatus = stringResource(id = R.string.recording_status)
+    val listeningStatus = stringResource(id = R.string.listening_status)
+    val processingStatus = stringResource(id = R.string.processing_status)
+    val savedStatus = stringResource(id = R.string.saved_status)
+    val noMatchStatus = stringResource(id = R.string.error_no_match)
+    val tooShortStatus = stringResource(id = R.string.error_too_short)
+    val networkStatus = stringResource(id = R.string.error_network)
+    val notAvailableStatus = stringResource(id = R.string.error_not_available)
+    val permissionStatus = stringResource(id = R.string.error_permission)
+    val genericErrorStatus = stringResource(id = R.string.error_generic)
     val blockedMessage = stringResource(id = R.string.mic_blocked_message)
+    val savedTitle = stringResource(id = R.string.saved_transcripts_title)
+    val emptyTitle = stringResource(id = R.string.no_transcripts_yet)
 
     Box(modifier = modifier) {
         Column(
@@ -183,18 +203,60 @@ fun MainScreen(
                 )
             }
 
-            if (isRecording) {
+            val statusText = when {
+                showBlockedMessage -> blockedMessage
+                recordingState is RecordingState.Listening -> listeningStatus
+                recordingState is RecordingState.Processing -> processingStatus
+                recordingState is RecordingState.Saved -> savedStatus
+                recordingState is RecordingState.Error -> {
+                    when (recordingState.error) {
+                        RecognizerError.NoMatch -> noMatchStatus
+                        RecognizerError.TooShort -> tooShortStatus
+                        RecognizerError.Network -> networkStatus
+                        RecognizerError.NotAvailable -> notAvailableStatus
+                        RecognizerError.InsufficientPermissions -> permissionStatus
+                        else -> genericErrorStatus
+                    }
+                }
+                else -> null
+            }
+
+            if (statusText != null) {
                 Text(
-                    text = recordingStatus,
+                    text = statusText,
                     style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(top = 16.dp)
                 )
-            } else if (showBlockedMessage) {
-                Text(
-                    text = blockedMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(top = 16.dp)
-                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = savedTitle,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            LazyColumn(
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .height(240.dp)
+            ) {
+                if (entries.isEmpty()) {
+                    item {
+                        Text(
+                            text = emptyTitle,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                } else {
+                    items(entries, key = { it.id }) { entry ->
+                        Text(
+                            text = entry.transcript,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -205,7 +267,8 @@ fun MainScreen(
 fun MainButtonPreview() {
     WraitTheme {
         MainScreen(
-            isRecording = false,
+            recordingState = RecordingState.Idle,
+            entries = emptyList(),
             showBlockedMessage = false,
             onMainButtonTapped = {}
         )
