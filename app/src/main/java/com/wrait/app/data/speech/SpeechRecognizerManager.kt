@@ -1,6 +1,7 @@
 package com.wrait.app.data.speech
 
 import android.content.Context
+import android.util.Log
 import android.content.Intent
 import android.os.CountDownTimer
 import android.speech.RecognitionListener
@@ -25,6 +26,7 @@ class SpeechRecognizerManager @Inject constructor(
     private val lock = Any()
     private var recognizer: SpeechRecognizer? = null
     private var timer: CountDownTimer? = null
+    @Volatile private var userStoppedManually = false
 
     fun listen(languageCode: String): Flow<RecognitionResult> = callbackFlow {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
@@ -34,8 +36,7 @@ class SpeechRecognizerManager @Inject constructor(
         }
 
         val hasPermission = ContextCompat.checkSelfPermission(
-            context,
-            Manifest.permission.RECORD_AUDIO
+            context, Manifest.permission.RECORD_AUDIO
         ) == PackageManager.PERMISSION_GRANTED
         if (!hasPermission) {
             trySend(RecognitionResult.Error(RecognizerError.InsufficientPermissions))
@@ -44,13 +45,58 @@ class SpeechRecognizerManager @Inject constructor(
         }
 
         launch(Dispatchers.Main) {
+            userStoppedManually = false
+
             val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
-            synchronized(lock) {
-                recognizer = speechRecognizer
+            synchronized(lock) { recognizer = speechRecognizer }
+
+            // Session-scoped state — lives inside this coroutine, closed over by the listener
+            var sessionStartTime = 0L
+            var restartCount     = 0
+            var timerStarted     = false
+            var lastPartialText  = ""
+            var accumulatedText  = ""
+
+            // Emits ListeningEnded then Final or TooShort based on accumulated text.
+            // Captured by the recognition listener — must only be called from the Main thread.
+            fun emitFinalOrTooShort() {
+                val wordCount = accumulatedText.split(Regex("\\s+")).filter { it.isNotEmpty() }.count()
+                trySend(RecognitionResult.ListeningEnded)
+                if (wordCount < 5) {
+                    trySend(RecognitionResult.Error(RecognizerError.TooShort))
+                } else {
+                    trySend(RecognitionResult.Final(accumulatedText))
+                }
+            }
+
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                         RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageCode)
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
+                         RecognitionConfig.SilenceTimeoutMs)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS,
+                         RecognitionConfig.SilenceTimeoutMs)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,
+                         RecognitionConfig.MinimumUtteranceMs)
             }
 
             speechRecognizer.setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(params: android.os.Bundle?) = Unit
+
+                override fun onReadyForSpeech(params: android.os.Bundle?) {
+                    synchronized(lock) {
+                        if (!timerStarted) {
+                            timerStarted = true
+                            sessionStartTime = System.currentTimeMillis()
+                            timer?.cancel()
+                            timer = object : CountDownTimer(RecognitionConfig.HardCapMs, 1000) {
+                                override fun onTick(millisUntilFinished: Long) = Unit
+                                override fun onFinish() { stopListening() }
+                            }.start()
+                        }
+                    }
+                }
 
                 override fun onBeginningOfSpeech() = Unit
 
@@ -58,28 +104,78 @@ class SpeechRecognizerManager @Inject constructor(
 
                 override fun onBufferReceived(buffer: ByteArray?) = Unit
 
-                override fun onEndOfSpeech() {
-                    trySend(RecognitionResult.ListeningEnded)
-                }
+                override fun onEndOfSpeech() = Unit
+                // ListeningEnded is emitted only when we know it is a genuine stop
+                // (in onResults and the genuine-stop branch of onError).
+                // Emitting it here — before onError decides whether to restart —
+                // caused a Processing flash on every silence pause.
 
                 override fun onError(error: Int) {
-                    val mapped = mapError(error)
-                    trySend(RecognitionResult.Error(mapped))
-                    close()
+                    val elapsed = System.currentTimeMillis() - sessionStartTime
+                    val isOemTimeout = error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
+                                    || error == SpeechRecognizer.ERROR_NO_MATCH
+
+                    if (isOemTimeout
+                        && !userStoppedManually
+                        && restartCount < RecognitionConfig.MaxRestartAttempts
+                    ) {
+                        restartCount++
+                        if (lastPartialText.isNotEmpty()) {
+                            accumulatedText = if (accumulatedText.isEmpty()) lastPartialText
+                                              else "$accumulatedText $lastPartialText"
+                            lastPartialText = ""
+                        }
+                        Log.d(TAG, "Restarting recognizer (attempt $restartCount/${RecognitionConfig.MaxRestartAttempts}, elapsed=${elapsed}ms)")
+                        try {
+                            speechRecognizer.cancel()
+                            speechRecognizer.startListening(intent)
+                            // No emission — ViewModel state stays Listening throughout restart cycles
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to restart recognizer", e)
+                            trySend(RecognitionResult.Error(RecognizerError.Client))
+                            close()
+                        }
+                    } else {
+                        // Genuine stop — emit accumulated text if we have enough, else error
+                        if (accumulatedText.isNotEmpty()) {
+                            emitFinalOrTooShort()
+                        } else {
+                            trySend(RecognitionResult.ListeningEnded)
+                            trySend(RecognitionResult.Error(mapError(error)))
+                        }
+                        close()
+                    }
                 }
 
                 override fun onResults(results: android.os.Bundle?) {
                     val matches = results
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         .orEmpty()
-                    val transcript = matches.firstOrNull().orEmpty().trim()
-                    val wordCount = transcript.split(Regex("\\s+")).filter { it.isNotEmpty() }.count()
-                    if (wordCount < 5) {
-                        trySend(RecognitionResult.Error(RecognizerError.TooShort))
-                    } else {
-                        trySend(RecognitionResult.Final(transcript))
+                    val segment = matches.firstOrNull().orEmpty().trim()
+
+                    // Append recognised speech to the running transcript
+                    if (segment.isNotEmpty()) {
+                        accumulatedText = if (accumulatedText.isEmpty()) segment
+                                          else "$accumulatedText $segment"
                     }
-                    close()
+                    lastPartialText = ""
+
+                    if (userStoppedManually) {
+                        // User tapped Stop or 2-min cap fired — finalise everything collected
+                        emitFinalOrTooShort()
+                        close()
+                    } else {
+                        // Intermediate result — restart and keep listening
+                        Log.d(TAG, "Restarting after onResults (accumulated: \"$accumulatedText\")")
+                        try {
+                            speechRecognizer.cancel()
+                            speechRecognizer.startListening(intent)
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Failed to restart after onResults", e)
+                            emitFinalOrTooShort()
+                            close()
+                        }
+                    }
                 }
 
                 override fun onPartialResults(partialResults: android.os.Bundle?) {
@@ -88,28 +184,13 @@ class SpeechRecognizerManager @Inject constructor(
                         .orEmpty()
                     val transcript = matches.firstOrNull()?.trim().orEmpty()
                     if (transcript.isNotEmpty()) {
+                        lastPartialText = transcript
                         trySend(RecognitionResult.Partial(transcript))
                     }
                 }
 
                 override fun onEvent(eventType: Int, params: android.os.Bundle?) = Unit
             })
-
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageCode)
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            }
-
-            synchronized(lock) {
-                timer?.cancel()
-                timer = object : CountDownTimer(LISTENING_CAP_MS, 1000) {
-                override fun onTick(millisUntilFinished: Long) = Unit
-                override fun onFinish() {
-                    stopListening()
-                }
-                }.start()
-            }
 
             speechRecognizer.startListening(intent)
         }
@@ -131,6 +212,7 @@ class SpeechRecognizerManager @Inject constructor(
     }
 
     fun stopListening() {
+        userStoppedManually = true
         synchronized(lock) {
             val currentRecognizer = recognizer
             if (currentRecognizer != null) {
@@ -139,6 +221,10 @@ class SpeechRecognizerManager @Inject constructor(
             timer?.cancel()
             timer = null
         }
+    }
+
+    private companion object {
+        private const val TAG = "SpeechRecognizerManager"
     }
 
     private fun mapError(error: Int): RecognizerError {
@@ -154,10 +240,6 @@ class SpeechRecognizerManager @Inject constructor(
             else -> RecognizerError.Unknown(error)
         }
     }
-
-    private companion object {
-        private const val LISTENING_CAP_MS = 120_000L
-    }
 }
 
 sealed class RecognitionResult {
@@ -165,6 +247,7 @@ sealed class RecognitionResult {
     data class Final(val text: String) : RecognitionResult()
     data class Error(val error: RecognizerError) : RecognitionResult()
     data object ListeningEnded : RecognitionResult()
+    data object Restarted : RecognitionResult()
 }
 
 sealed class RecognizerError {
