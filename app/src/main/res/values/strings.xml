@@ -16,4 +16,7 @@
     <string name="error_generic">Speech recognition error</string>
     <string name="saved_transcripts_title">Saved transcripts</string>
     <string name="no_transcripts_yet">No transcripts yet</string>
+    <string name="entry_detail_draft_notice">not yet cleaned up — will update automatically</string>
+    <string name="entry_detail_back_description">Navigate back to entry list</string>
+    <string name="entry_detail_error_loading">Error loading entry</string>
 </resources>

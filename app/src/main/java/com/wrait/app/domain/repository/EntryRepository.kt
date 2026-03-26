@@ -7,6 +7,7 @@ interface EntryRepository {
     suspend fun saveDraft(transcript: String, language: String): Long
     suspend fun updateWithCleanedText(id: Long, text: String, wordCount: Int)
     fun getAllEntries(): Flow<List<Entry>>
+    fun getEntryById(id: Long): Flow<Result<Entry?>>
     suspend fun getPendingDrafts(): List<Entry>
     suspend fun deleteStaleDrafts(daysOld: Int)
     suspend fun deleteStaleDrafts()

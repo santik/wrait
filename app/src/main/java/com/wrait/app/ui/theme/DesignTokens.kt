@@ -20,9 +20,10 @@ object DesignTokens {
     }
 
     object Radius {
-        val small = 4.dp
+        val small  = 4.dp
         val medium = 8.dp
-        val large = 16.dp
+        val card   = 12.dp
+        val large  = 16.dp
         val xLarge = 24.dp
     }
 
