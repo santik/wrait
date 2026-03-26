@@ -69,6 +69,7 @@ class MainViewModel @Inject constructor(
                             _recordingState.value = RecordingState.Processing
                         }
                     }
+                    RecognitionResult.Restarted -> Unit
                     is RecognitionResult.Final -> {
                         saveTranscript(result.text)
                     }
