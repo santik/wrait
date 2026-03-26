@@ -11,16 +11,13 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.compose.ui.res.dimensionResource
@@ -45,7 +43,16 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.ui.entries.EntryListScreen
+import com.wrait.app.ui.entries.EntryListViewModel
+import com.wrait.app.ui.theme.DesignTokens.Gesture
 import com.wrait.app.ui.theme.WrAItTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -64,7 +71,6 @@ class MainActivity : ComponentActivity() {
                 var showBlockedMessage by remember { mutableStateOf(false) }
                 var hasRequestedPermission by remember { mutableStateOf(false) }
                 val recordingState by viewModel.recordingState.collectAsState()
-                val entries by viewModel.entries.collectAsState()
 
                 val isPermissionGranted = remember {
                     mutableStateOf(
@@ -125,16 +131,17 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                MainScreen(
-                    modifier = Modifier.fillMaxSize(),
+                val navController = rememberNavController()
+
+                AppNavHost(
+                    navController = navController,
                     recordingState = recordingState,
-                    entries = entries,
                     showBlockedMessage = showBlockedMessage,
                     onMainButtonTapped = {
                         if (isPermissionGranted.value) {
                             showBlockedMessage = false
                             viewModel.onMainButtonTapped()
-                            return@MainScreen
+                            return@AppNavHost
                         }
 
                         val permanentlyDenied = hasRequestedPermission &&
@@ -162,10 +169,65 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+private fun AppNavHost(
+    navController: NavHostController,
+    recordingState: RecordingState,
+    showBlockedMessage: Boolean,
+    onMainButtonTapped: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    NavHost(
+        navController = navController,
+        startDestination = "main",
+        modifier = modifier.fillMaxSize()
+    ) {
+        composable("main") {
+            MainScreen(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { _, dragAmount ->
+                            if (dragAmount < -Gesture.SwipeNavThresholdPx) {
+                                navController.navigate("entries") {
+                                    launchSingleTop = true
+                                }
+                            }
+                        }
+                    },
+                recordingState = recordingState,
+                showBlockedMessage = showBlockedMessage,
+                onMainButtonTapped = onMainButtonTapped
+            )
+        }
+        composable("entries") {
+            val entryListViewModel: EntryListViewModel = hiltViewModel()
+            val entries by entryListViewModel.entries.collectAsStateWithLifecycle()
+            EntryListScreen(
+                entries = entries,
+                onEntryClick = { id -> navController.navigate("entry/$id") },
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable("entry/{entryId}") {
+            // Part B — entry detail screen (coming soon)
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "entry detail",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
 fun MainScreen(
     modifier: Modifier = Modifier,
     recordingState: RecordingState,
-    entries: List<EntrySummary>,
     showBlockedMessage: Boolean,
     onMainButtonTapped: () -> Unit
 ) {
@@ -182,8 +244,6 @@ fun MainScreen(
     val permissionStatus = stringResource(id = R.string.error_permission)
     val genericErrorStatus = stringResource(id = R.string.error_generic)
     val blockedMessage = stringResource(id = R.string.mic_blocked_message)
-    val savedTitle = stringResource(id = R.string.saved_transcripts_title)
-    val emptyTitle = stringResource(id = R.string.no_transcripts_yet)
 
     Box(modifier = modifier) {
         Column(
@@ -229,36 +289,6 @@ fun MainScreen(
                     modifier = Modifier.padding(top = 16.dp)
                 )
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = savedTitle,
-                style = MaterialTheme.typography.titleMedium
-            )
-
-            LazyColumn(
-                modifier = Modifier
-                    .padding(top = 8.dp)
-                    .height(240.dp)
-            ) {
-                if (entries.isEmpty()) {
-                    item {
-                        Text(
-                            text = emptyTitle,
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-                } else {
-                    items(entries, key = { it.id }) { entry ->
-                        Text(
-                            text = entry.transcript,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
-                    }
-                }
-            }
         }
     }
 }
@@ -269,7 +299,6 @@ fun MainButtonPreview() {
     WrAItTheme {
         MainScreen(
             recordingState = RecordingState.Idle,
-            entries = emptyList(),
             showBlockedMessage = false,
             onMainButtonTapped = {}
         )
