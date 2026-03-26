@@ -1,5 +1,6 @@
 package com.wrait.app.ui.entries
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -11,7 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,8 +28,10 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Velocity
+import androidx.compose.ui.unit.dp
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.ui.theme.DesignTokens
 import com.wrait.app.ui.theme.DesignTokens.Gesture
@@ -85,6 +88,7 @@ fun EntryListScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .statusBarsPadding()
             .nestedScroll(nestedScrollConnection)
             // Fallback: fires only when there is no LazyColumn to steal events
             .pointerInput(Unit) {
@@ -100,8 +104,8 @@ fun EntryListScreen(
             ) {
                 Text(
                     text = "your entries will appear here",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary
                 )
             }
         } else {
@@ -134,7 +138,7 @@ private fun EntryCard(
         .lines()
         .firstOrNull { it.isNotBlank() } ?: entry.rawTranscript
     val textColor = if (entry.isDraft) {
-        MaterialTheme.colorScheme.onSurfaceVariant
+        MaterialTheme.colorScheme.secondary
     } else {
         MaterialTheme.colorScheme.onSurface
     }
@@ -143,44 +147,58 @@ private fun EntryCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(DesignTokens.Radius.medium),
+        shape = RoundedCornerShape(DesignTokens.Radius.card),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = if (entry.isDraft) DesignTokens.Spacing.xs else DesignTokens.Spacing.sm
     ) {
         Column(
-            modifier = Modifier.padding(DesignTokens.Spacing.md)
+            modifier = Modifier.padding(
+                horizontal = DesignTokens.Spacing.md,
+                vertical   = 14.dp
+            )
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = dateString,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
                     modifier = Modifier.weight(1f)
                 )
                 if (entry.isDraft) {
-                    Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
-                    Text(
-                        text = "draft",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = WrAItTheme.semanticColors.warning
-                    )
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                color = WrAItTheme.semanticColors.warningContainer,
+                                shape = RoundedCornerShape(DesignTokens.Radius.small)
+                            )
+                            .padding(
+                                horizontal = DesignTokens.Spacing.sm,
+                                vertical   = DesignTokens.Spacing.xs
+                            )
+                    ) {
+                        Text(
+                            text  = "draft",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = WrAItTheme.semanticColors.warning
+                        )
+                    }
                 } else {
-                    Spacer(modifier = Modifier.width(DesignTokens.Spacing.sm))
                     Text(
-                        text = "${entry.wordCount} words",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text  = "${entry.wordCount} words",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
             }
             Spacer(modifier = Modifier.height(DesignTokens.Spacing.xs))
             Text(
-                text = displayText,
-                style = MaterialTheme.typography.bodyLarge,
-                color = textColor,
-                maxLines = 2
+                text     = displayText,
+                style    = MaterialTheme.typography.labelLarge,
+                color    = textColor,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
             )
         }
     }

@@ -1,5 +1,6 @@
 package com.wrait.app.data.repository
 
+import android.util.Log
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.mapper.toDomain
@@ -7,6 +8,7 @@ import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.util.TimeProvider
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -41,6 +43,21 @@ class EntryRepositoryImpl @Inject constructor(
             list.map { it.toDomain() }
         }
     }
+
+    override fun getEntryById(id: Long): Flow<Result<Entry?>> =
+        entryDao.getEntryById(id)
+            .map { entity ->
+                try {
+                    Result.success(entity?.toDomain())
+                } catch (e: Exception) {
+                    Log.e("EntryRepository", "Failed to map entry $id", e)
+                    Result.failure(e)
+                }
+            }
+            .catch { e ->
+                Log.e("EntryRepository", "Database error getting entry $id", e)
+                emit(Result.failure(e))
+            }
 
     override suspend fun getPendingDrafts(): List<Entry> {
         return entryDao.getPendingDrafts().map { it.toDomain() }

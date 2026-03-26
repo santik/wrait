@@ -43,13 +43,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.ui.entries.EntryDetailScreen
+import com.wrait.app.ui.entries.EntryDetailViewModel
 import com.wrait.app.ui.entries.EntryListScreen
 import com.wrait.app.ui.entries.EntryListViewModel
 import com.wrait.app.ui.theme.DesignTokens.Gesture
@@ -208,18 +212,16 @@ private fun AppNavHost(
                 onBack = { navController.popBackStack() }
             )
         }
-        composable("entry/{entryId}") {
-            // Part B — entry detail screen (coming soon)
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "entry detail",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        composable(
+            route = "entry/{entryId}",
+            arguments = listOf(navArgument("entryId") { type = NavType.LongType })
+        ) {
+            val detailViewModel: EntryDetailViewModel = hiltViewModel()
+            val entry by detailViewModel.entry.collectAsStateWithLifecycle()
+            EntryDetailScreen(
+                entryResult = entry,
+                onBack      = { navController.popBackStack() }
+            )
         }
     }
 }
