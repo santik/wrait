@@ -8,6 +8,7 @@ object DesignTokens {
         const val FadeDuration = 300        // ms — standard fade in/out
         const val ShakeDuration = 400       // ms — error shake
         const val PulseDuration = 1800      // ms — recording pulse loop
+        const val DeleteFadeDuration = 200  // ms — deleted card fade out in LazyColumn
     }
 
     object Spacing {

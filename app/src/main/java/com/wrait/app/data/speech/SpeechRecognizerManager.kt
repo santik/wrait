@@ -263,5 +263,9 @@ sealed class RecognizerError {
     data object Timeout : RecognizerError()
     data object NotAvailable : RecognizerError()
     data object InsufficientPermissions : RecognizerError()
+    /** OpenAI cleanup call failed due to missing / slow network. Entry saved as draft. */
+    data object NoInternet : RecognizerError()
+    /** OpenAI cleanup call returned a non-network failure. Entry saved as draft. */
+    data object ApiFailed : RecognizerError()
     data class Unknown(val code: Int) : RecognizerError()
 }

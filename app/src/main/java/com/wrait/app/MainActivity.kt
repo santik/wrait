@@ -141,6 +141,7 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     recordingState = recordingState,
                     showBlockedMessage = showBlockedMessage,
+                    onEntriesDeleted = { count -> viewModel.onEntriesDeleted(count) },
                     onMainButtonTapped = {
                         if (isPermissionGranted.value) {
                             showBlockedMessage = false
@@ -177,6 +178,7 @@ private fun AppNavHost(
     navController: NavHostController,
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
+    onEntriesDeleted: (Int) -> Unit,
     onMainButtonTapped: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -205,11 +207,28 @@ private fun AppNavHost(
         }
         composable("entries") {
             val entryListViewModel: EntryListViewModel = hiltViewModel()
-            val entries by entryListViewModel.entries.collectAsStateWithLifecycle()
+            val entryListUiState by entryListViewModel.uiState.collectAsStateWithLifecycle()
             EntryListScreen(
-                entries = entries,
-                onEntryClick = { id -> navController.navigate("entry/$id") },
-                onBack = { navController.popBackStack() }
+                uiState           = entryListUiState,
+                onEntryClick      = { id -> navController.navigate("entry/$id") },
+                onBack            = {
+                    val deleted = entryListUiState.lastDeletedCount
+                    if (deleted > 0) {
+                        onEntriesDeleted(deleted)
+                        entryListViewModel.clearDeletedCount()
+                    }
+                    navController.popBackStack()
+                },
+                onLongPress       = entryListViewModel::enterSelectionMode,
+                onToggleSelection = entryListViewModel::toggleSelection,
+                onSelectAll       = {
+                    entryListViewModel.selectAll(entryListUiState.entries.map { it.id })
+                },
+                onDeselectAll     = entryListViewModel::deselectAll,
+                onExitSelection   = entryListViewModel::exitSelectionMode,
+                onDeleteTapped    = entryListViewModel::onDeleteButtonTapped,
+                onDeleteCancelled = entryListViewModel::onDeleteCancelled,
+                onDeleteConfirmed = entryListViewModel::confirmDelete
             )
         }
         composable(
@@ -244,6 +263,8 @@ fun MainScreen(
     val networkStatus = stringResource(id = R.string.error_network)
     val notAvailableStatus = stringResource(id = R.string.error_not_available)
     val permissionStatus = stringResource(id = R.string.error_permission)
+    val noInternetStatus = stringResource(id = R.string.error_no_internet)
+    val apiFailedStatus = stringResource(id = R.string.error_api_failed)
     val genericErrorStatus = stringResource(id = R.string.error_generic)
     val blockedMessage = stringResource(id = R.string.mic_blocked_message)
 
@@ -271,6 +292,11 @@ fun MainScreen(
                 recordingState is RecordingState.Listening -> listeningStatus
                 recordingState is RecordingState.Processing -> processingStatus
                 recordingState is RecordingState.Saved -> savedStatus
+                recordingState is RecordingState.Deleted -> {
+                    val n = recordingState.count
+                    if (n == 1) stringResource(R.string.deleted_singular)
+                    else        stringResource(R.string.deleted_plural, n)
+                }
                 recordingState is RecordingState.Error -> {
                     when (recordingState.error) {
                         RecognizerError.NoMatch -> noMatchStatus
@@ -278,6 +304,8 @@ fun MainScreen(
                         RecognizerError.Network -> networkStatus
                         RecognizerError.NotAvailable -> notAvailableStatus
                         RecognizerError.InsufficientPermissions -> permissionStatus
+                        RecognizerError.NoInternet -> noInternetStatus
+                        RecognizerError.ApiFailed -> apiFailedStatus
                         else -> genericErrorStatus
                     }
                 }

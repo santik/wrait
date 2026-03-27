@@ -70,7 +70,7 @@ class OpenAiApiServiceImpl @Inject constructor() : OpenAiApiService {
                 else -> CleanupResult.Failure("api error $code")
             }
         } catch (e: Exception) {
-            Log.w(TAG, "OpenAI network error: ${e.javaClass.simpleName}")
+            Log.w(TAG, "OpenAI request failed: ${e.javaClass.simpleName}: ${e.message}")
             CleanupResult.Failure("network error")
         }
     }
