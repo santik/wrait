@@ -1,22 +1,35 @@
 package com.wrait.app
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.api.OpenAiApiService
 import com.wrait.app.data.speech.RecognitionResult
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.SpeechRecognizerManager
+import com.wrait.app.domain.model.Entry
+import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.Locale
 import javax.inject.Inject
 
@@ -24,8 +37,10 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     preferencesRepository: PreferencesRepository,
     private val entryRepository: EntryRepository,
-    private val speechRecognizerManager: SpeechRecognizerManager
+    private val speechRecognizerManager: SpeechRecognizerManager,
+    private val openAiApiService: OpenAiApiService
 ) : ViewModel() {
+
     private val languageState = preferencesRepository.selectedLanguage.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
@@ -41,21 +56,50 @@ class MainViewModel @Inject constructor(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    val entryStats: StateFlow<EntryStats> = entryRepository.getAllEntries()
+        .map { list -> computeStats(list) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EntryStats.Empty)
+
     private var listenJob: Job? = null
+
+    init {
+        viewModelScope.launch {
+            entryRepository.deleteStaleDrafts()
+            retryPendingDrafts()
+        }
+    }
+
+    // region — button handling
 
     fun onMainButtonTapped() {
         when (recordingState.value) {
-            RecordingState.Idle -> startListening()
-            RecordingState.Listening -> stopListening()
-            RecordingState.Processing -> Unit
-            is RecordingState.Saved -> _recordingState.value = RecordingState.Idle
-            is RecordingState.Error -> _recordingState.value = RecordingState.Idle
+            RecordingState.Idle        -> startListening()
+            RecordingState.Listening   -> stopListening()
+            RecordingState.Processing  -> Unit
+            is RecordingState.Saved    -> _recordingState.value = RecordingState.Idle
+            is RecordingState.Error    -> _recordingState.value = RecordingState.Idle
+            is RecordingState.Deleted  -> _recordingState.value = RecordingState.Idle
         }
     }
 
     fun onPermissionRevoked() {
         stopListening(forceIdle = true)
     }
+
+    fun onEntriesDeleted(count: Int) {
+        if (count <= 0) return
+        viewModelScope.launch {
+            _recordingState.value = RecordingState.Deleted(count)
+            delay(3_000)
+            if (_recordingState.value is RecordingState.Deleted) {
+                _recordingState.value = RecordingState.Idle
+            }
+        }
+    }
+
+    // endregion
+
+    // region — recording pipeline
 
     private fun startListening() {
         listenJob?.cancel()
@@ -70,12 +114,8 @@ class MainViewModel @Inject constructor(
                         }
                     }
                     RecognitionResult.Restarted -> Unit
-                    is RecognitionResult.Final -> {
-                        saveTranscript(result.text)
-                    }
-                    is RecognitionResult.Error -> {
-                        emitError(result.error)
-                    }
+                    is RecognitionResult.Final  -> saveTranscript(result.text)
+                    is RecognitionResult.Error  -> emitError(result.error)
                     is RecognitionResult.Partial -> Unit
                 }
             }
@@ -92,10 +132,54 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Full pipeline:
+     * 1. Validate input — blank or overlong text is rejected before touching the DB.
+     * 2. Save raw transcript as draft (on IO) — user's words are safe before any network call.
+     * 3. Call OpenAI cleanup.
+     * 4a. Success → update entry with cleaned text → Saved(entryId).
+     * 4b. Failure → leave draft in DB → Error(NoInternet | ApiFailed).
+     */
     private suspend fun saveTranscript(text: String) {
         val language = languageState.value
-        entryRepository.saveDraft(text, language)
-        _recordingState.value = RecordingState.Saved(text)
+
+        // Step 1 — input guard (should not normally be reached; belt-and-braces)
+        if (text.isBlank()) {
+            _recordingState.value = RecordingState.Error(RecognizerError.TooShort)
+            delayAndReset()
+            return
+        }
+        if (text.length > MAX_TRANSCRIPT_LENGTH) {
+            Log.w(TAG, "Transcript exceeds max length (${text.length} chars), truncating")
+        }
+
+        // Step 2 — draft save (must complete before cleanup call begins)
+        val entryId = withContext(Dispatchers.IO) {
+            entryRepository.saveDraft(text, language)
+        }
+        Log.d(TAG, "Draft saved, id=$entryId")
+
+        // Step 3 — cleanup
+        when (val result = openAiApiService.cleanupTranscript(text)) {
+            is CleanupResult.Success -> {
+                val wordCount = result.cleanedText.trim()
+                    .split(Regex("\\s+")).count { it.isNotEmpty() }
+                withContext(Dispatchers.IO) {
+                    entryRepository.updateWithCleanedText(entryId, result.cleanedText, wordCount)
+                }
+                Log.d(TAG, "Entry $entryId cleaned (${wordCount}w)")
+                _recordingState.value = RecordingState.Saved(entryId)
+            }
+            is CleanupResult.Failure -> {
+                val isNetworkFailure = result.reason == "network error"
+                                    || result.reason == "timeout"
+                Log.w(TAG, "Cleanup failed for entry $entryId: ${result.reason} (draft kept)")
+                val error = if (isNetworkFailure) RecognizerError.NoInternet
+                            else RecognizerError.ApiFailed
+                _recordingState.value = RecordingState.Error(error)
+            }
+        }
+
         delayAndReset()
     }
 
@@ -106,17 +190,85 @@ class MainViewModel @Inject constructor(
 
     private suspend fun delayAndReset() {
         listenJob?.cancel()
-        delay(1500)
+        delay(1_500)
         _recordingState.value = RecordingState.Idle
+    }
+
+    // endregion
+
+    // region — draft retry on init
+
+    private suspend fun retryPendingDrafts() {
+        val drafts = entryRepository.getPendingDrafts()
+        if (drafts.isEmpty()) return
+        Log.d(TAG, "Retrying ${drafts.size} pending draft(s)")
+        drafts.forEach { entry ->
+            // Abort the entire retry loop if the ViewModel has been destroyed
+            currentCoroutineContext().ensureActive()
+            try {
+                when (val result = openAiApiService.cleanupTranscript(entry.rawTranscript)) {
+                    is CleanupResult.Success -> {
+                        val wordCount = result.cleanedText.trim()
+                            .split(Regex("\\s+")).count { it.isNotEmpty() }
+                        withContext(Dispatchers.IO) {
+                            entryRepository.updateWithCleanedText(entry.id, result.cleanedText, wordCount)
+                        }
+                        Log.d(TAG, "Draft ${entry.id} upgraded to clean entry")
+                    }
+                    is CleanupResult.Failure -> {
+                        // Leave as draft — S-017 handles surfacing this to the user via messages panel
+                        Log.w(TAG, "Draft ${entry.id} retry failed: ${result.reason}")
+                    }
+                }
+            } catch (e: Exception) {
+                // One draft failing must not abort the rest of the retry loop
+                Log.e(TAG, "Unexpected error retrying draft ${entry.id}", e)
+            }
+        }
+    }
+
+    // endregion
+
+    // region — stats computation
+
+    private fun computeStats(entries: List<Entry>): EntryStats {
+        if (entries.isEmpty()) return EntryStats.Empty
+
+        val zone   = ZoneId.systemDefault()
+        val today  = LocalDate.now(zone)
+        val monday = today.with(DayOfWeek.MONDAY)
+
+        // Build a Set once — O(n) — so the 7 streak lookups are O(1) each instead of O(n) each
+        val entryDates: Set<LocalDate> = entries.mapTo(HashSet()) { entry ->
+            Instant.ofEpochMilli(entry.createdAt).atZone(zone).toLocalDate()
+        }
+
+        val streakDays = (0..6).map { offset ->
+            monday.plusDays(offset.toLong()) in entryDates
+        }
+
+        return EntryStats(
+            entryCount = entries.size,
+            activeDays = entryDates.size,
+            streakDays = streakDays
+        )
+    }
+
+    // endregion
+
+    private companion object {
+        private const val TAG = "MainViewModel"
+        private const val MAX_TRANSCRIPT_LENGTH = 10_000
     }
 }
 
 sealed class RecordingState {
-    data object Idle : RecordingState()
-    data object Listening : RecordingState()
+    data object Idle       : RecordingState()
+    data object Listening  : RecordingState()
     data object Processing : RecordingState()
-    data class Saved(val transcript: String) : RecordingState()
+    data class Saved(val entryId: Long) : RecordingState()
     data class Error(val error: RecognizerError) : RecordingState()
+    data class Deleted(val count: Int) : RecordingState()
 }
 
 data class EntrySummary(

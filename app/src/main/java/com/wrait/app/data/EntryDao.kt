@@ -29,4 +29,7 @@ interface EntryDao {
 
     @Query("DELETE FROM entries WHERE isDraft = 1 AND createdAt < :timestamp")
     suspend fun deleteDraftsOlderThan(timestamp: Long)
+
+    @Query("DELETE FROM entries WHERE id IN (:ids)")
+    suspend fun deleteEntries(ids: List<Long>)
 }

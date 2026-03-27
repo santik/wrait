@@ -11,4 +11,5 @@ interface EntryRepository {
     suspend fun getPendingDrafts(): List<Entry>
     suspend fun deleteStaleDrafts(daysOld: Int)
     suspend fun deleteStaleDrafts()
+    suspend fun deleteEntries(ids: List<Long>)
 }

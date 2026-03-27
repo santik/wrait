@@ -72,4 +72,9 @@ class EntryRepositoryImpl @Inject constructor(
     override suspend fun deleteStaleDrafts() {
         deleteStaleDrafts(7)
     }
+
+    override suspend fun deleteEntries(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        entryDao.deleteEntries(ids)
+    }
 }

@@ -14,9 +14,13 @@
     <string name="error_not_available">Speech recognition not available</string>
     <string name="error_permission">Microphone permission required</string>
     <string name="error_generic">Speech recognition error</string>
+    <string name="error_no_internet">Saved as draft — no internet connection</string>
+    <string name="error_api_failed">Saved as draft — cleanup failed, will retry</string>
     <string name="saved_transcripts_title">Saved transcripts</string>
     <string name="no_transcripts_yet">No transcripts yet</string>
     <string name="entry_detail_draft_notice">not yet cleaned up — will update automatically</string>
     <string name="entry_detail_back_description">Navigate back to entry list</string>
     <string name="entry_detail_error_loading">Error loading entry</string>
+    <string name="deleted_singular">1 entry deleted</string>
+    <string name="deleted_plural">%d entries deleted</string>
 </resources>
