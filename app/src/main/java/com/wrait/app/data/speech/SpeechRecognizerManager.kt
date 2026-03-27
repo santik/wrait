@@ -71,7 +71,7 @@ class SpeechRecognizerManager @Inject constructor(
 
             val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                         RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                         RecognizerIntent.LANGUAGE_MODEL_WEB_SEARCH)
                 putExtra(RecognizerIntent.EXTRA_LANGUAGE, languageCode)
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS,
@@ -165,10 +165,13 @@ class SpeechRecognizerManager @Inject constructor(
                         emitFinalOrTooShort()
                         close()
                     } else {
-                        // Intermediate result — restart and keep listening
+                        // Intermediate result — restart and keep listening.
+                        // Do NOT call cancel() here: recognition has already completed normally,
+                        // the recognizer is idle. cancel() on a completed recognizer can trigger
+                        // a spurious onError(ERROR_CLIENT) that closes the flow prematurely.
+                        restartCount = 0  // successful recognition resets the error cap
                         Log.d(TAG, "Restarting after onResults (accumulated: \"$accumulatedText\")")
                         try {
-                            speechRecognizer.cancel()
                             speechRecognizer.startListening(intent)
                         } catch (e: Exception) {
                             Log.e(TAG, "Failed to restart after onResults", e)
