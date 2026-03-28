@@ -32,39 +32,70 @@ object DatabaseModule {
     @Provides
     @Singleton
     fun provideDatabasePassword(@ApplicationContext context: Context): ByteArray {
-        try {
-            AeadConfig.register()
-
-            val keysetHandle = AndroidKeysetManager.Builder()
-                .withSharedPref(context, "tink_keyset", PREFS_NAME)
-                .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
-                .withMasterKeyUri("android-keystore://$KEY_ALIAS")
-                .build()
-                .keysetHandle
-
-            val aead: Aead = keysetHandle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
-            val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-
-            val storedPassword = sharedPreferences.getString(DB_PASSWORD_KEY, null)
-            return if (storedPassword != null) {
-                val encryptedBytes = Base64.decode(storedPassword, Base64.NO_WRAP)
-                val passwordBytes = aead.decrypt(encryptedBytes, null)
-                if (passwordBytes.size != 32) {
-                    throw IllegalStateException("Stored database password has invalid length: ${passwordBytes.size}")
-                }
-                passwordBytes
-            } else {
-                val password = ByteArray(32).apply { SecureRandom().nextBytes(this) }
-                val encryptedBytes = aead.encrypt(password, null)
-                val passwordString = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP)
-                sharedPreferences.edit {
-                    putString(DB_PASSWORD_KEY, passwordString)
-                }
-                password
-            }
+        return try {
+            loadOrCreatePassword(context)
         } catch (e: Exception) {
-            throw IllegalStateException("Failed to initialize Tink or retrieve database password", e)
+            // The Android Keystore key is gone (device reset, lock screen removed, etc.).
+            // The Tink keyset stored in SharedPreferences can no longer be decrypted.
+            // Clear all encrypted state and the database, then start fresh.
+            clearEncryptedState(context)
+            try {
+                loadOrCreatePassword(context)
+            } catch (retryException: Exception) {
+                throw IllegalStateException(
+                    "Failed to initialize database encryption after keystore recovery",
+                    retryException
+                )
+            }
         }
+    }
+
+    private fun loadOrCreatePassword(context: Context): ByteArray {
+        AeadConfig.register()
+
+        val keysetHandle = AndroidKeysetManager.Builder()
+            .withSharedPref(context, "tink_keyset", PREFS_NAME)
+            .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
+            .withMasterKeyUri("android-keystore://$KEY_ALIAS")
+            .build()
+            .keysetHandle
+
+        val aead: Aead = keysetHandle.getPrimitive(RegistryConfiguration.get(), Aead::class.java)
+        val sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+        val storedPassword = sharedPreferences.getString(DB_PASSWORD_KEY, null)
+        return if (storedPassword != null) {
+            val encryptedBytes = Base64.decode(storedPassword, Base64.NO_WRAP)
+            val passwordBytes = aead.decrypt(encryptedBytes, null)
+            if (passwordBytes.size != 32) {
+                throw IllegalStateException("Stored database password has invalid length: ${passwordBytes.size}")
+            }
+            passwordBytes
+        } else {
+            val password = ByteArray(32).apply { SecureRandom().nextBytes(this) }
+            val encryptedBytes = aead.encrypt(password, null)
+            sharedPreferences.edit {
+                putString(DB_PASSWORD_KEY, Base64.encodeToString(encryptedBytes, Base64.NO_WRAP))
+            }
+            password
+        }
+    }
+
+    private fun clearEncryptedState(context: Context) {
+        // Remove the Tink keyset and the encrypted DB password — both are unreadable without the key
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
+            remove("tink_keyset")
+            remove(DB_PASSWORD_KEY)
+        }
+        // Delete the database; it cannot be opened without the original password
+        listOf(DB_NAME, "$DB_NAME-shm", "$DB_NAME-wal").forEach { name ->
+            context.getDatabasePath(name).delete()
+        }
+        // Remove the stale Keystore entry so Tink can create a fresh one
+        try {
+            val ks = java.security.KeyStore.getInstance("AndroidKeyStore").also { it.load(null) }
+            if (ks.containsAlias(KEY_ALIAS)) ks.deleteEntry(KEY_ALIAS)
+        } catch (_: Exception) { /* best-effort */ }
     }
 
     @Provides

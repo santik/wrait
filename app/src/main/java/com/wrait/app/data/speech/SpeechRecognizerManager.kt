@@ -20,7 +20,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class SpeechRecognizerManager @Inject constructor(
+open class SpeechRecognizerManager @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     private val lock = Any()
@@ -28,7 +28,7 @@ class SpeechRecognizerManager @Inject constructor(
     private var timer: CountDownTimer? = null
     @Volatile private var userStoppedManually = false
 
-    fun listen(languageCode: String): Flow<RecognitionResult> = callbackFlow {
+    open fun listen(languageCode: String): Flow<RecognitionResult> = callbackFlow {
         if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
             close()
@@ -214,7 +214,7 @@ class SpeechRecognizerManager @Inject constructor(
         }
     }
 
-    fun stopListening() {
+    open fun stopListening() {
         userStoppedManually = true
         synchronized(lock) {
             val currentRecognizer = recognizer
