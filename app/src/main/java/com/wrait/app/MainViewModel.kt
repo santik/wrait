@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.api.OpenAiApiService
+import com.wrait.app.di.IoDispatcher
 import com.wrait.app.data.speech.RecognitionResult
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.SpeechRecognizerManager
@@ -13,7 +14,7 @@ import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.currentCoroutineContext
@@ -38,7 +39,8 @@ class MainViewModel @Inject constructor(
     preferencesRepository: PreferencesRepository,
     private val entryRepository: EntryRepository,
     private val speechRecognizerManager: SpeechRecognizerManager,
-    private val openAiApiService: OpenAiApiService
+    private val openAiApiService: OpenAiApiService,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
     private val languageState = preferencesRepository.selectedLanguage.stateIn(
@@ -62,11 +64,9 @@ class MainViewModel @Inject constructor(
 
     private var listenJob: Job? = null
 
-    init {
-        viewModelScope.launch {
-            entryRepository.deleteStaleDrafts()
-            retryPendingDrafts()
-        }
+    internal val initJob: Job = viewModelScope.launch {
+        entryRepository.deleteStaleDrafts()
+        retryPendingDrafts()
     }
 
     // region — button handling
@@ -154,7 +154,7 @@ class MainViewModel @Inject constructor(
         }
 
         // Step 2 — draft save (must complete before cleanup call begins)
-        val entryId = withContext(Dispatchers.IO) {
+        val entryId = withContext(ioDispatcher) {
             entryRepository.saveDraft(text, language)
         }
         Log.d(TAG, "Draft saved, id=$entryId")
@@ -164,7 +164,7 @@ class MainViewModel @Inject constructor(
             is CleanupResult.Success -> {
                 val wordCount = result.cleanedText.trim()
                     .split(Regex("\\s+")).count { it.isNotEmpty() }
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     entryRepository.updateWithCleanedText(entryId, result.cleanedText, wordCount)
                 }
                 Log.d(TAG, "Entry $entryId cleaned (${wordCount}w)")
@@ -210,7 +210,7 @@ class MainViewModel @Inject constructor(
                     is CleanupResult.Success -> {
                         val wordCount = result.cleanedText.trim()
                             .split(Regex("\\s+")).count { it.isNotEmpty() }
-                        withContext(Dispatchers.IO) {
+                        withContext(ioDispatcher) {
                             entryRepository.updateWithCleanedText(entry.id, result.cleanedText, wordCount)
                         }
                         Log.d(TAG, "Draft ${entry.id} upgraded to clean entry")
