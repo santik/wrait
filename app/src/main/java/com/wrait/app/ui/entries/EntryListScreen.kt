@@ -154,7 +154,7 @@ fun EntryListScreen(
                     onDragEnd    = { hasFired = false },
                     onDragCancel = { hasFired = false }
                 ) { _, dragAmount ->
-                    if (!hasFired && dragAmount > Gesture.SwipeNavThresholdPx) {
+                    if (!hasFired && dragAmount > Gesture.SwipeNavThresholdDp.toPx()) {
                         hasFired = true
                         if (uiState.selectionMode) onExitSelection() else onBack()
                     }
