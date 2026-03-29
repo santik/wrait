@@ -6,9 +6,11 @@ object DesignTokens {
 
     object Animation {
         const val FadeDuration = 300        // ms — standard fade in/out
-        const val ShakeDuration = 400       // ms — error shake
+        const val ShakeDuration = 310       // ms — error shake (~310ms total, 5 steps)
         const val PulseDuration = 1800      // ms — recording pulse loop
         const val DeleteFadeDuration = 200  // ms — deleted card fade out in LazyColumn
+        const val StripColorDuration = 400  // ms — top strip colour transition
+        const val ButtonAlphaDuration = 200 // ms — button opacity (Processing fade)
     }
 
     object Spacing {
@@ -36,7 +38,7 @@ object DesignTokens {
     object Button {
         val SizeDp = 220.dp
         const val PulseScaleMax = 1.6f
-        const val PulseAlphaStart = 0.5f
+        const val PulseAlphaStart = 0.6f
         const val AlphaDisabled = 0.3f
         const val AlphaReduced = 0.5f
         const val AlphaFull = 1.0f

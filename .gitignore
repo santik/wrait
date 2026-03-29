@@ -42,4 +42,4 @@ output-metadata.json
 !/app/schemas/
 
 # Project changes documentation
-# #changes/
+changes/

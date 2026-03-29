@@ -1,11 +1,16 @@
 package com.wrait.app.ui.main
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import android.provider.Settings
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -34,6 +39,7 @@ import java.util.Locale
 fun MainScreen(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
+    shakeErrorKey: Int,
     stats: EntryStats,
     selectedLanguage: String,
     onButtonTap: () -> Unit,
@@ -101,6 +107,7 @@ fun MainScreen(
             ButtonArea(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
+                shakeErrorKey = shakeErrorKey,
                 onTap = onButtonTap,
             )
             Spacer(Modifier.height(DesignTokens.StatusLine.GapAboveDp))
@@ -130,11 +137,19 @@ private fun TopStrip(
 ) {
     val colorScheme = MaterialTheme.colorScheme
     val warningColor = LocalWraitSemanticColors.current.warning
+    val animationsEnabled = Settings.Global.getFloat(
+        LocalContext.current.contentResolver,
+        Settings.Global.ANIMATOR_DURATION_SCALE,
+        1f
+    ) != 0f
 
     val targetColor = stripColorFor(recordingState, showBlockedMessage, colorScheme.error, warningColor)
     val animatedColor by animateColorAsState(
         targetValue = targetColor,
-        animationSpec = tween(durationMillis = DesignTokens.Animation.FadeDuration),
+        animationSpec = if (animationsEnabled)
+            tween(durationMillis = DesignTokens.Animation.StripColorDuration)
+        else
+            snap(),
         label = "stripColor"
     )
     Box(
@@ -171,11 +186,20 @@ private fun StatusLine(
 ) {
     val hasEntries = stats.entryCount > 0
     val statusText = statusTextFor(recordingState, showBlockedMessage, hasEntries)
+    val animationsEnabled = Settings.Global.getFloat(
+        LocalContext.current.contentResolver,
+        Settings.Global.ANIMATOR_DURATION_SCALE,
+        1f
+    ) != 0f
     AnimatedContent(
         targetState = statusText,
         transitionSpec = {
-            fadeIn(animationSpec = tween(DesignTokens.Animation.FadeDuration)) togetherWith
-            fadeOut(animationSpec = tween(DesignTokens.Animation.FadeDuration))
+            if (animationsEnabled) {
+                fadeIn(animationSpec = tween(DesignTokens.Animation.FadeDuration)) togetherWith
+                fadeOut(animationSpec = tween(DesignTokens.Animation.FadeDuration))
+            } else {
+                EnterTransition.None togetherWith ExitTransition.None
+            }
         },
         label = "statusLine",
         modifier = modifier,

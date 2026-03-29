@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -53,6 +54,11 @@ class MainViewModel @Inject constructor(
 
     private val _recordingState = MutableStateFlow<RecordingState>(RecordingState.Idle)
     val recordingState: StateFlow<RecordingState> = _recordingState.asStateFlow()
+
+    // Incremented on each NoMatch / TooShort error so ButtonArea can fire a shake
+    // even when two identical error states are emitted in succession.
+    private val _shakeErrorKey = MutableStateFlow(0)
+    val shakeErrorKey: StateFlow<Int> = _shakeErrorKey.asStateFlow()
 
     val entries: StateFlow<List<EntrySummary>> = entryRepository.getAllEntries()
         .map { list ->
@@ -159,6 +165,7 @@ class MainViewModel @Inject constructor(
 
         // Step 1 — input guard (should not normally be reached; belt-and-braces)
         if (text.isBlank()) {
+            _shakeErrorKey.update { it + 1 }
             _recordingState.value = RecordingState.Error(RecognizerError.TooShort)
             delayAndReset()
             return
@@ -198,6 +205,9 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun emitError(error: RecognizerError) {
+        if (error == RecognizerError.NoMatch || error == RecognizerError.TooShort) {
+            _shakeErrorKey.update { it + 1 }
+        }
         _recordingState.value = RecordingState.Error(error)
         delayAndReset()
     }
