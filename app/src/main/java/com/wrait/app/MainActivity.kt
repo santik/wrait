@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
                 var showBlockedMessage by remember { mutableStateOf(false) }
                 var hasRequestedPermission by remember { mutableStateOf(false) }
                 val recordingState by viewModel.recordingState.collectAsState()
+                val shakeErrorKey by viewModel.shakeErrorKey.collectAsStateWithLifecycle()
                 val stats by viewModel.entryStats.collectAsStateWithLifecycle()
                 val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
 
@@ -126,6 +127,7 @@ class MainActivity : ComponentActivity() {
                     navController = navController,
                     recordingState = recordingState,
                     showBlockedMessage = showBlockedMessage,
+                    shakeErrorKey = shakeErrorKey,
                     stats = stats,
                     selectedLanguage = selectedLanguage,
                     onEntriesDeleted = { count -> viewModel.onEntriesDeleted(count) },
@@ -177,6 +179,7 @@ private fun AppNavHost(
     navController: NavHostController,
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
+    shakeErrorKey: Int,
     stats: com.wrait.app.domain.model.EntryStats,
     selectedLanguage: String,
     onEntriesDeleted: (Int) -> Unit,
@@ -193,6 +196,7 @@ private fun AppNavHost(
             MainScreen(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
+                shakeErrorKey = shakeErrorKey,
                 stats = stats,
                 selectedLanguage = selectedLanguage,
                 onButtonTap = onMainButtonTapped,

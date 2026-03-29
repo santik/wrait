@@ -1,9 +1,9 @@
 package com.wrait.app.ui.main
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.*
 import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,6 +20,8 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.offset
+import android.provider.Settings
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
@@ -29,61 +31,69 @@ import com.wrait.app.ui.theme.DesignTokens
 internal fun ButtonArea(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
+    shakeErrorKey: Int,
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val animationsEnabled = Settings.Global.getFloat(
+        LocalContext.current.contentResolver,
+        Settings.Global.ANIMATOR_DURATION_SCALE,
+        1f
+    ) != 0f
+
     // --- alpha ---
     val targetAlpha = buttonAlphaFor(recordingState, showBlockedMessage)
     val animatedAlpha by animateFloatAsState(
         targetValue = targetAlpha,
-        animationSpec = tween(durationMillis = DesignTokens.Animation.FadeDuration),
+        animationSpec = if (animationsEnabled)
+            tween(durationMillis = DesignTokens.Animation.ButtonAlphaDuration)
+        else
+            snap(),
         label = "buttonAlpha"
     )
 
     // --- shake ---
+    // LaunchedEffect keyed on shakeErrorKey (incremented per shake-eligible error in
+    // MainViewModel) ensures the shake re-fires even when the same Error state is
+    // emitted twice in succession.
     val shakeOffset = remember { Animatable(0f) }
-    val shouldShake = recordingState is RecordingState.Error &&
-        (recordingState.error == RecognizerError.NoMatch ||
-         recordingState.error == RecognizerError.TooShort)
-    LaunchedEffect(recordingState) {
-        if (shouldShake) {
-            shakeOffset.animateTo(
-                targetValue = 0f,
-                animationSpec = keyframes {
-                    durationMillis = DesignTokens.Animation.ShakeDuration
-                    0f   at 0
-                    -12f at 50
-                    12f  at 100
-                    -10f at 160
-                    10f  at 220
-                    -6f  at 290
-                    6f   at 340
-                    0f   at 400
-                }
-            )
-        }
+    LaunchedEffect(shakeErrorKey) {
+        if (shakeErrorKey == 0) return@LaunchedEffect  // initial value — no shake on first compose
+        if (!animationsEnabled) return@LaunchedEffect   // respect reduce-motion
+        shakeOffset.snapTo(0f)
+        shakeOffset.animateTo(-6f, tween(50))
+        shakeOffset.animateTo( 6f, tween(80))
+        shakeOffset.animateTo(-4f, tween(70))
+        shakeOffset.animateTo( 3f, tween(60))
+        shakeOffset.animateTo( 0f, tween(50))
     }
 
-    // --- dashed border for MicBlocked ---
+    // --- dashed border for MicBlocked — always composed, fades in/out via alpha ---
     val isMicBlocked = showBlockedMessage ||
         (recordingState is RecordingState.Error &&
          recordingState.error == RecognizerError.InsufficientPermissions)
     val borderColor = MaterialTheme.colorScheme.error
-    val dashedBorderModifier = if (isMicBlocked) {
-        Modifier.drawBehind {
-            val dashWidth = DesignTokens.Button.DashedBorderDash.toPx()
-            val gapWidth  = DesignTokens.Button.DashedBorderGap.toPx()
-            val strokeWidth = DesignTokens.Button.DashedBorderWidth.toPx()
-            drawCircle(
-                color = borderColor,
-                radius = (size.minDimension / 2f) - strokeWidth / 2f,
-                style = Stroke(
-                    width = strokeWidth,
-                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashWidth, gapWidth), 0f)
-                )
+    val dashedBorderAlpha by animateFloatAsState(
+        targetValue = if (isMicBlocked) 1f else 0f,
+        animationSpec = if (animationsEnabled)
+            tween(durationMillis = DesignTokens.Animation.FadeDuration)
+        else
+            snap(),
+        label = "dashedBorderAlpha"
+    )
+    val dashedBorderModifier = Modifier.drawBehind {
+        val dashWidth  = DesignTokens.Button.DashedBorderDash.toPx()
+        val gapWidth   = DesignTokens.Button.DashedBorderGap.toPx()
+        val strokeWidth = DesignTokens.Button.DashedBorderWidth.toPx()
+        drawCircle(
+            color = borderColor.copy(alpha = dashedBorderAlpha),
+            radius = (size.minDimension / 2f) - strokeWidth / 2f,
+            style = Stroke(
+                width = strokeWidth,
+                pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashWidth, gapWidth), 0f)
             )
-        }
-    } else Modifier
+        )
+    }
 
     val isEnabled = recordingState !is RecordingState.Processing
     val isListening = recordingState is RecordingState.Listening
@@ -97,11 +107,13 @@ internal fun ButtonArea(
             .offset(x = shakeOffset.value.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Pulse ring behind button — only composed when Listening
+        // Pulse ring behind button — only composed when Listening.
+        // ExitTransition.None removes the composable immediately so the InfiniteTransition
+        // stops on the frame the state leaves Listening (spec: "stop immediately").
         AnimatedVisibility(
             visible = isListening,
             enter = fadeIn(),
-            exit = fadeOut()
+            exit = ExitTransition.None
         ) {
             PulseRing(
                 modifier = Modifier.size(DesignTokens.Button.SizeDp * 2f)
