@@ -29,7 +29,42 @@ object DesignTokens {
     }
 
     object Gesture {
-        const val SwipeBackThresholdPx = 200f   // px — accumulated overscroll to trigger back
-        const val SwipeNavThresholdPx  = 80f    // px — single-frame delta to trigger navigation
+        const val SwipeBackThresholdPx  = 200f  // px — accumulated overscroll to trigger back
+        val SwipeNavThresholdDp         = 80.dp // dp — single-frame delta to trigger navigation
+    }
+
+    object Button {
+        val SizeDp = 220.dp
+        const val PulseScaleMax = 1.6f
+        const val PulseAlphaStart = 0.5f
+        const val AlphaDisabled = 0.3f
+        const val AlphaReduced = 0.5f
+        const val AlphaFull = 1.0f
+        val DashedBorderWidth = 1.5.dp
+        val DashedBorderDash = 6.dp
+        val DashedBorderGap = 4.dp
+    }
+
+    object TopStrip {
+        val HeightDp = 3.dp
+    }
+
+    object StatusLine {
+        const val ClearDelayMs = 4_000
+        val GapAboveDp = 12.dp
+    }
+
+    object StreakDot {
+        val SizeDp = 6.dp
+        val SpacingDp = 6.dp
+        val GapAboveDp = 10.dp
+    }
+
+    object StatsLine {
+        val GapAboveDp = 6.dp
+    }
+
+    object LanguageLabel {
+        val GapBelowDp = 20.dp
     }
 }

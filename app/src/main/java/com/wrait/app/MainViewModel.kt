@@ -49,6 +49,8 @@ class MainViewModel @Inject constructor(
         initialValue = Locale.getDefault().toLanguageTag()
     )
 
+    val selectedLanguage: StateFlow<String> = languageState
+
     private val _recordingState = MutableStateFlow<RecordingState>(RecordingState.Idle)
     val recordingState: StateFlow<RecordingState> = _recordingState.asStateFlow()
 
@@ -72,13 +74,25 @@ class MainViewModel @Inject constructor(
     // region — button handling
 
     fun onMainButtonTapped() {
-        when (recordingState.value) {
+        val current = recordingState.value
+        when (current) {
             RecordingState.Idle        -> startListening()
             RecordingState.Listening   -> stopListening()
             RecordingState.Processing  -> Unit
             is RecordingState.Saved    -> _recordingState.value = RecordingState.Idle
-            is RecordingState.Error    -> _recordingState.value = RecordingState.Idle
             is RecordingState.Deleted  -> _recordingState.value = RecordingState.Idle
+            is RecordingState.Error    -> {
+                // TooShort / NoMatch are transient feedback states — tapping should
+                // restart recording immediately rather than requiring a second tap.
+                // startListening() cancels the stuck listenJob (self-cancelled delay)
+                // and begins a fresh session.
+                if (current.error == RecognizerError.TooShort ||
+                    current.error == RecognizerError.NoMatch) {
+                    startListening()
+                } else {
+                    _recordingState.value = RecordingState.Idle
+                }
+            }
         }
     }
 
