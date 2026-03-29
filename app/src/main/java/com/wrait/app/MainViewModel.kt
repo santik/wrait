@@ -37,7 +37,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    preferencesRepository: PreferencesRepository,
+    private val preferencesRepository: PreferencesRepository,
     private val entryRepository: EntryRepository,
     private val speechRecognizerManager: SpeechRecognizerManager,
     private val openAiApiService: OpenAiApiService,
@@ -98,6 +98,17 @@ class MainViewModel @Inject constructor(
                 } else {
                     _recordingState.value = RecordingState.Idle
                 }
+            }
+        }
+    }
+
+    fun saveLanguage(code: String) {
+        viewModelScope.launch {
+            try {
+                preferencesRepository.setLanguage(code)
+                Log.d(TAG, "Language saved: $code")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save language: $code", e)
             }
         }
     }

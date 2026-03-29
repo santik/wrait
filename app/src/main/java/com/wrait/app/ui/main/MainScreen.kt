@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -166,15 +167,28 @@ private fun LanguageLabel(
     onTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Look up display name from the hardcoded list so it renders in the language's
+    // own script (e.g. "Русский", not "Russian"). Fall back to system locale name
+    // for languages not in the list.
     val displayName = remember(language) {
-        Locale.forLanguageTag(language).displayLanguage.replaceFirstChar { it.uppercaseChar() }
+        LANGUAGES.firstOrNull { it.code == language }?.displayName
+            ?: Locale.forLanguageTag(language).displayLanguage
+                .replaceFirstChar { it.uppercaseChar() }
     }
-    Text(
-        text = "$displayName \u203a",
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onBackground,
-        modifier = modifier.clickable(onClick = onTap)
-    )
+    // Box with minimumInteractiveComponentSize guarantees a 48dp tap target even
+    // though the text itself is small (labelSmall / 11sp).
+    Box(
+        modifier = modifier
+            .minimumInteractiveComponentSize()
+            .clickable(onClick = onTap),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text  = "$displayName \u203a",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.tertiary,
+        )
+    }
 }
 
 @Composable
