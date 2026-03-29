@@ -38,6 +38,7 @@ import com.wrait.app.ui.entries.EntryDetailScreen
 import com.wrait.app.ui.entries.EntryDetailViewModel
 import com.wrait.app.ui.entries.EntryListScreen
 import com.wrait.app.ui.entries.EntryListViewModel
+import com.wrait.app.ui.main.LanguagePickerSheet
 import com.wrait.app.ui.main.MainScreen
 import com.wrait.app.ui.theme.WrAItTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -132,6 +133,7 @@ class MainActivity : ComponentActivity() {
                     selectedLanguage = selectedLanguage,
                     onEntriesDeleted = { count -> viewModel.onEntriesDeleted(count) },
                     onStatusCleared = { viewModel.onMainButtonTapped() },
+                    onSaveLanguage = { code -> viewModel.saveLanguage(code) },
                     onMainButtonTapped = {
                         if (recordingState is RecordingState.Error &&
                             (recordingState as RecordingState.Error).error == RecognizerError.InsufficientPermissions
@@ -185,6 +187,7 @@ private fun AppNavHost(
     onEntriesDeleted: (Int) -> Unit,
     onStatusCleared: () -> Unit,
     onMainButtonTapped: () -> Unit,
+    onSaveLanguage: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -193,6 +196,8 @@ private fun AppNavHost(
         modifier = modifier.fillMaxSize()
     ) {
         composable("main") {
+            var showLanguagePicker by remember { mutableStateOf(false) }
+
             MainScreen(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
@@ -200,7 +205,7 @@ private fun AppNavHost(
                 stats = stats,
                 selectedLanguage = selectedLanguage,
                 onButtonTap = onMainButtonTapped,
-                onLanguageTap = {},
+                onLanguageTap = { showLanguagePicker = true },
                 onSwipeUp = {
                     navController.navigate("entries") {
                         launchSingleTop = true
@@ -210,6 +215,14 @@ private fun AppNavHost(
                 onStatusCleared = onStatusCleared,
                 modifier = Modifier.fillMaxSize(),
             )
+
+            if (showLanguagePicker) {
+                LanguagePickerSheet(
+                    selectedLanguage   = selectedLanguage,
+                    onLanguageSelected = { code -> onSaveLanguage(code) },
+                    onDismiss          = { showLanguagePicker = false },
+                )
+            }
         }
         composable("entries") {
             val entryListViewModel: EntryListViewModel = hiltViewModel()
