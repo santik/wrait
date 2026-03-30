@@ -9,8 +9,11 @@ import com.wrait.app.di.IoDispatcher
 import com.wrait.app.data.speech.RecognitionResult
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.SpeechRecognizerManager
+import com.wrait.app.domain.model.AppMessage
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
+import com.wrait.app.domain.model.MessageStripLevel
+import com.wrait.app.domain.model.MessageType
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -24,6 +27,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -32,7 +36,9 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.format.TextStyle
 import java.util.Locale
+import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -70,6 +76,25 @@ class MainViewModel @Inject constructor(
         .map { list -> computeStats(list) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EntryStats.Empty)
 
+    // region — messages panel
+
+    private val _messages = MutableStateFlow<List<AppMessage>>(emptyList())
+    val messages: StateFlow<List<AppMessage>> = _messages.asStateFlow()
+
+    val messageStripLevel: StateFlow<MessageStripLevel> = _messages
+        .map { list ->
+            if (list.any { it.type == MessageType.CleanupFailed || it.type == MessageType.NetworkError })
+                MessageStripLevel.Warning
+            else
+                MessageStripLevel.None
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MessageStripLevel.None)
+
+    val hasPanelBeenOpened: StateFlow<Boolean> = preferencesRepository.hasPanelBeenOpened
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    // endregion
+
     private var listenJob: Job? = null
 
     internal val initJob: Job = viewModelScope.launch {
@@ -90,8 +115,6 @@ class MainViewModel @Inject constructor(
             is RecordingState.Error    -> {
                 // TooShort / NoMatch are transient feedback states — tapping should
                 // restart recording immediately rather than requiring a second tap.
-                // startListening() cancels the stuck listenJob (self-cancelled delay)
-                // and begins a fresh session.
                 if (current.error == RecognizerError.TooShort ||
                     current.error == RecognizerError.NoMatch) {
                     startListening()
@@ -124,6 +147,39 @@ class MainViewModel @Inject constructor(
             delay(3_000)
             if (_recordingState.value is RecordingState.Deleted) {
                 _recordingState.value = RecordingState.Idle
+            }
+        }
+    }
+
+    fun dismissMessage(id: UUID) {
+        _messages.update { list -> list.filter { it.id != id } }
+    }
+
+    fun markPanelOpened() {
+        viewModelScope.launch {
+            try { preferencesRepository.markPanelOpened() }
+            catch (e: Exception) { Log.e(TAG, "Failed to mark panel opened", e) }
+        }
+    }
+
+    fun retryCleanup(messageId: UUID, entryId: Long) {
+        viewModelScope.launch {
+            dismissMessage(messageId)
+            try {
+                val entry = entryRepository.getEntryById(entryId).first().getOrNull() ?: return@launch
+                when (val result = openAiApiService.cleanupTranscript(entry.rawTranscript)) {
+                    is CleanupResult.Success -> {
+                        val wordCount = result.cleanedText.trim()
+                            .split(Regex("\\s+")).count { it.isNotEmpty() }
+                        withContext(ioDispatcher) {
+                            entryRepository.updateWithCleanedText(entryId, result.cleanedText, wordCount)
+                        }
+                        addMessage(MessageType.DraftCleaned, entry)
+                    }
+                    is CleanupResult.Failure -> addMessage(MessageType.CleanupFailed, entry)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "retryCleanup failed for entry $entryId", e)
             }
         }
     }
@@ -209,6 +265,17 @@ class MainViewModel @Inject constructor(
                 val error = if (isNetworkFailure) RecognizerError.NoInternet
                             else RecognizerError.ApiFailed
                 _recordingState.value = RecordingState.Error(error)
+                if (isNetworkFailure) {
+                    val draftEntry = Entry(
+                        id            = entryId,
+                        rawTranscript = text,
+                        isDraft       = true,
+                        language      = language,
+                        createdAt     = System.currentTimeMillis(),
+                        wordCount     = 0,
+                    )
+                    addMessage(MessageType.NetworkError, draftEntry)
+                }
             }
         }
 
@@ -248,17 +315,71 @@ class MainViewModel @Inject constructor(
                         withContext(ioDispatcher) {
                             entryRepository.updateWithCleanedText(entry.id, result.cleanedText, wordCount)
                         }
-                        Log.d(TAG, "Draft ${entry.id} upgraded to clean entry")
+                        addMessage(MessageType.DraftCleaned, entry)
                     }
                     is CleanupResult.Failure -> {
-                        // Leave as draft — S-017 handles surfacing this to the user via messages panel
-                        Log.w(TAG, "Draft ${entry.id} retry failed: ${result.reason}")
+                        addMessage(MessageType.CleanupFailed, entry)
                     }
                 }
             } catch (e: Exception) {
                 // One draft failing must not abort the rest of the retry loop
                 Log.e(TAG, "Unexpected error retrying draft ${entry.id}", e)
             }
+        }
+    }
+
+    // endregion
+
+    // region — message factory
+
+    private fun addMessage(type: MessageType, entry: Entry) {
+        val day = formatEntryDay(entry.createdAt)
+        val message = when (type) {
+            MessageType.DraftCleaned -> AppMessage(
+                id          = UUID.randomUUID(),
+                type        = MessageType.DraftCleaned,
+                title       = "Entry cleaned",
+                description = "Your draft from $day was cleaned up.",
+                entryId     = entry.id,
+                createdAt   = System.currentTimeMillis(),
+            )
+            MessageType.CleanupFailed -> AppMessage(
+                id          = UUID.randomUUID(),
+                type        = MessageType.CleanupFailed,
+                title       = "Cleanup failed",
+                description = "Could not clean up your entry from $day.",
+                actionLabel = "Retry",
+                entryId     = entry.id,
+                createdAt   = System.currentTimeMillis(),
+            )
+            MessageType.NetworkError -> AppMessage(
+                id          = UUID.randomUUID(),
+                type        = MessageType.NetworkError,
+                title       = "Saved as draft",
+                description = "Your entry from $day was saved as a draft — will retry on next open.",
+                entryId     = entry.id,
+                createdAt   = System.currentTimeMillis(),
+            )
+        }
+        _messages.update { it + message }
+        if (type == MessageType.DraftCleaned) {
+            viewModelScope.launch {
+                delay(48L * 60 * 60 * 1_000)
+                dismissMessage(message.id)
+            }
+        }
+    }
+
+    private fun formatEntryDay(createdAt: Long): String {
+        val zone      = ZoneId.systemDefault()
+        val today     = LocalDate.now(zone)
+        val entryDate = Instant.ofEpochMilli(createdAt).atZone(zone).toLocalDate()
+        return when (entryDate) {
+            today                -> "today"
+            today.minusDays(1)   -> "yesterday"
+            else                 -> entryDate.dayOfWeek
+                .getDisplayName(TextStyle.FULL, Locale.getDefault())
+                .lowercase().replaceFirstChar { it.uppercaseChar() }
         }
     }
 

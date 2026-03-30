@@ -34,14 +34,18 @@ import androidx.navigation.navArgument
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.domain.model.AppMessage
+import com.wrait.app.domain.model.MessageStripLevel
 import com.wrait.app.ui.entries.EntryDetailScreen
 import com.wrait.app.ui.entries.EntryDetailViewModel
 import com.wrait.app.ui.entries.EntryListScreen
 import com.wrait.app.ui.entries.EntryListViewModel
 import com.wrait.app.ui.main.LanguagePickerSheet
 import com.wrait.app.ui.main.MainScreen
+import com.wrait.app.ui.main.MessagesPanelSheet
 import com.wrait.app.ui.theme.WrAItTheme
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.UUID
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -62,6 +66,9 @@ class MainActivity : ComponentActivity() {
                 val shakeErrorKey by viewModel.shakeErrorKey.collectAsStateWithLifecycle()
                 val stats by viewModel.entryStats.collectAsStateWithLifecycle()
                 val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+                val messages by viewModel.messages.collectAsStateWithLifecycle()
+                val messageStripLevel by viewModel.messageStripLevel.collectAsStateWithLifecycle()
+                val hasPanelBeenOpened by viewModel.hasPanelBeenOpened.collectAsStateWithLifecycle()
 
                 val isPermissionGranted = remember {
                     mutableStateOf(
@@ -131,9 +138,15 @@ class MainActivity : ComponentActivity() {
                     shakeErrorKey = shakeErrorKey,
                     stats = stats,
                     selectedLanguage = selectedLanguage,
+                    messages = messages,
+                    messageStripLevel = messageStripLevel,
+                    hasPanelBeenOpened = hasPanelBeenOpened,
                     onEntriesDeleted = { count -> viewModel.onEntriesDeleted(count) },
                     onStatusCleared = { viewModel.onMainButtonTapped() },
                     onSaveLanguage = { code -> viewModel.saveLanguage(code) },
+                    onDismissMessage = { id -> viewModel.dismissMessage(id) },
+                    onRetryCleanup = { id, entryId -> viewModel.retryCleanup(id, entryId) },
+                    onMarkPanelOpened = { viewModel.markPanelOpened() },
                     onMainButtonTapped = {
                         if (recordingState is RecordingState.Error &&
                             (recordingState as RecordingState.Error).error == RecognizerError.InsufficientPermissions
@@ -184,10 +197,16 @@ private fun AppNavHost(
     shakeErrorKey: Int,
     stats: com.wrait.app.domain.model.EntryStats,
     selectedLanguage: String,
+    messages: List<AppMessage>,
+    messageStripLevel: MessageStripLevel,
+    hasPanelBeenOpened: Boolean,
     onEntriesDeleted: (Int) -> Unit,
     onStatusCleared: () -> Unit,
     onMainButtonTapped: () -> Unit,
     onSaveLanguage: (String) -> Unit,
+    onDismissMessage: (UUID) -> Unit,
+    onRetryCleanup: (UUID, Long) -> Unit,
+    onMarkPanelOpened: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     NavHost(
@@ -197,6 +216,7 @@ private fun AppNavHost(
     ) {
         composable("main") {
             var showLanguagePicker by remember { mutableStateOf(false) }
+            var showMessagesPanel by remember { mutableStateOf(false) }
 
             MainScreen(
                 recordingState = recordingState,
@@ -204,6 +224,8 @@ private fun AppNavHost(
                 shakeErrorKey = shakeErrorKey,
                 stats = stats,
                 selectedLanguage = selectedLanguage,
+                messageStripLevel = messageStripLevel,
+                showChevron = messageStripLevel == MessageStripLevel.Warning && !hasPanelBeenOpened,
                 onButtonTap = onMainButtonTapped,
                 onLanguageTap = { showLanguagePicker = true },
                 onSwipeUp = {
@@ -211,7 +233,7 @@ private fun AppNavHost(
                         launchSingleTop = true
                     }
                 },
-                onSwipeDown = {},
+                onSwipeDown = { showMessagesPanel = true },
                 onStatusCleared = onStatusCleared,
                 modifier = Modifier.fillMaxSize(),
             )
@@ -221,6 +243,18 @@ private fun AppNavHost(
                     selectedLanguage   = selectedLanguage,
                     onLanguageSelected = { code -> onSaveLanguage(code) },
                     onDismiss          = { showLanguagePicker = false },
+                )
+            }
+
+            if (showMessagesPanel) {
+                MessagesPanelSheet(
+                    messages         = messages,
+                    onDismissMessage = onDismissMessage,
+                    onRetryCleanup   = onRetryCleanup,
+                    onDismiss        = {
+                        showMessagesPanel = false
+                        if (!hasPanelBeenOpened) onMarkPanelOpened()
+                    },
                 )
             }
         }

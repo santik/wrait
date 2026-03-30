@@ -1,9 +1,15 @@
 package com.wrait.app.ui.main
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.EaseOut
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -17,6 +23,9 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -28,9 +37,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.EntryStats
+import com.wrait.app.domain.model.MessageStripLevel
 import com.wrait.app.ui.theme.DesignTokens
 import com.wrait.app.ui.theme.LocalWraitSemanticColors
 import kotlinx.coroutines.delay
@@ -43,6 +54,8 @@ fun MainScreen(
     shakeErrorKey: Int,
     stats: EntryStats,
     selectedLanguage: String,
+    messageStripLevel: MessageStripLevel,
+    showChevron: Boolean,
     onButtonTap: () -> Unit,
     onLanguageTap: () -> Unit,
     onSwipeUp: () -> Unit,
@@ -89,6 +102,7 @@ fun MainScreen(
         TopStrip(
             recordingState = recordingState,
             showBlockedMessage = showBlockedMessage,
+            messageStripLevel = messageStripLevel,
             modifier = Modifier.align(Alignment.TopCenter)
         )
 
@@ -104,6 +118,10 @@ fun MainScreen(
             // Language label
             LanguageLabel(language = selectedLanguage, onTap = onLanguageTap)
             Spacer(Modifier.height(DesignTokens.LanguageLabel.GapBelowDp))
+            // Chevron hint (shown when there are warning messages and panel not yet opened)
+            AnimatedVisibility(visible = showChevron) {
+                ChevronHint()
+            }
             // Button
             ButtonArea(
                 recordingState = recordingState,
@@ -134,6 +152,7 @@ fun MainScreen(
 private fun TopStrip(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
+    messageStripLevel: MessageStripLevel,
     modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -144,7 +163,13 @@ private fun TopStrip(
         1f
     ) != 0f
 
-    val targetColor = stripColorFor(recordingState, showBlockedMessage, colorScheme.error, warningColor)
+    val targetColor = stripColorFor(
+        recordingState,
+        showBlockedMessage,
+        messageStripLevel,
+        colorScheme.error,
+        warningColor,
+    )
     val animatedColor by animateColorAsState(
         targetValue = targetColor,
         animationSpec = if (animationsEnabled)
@@ -158,6 +183,40 @@ private fun TopStrip(
             .fillMaxWidth()
             .height(DesignTokens.TopStrip.HeightDp)
             .background(animatedColor)
+    )
+}
+
+@Composable
+private fun ChevronHint(
+    modifier: Modifier = Modifier,
+) {
+    val animationsEnabled = Settings.Global.getFloat(
+        LocalContext.current.contentResolver,
+        Settings.Global.ANIMATOR_DURATION_SCALE,
+        1f
+    ) != 0f
+
+    val offsetY = if (animationsEnabled) {
+        val infiniteTransition = rememberInfiniteTransition(label = "chevron")
+        val value by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue  = 3f,
+            animationSpec = infiniteRepeatable(
+                animation  = tween(3_000, easing = EaseOut),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "chevronDrift",
+        )
+        value
+    } else {
+        0f
+    }
+
+    Icon(
+        imageVector        = Icons.Default.KeyboardArrowDown,
+        contentDescription = "Swipe down for messages",
+        tint               = MaterialTheme.colorScheme.tertiary,
+        modifier           = modifier.offset(y = offsetY.dp),
     )
 }
 
@@ -297,11 +356,12 @@ private fun statusTextFor(
 private fun stripColorFor(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
+    messageStripLevel: MessageStripLevel,
     errorColor: Color,
     warningColor: Color,
 ): Color {
     if (showBlockedMessage) return errorColor
-    return when (recordingState) {
+    val recordingColor: Color? = when (recordingState) {
         is RecordingState.Error -> when (recordingState.error) {
             RecognizerError.InsufficientPermissions -> errorColor
             RecognizerError.NoInternet,
@@ -311,10 +371,15 @@ private fun stripColorFor(
             RecognizerError.Server,
             RecognizerError.Client,
             RecognizerError.Audio,
-            RecognizerError.NotAvailable            -> warningColor
-            is RecognizerError.Unknown              -> warningColor
-            else                                    -> Color.Transparent
+            RecognizerError.NotAvailable -> warningColor
+            is RecognizerError.Unknown   -> warningColor
+            else                         -> null
         }
-        else -> Color.Transparent
+        else -> null
+    }
+    if (recordingColor != null) return recordingColor
+    return when (messageStripLevel) {
+        MessageStripLevel.Warning -> warningColor
+        MessageStripLevel.None    -> Color.Transparent
     }
 }
