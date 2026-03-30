@@ -98,7 +98,7 @@ internal fun ButtonArea(
     val isEnabled = recordingState !is RecordingState.Processing
     val isListening = recordingState is RecordingState.Listening
 
-    val label = buttonLabelFor(recordingState, showBlockedMessage)
+    val label = buttonLabelFor(recordingState)
 
     Box(
         modifier = modifier
@@ -139,7 +139,7 @@ internal fun ButtonArea(
     }
 }
 
-private fun buttonLabelFor(recordingState: RecordingState, showBlockedMessage: Boolean): String =
+private fun buttonLabelFor(recordingState: RecordingState): String =
     if (recordingState is RecordingState.Listening) "stop" else "wrait"
 
 internal fun buttonAlphaFor(recordingState: RecordingState, showBlockedMessage: Boolean): Float {
@@ -148,9 +148,6 @@ internal fun buttonAlphaFor(recordingState: RecordingState, showBlockedMessage: 
         is RecordingState.Processing -> DesignTokens.Button.AlphaDisabled
         is RecordingState.Error -> when (recordingState.error) {
             RecognizerError.InsufficientPermissions -> DesignTokens.Button.AlphaDisabled
-            RecognizerError.NoInternet,
-            RecognizerError.Network,
-            RecognizerError.Timeout -> DesignTokens.Button.AlphaReduced
             else -> DesignTokens.Button.AlphaFull
         }
         else -> DesignTokens.Button.AlphaFull

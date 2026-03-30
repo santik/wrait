@@ -20,13 +20,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.em
 import com.wrait.app.R
 import com.wrait.app.domain.model.Entry
@@ -45,6 +55,41 @@ fun EntryDetailScreen(
 ) {
     val entry = entryResult.getOrNull()
     val backDescription = stringResource(R.string.entry_detail_back_description)
+    val scrollState = rememberScrollState()
+    val swipeThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { 120.dp.toPx() }
+    var swipeAccumPx by remember { mutableFloatStateOf(0f) }
+    var swipeTriggered by remember { mutableStateOf(false) }
+
+    val swipeToDismissConnection = remember {
+        object : NestedScrollConnection {
+            override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                if (source != NestedScrollSource.UserInput) return Offset.Zero
+                if (scrollState.value == 0 && available.y > 0) {
+                    swipeAccumPx += available.y
+                    if (!swipeTriggered && swipeAccumPx >= swipeThresholdPx) {
+                        swipeTriggered = true
+                        onBack()
+                    }
+                } else {
+                    swipeAccumPx = 0f
+                    swipeTriggered = false
+                }
+                return Offset.Zero
+            }
+
+            override suspend fun onPreFling(available: Velocity): Velocity {
+                swipeAccumPx = 0f
+                swipeTriggered = false
+                return Velocity.Zero
+            }
+
+            override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+                swipeAccumPx = 0f
+                swipeTriggered = false
+                return Velocity.Zero
+            }
+        }
+    }
 
     BackHandler(onBack = onBack)
 
@@ -52,7 +97,8 @@ fun EntryDetailScreen(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .verticalScroll(rememberScrollState())
+            .nestedScroll(swipeToDismissConnection)
+            .verticalScroll(scrollState)
             .semantics {
                 if (entry != null) {
                     contentDescription = "Entry detail"
