@@ -15,6 +15,7 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 val openAiApiKey: String = localProperties.getProperty("OPENAI_API_KEY", "")
+val sttBackend: String = localProperties.getProperty("STT_BACKEND", "android")
 
 android {
     namespace = "com.wrait.app"
@@ -30,6 +31,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPENAI_API_KEY", "\"$openAiApiKey\"")
+        buildConfigField("String", "STT_BACKEND", "\"$sttBackend\"")
     }
 
     buildTypes {
