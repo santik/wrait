@@ -3,9 +3,11 @@ package com.wrait.app
 import android.util.Log
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.api.OpenAiApiService
-import com.wrait.app.data.speech.RecognitionResult
 import com.wrait.app.data.speech.RecognizerError
-import com.wrait.app.data.speech.SpeechRecognizerManager
+import com.wrait.app.data.speech.TranscriptionFailureReason
+import com.wrait.app.data.speech.TranscriptionResult
+import com.wrait.app.data.speech.TranscriptionService
+import com.wrait.app.data.speech.TranscriptionStatus
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.MessageType
@@ -25,7 +27,7 @@ import javax.inject.Inject
 class MainRecordingController @Inject constructor(
     private val languageState: StateFlow<String>,
     private val entryRepository: EntryRepository,
-    private val speechRecognizerManager: SpeechRecognizerManager,
+    private val transcriptionService: TranscriptionService,
     private val openAiApiService: OpenAiApiService,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope,
@@ -44,6 +46,7 @@ class MainRecordingController @Inject constructor(
         when (current) {
             RecordingState.Idle        -> startListening()
             RecordingState.Listening   -> stopListening()
+            RecordingState.Uploading,
             RecordingState.Processing  -> Unit
             is RecordingState.Saved    -> _recordingState.value = RecordingState.Idle
             is RecordingState.Deleted  -> _recordingState.value = RecordingState.Idle
@@ -78,30 +81,28 @@ class MainRecordingController @Inject constructor(
         _recordingState.value = RecordingState.Listening
         listenJob = scope.launch {
             val language = languageState.value
-            speechRecognizerManager.listen(language).collect { result ->
-                when (result) {
-                    RecognitionResult.ListeningEnded -> {
-                        if (_recordingState.value == RecordingState.Listening) {
-                            _recordingState.value = RecordingState.Processing
-                        }
-                    }
-                    RecognitionResult.Restarted -> Unit
-                    is RecognitionResult.Final  -> saveTranscript(result.text)
-                    is RecognitionResult.Error  -> emitError(result.error)
-                    is RecognitionResult.Partial -> Unit
+            val result = transcriptionService.transcribe(language) { status ->
+                when (status) {
+                    TranscriptionStatus.RecordingEnded -> _recordingState.value = RecordingState.Processing
+                    TranscriptionStatus.Uploading      -> _recordingState.value = RecordingState.Uploading
                 }
+            }
+            // Ensure Processing before cleanup (no-op for Android which set it via callback)
+            _recordingState.value = RecordingState.Processing
+            when (result) {
+                is TranscriptionResult.Success  -> saveTranscript(result.transcript)
+                is TranscriptionResult.Failure  -> emitError(result.reason.toRecognizerError())
             }
         }
     }
 
     private fun stopListening(forceIdle: Boolean = false) {
-        speechRecognizerManager.stopListening()
+        transcriptionService.stopRecording()
         if (forceIdle) {
             listenJob?.cancel()
             _recordingState.value = RecordingState.Idle
-        } else {
-            _recordingState.value = RecordingState.Processing
         }
+        // Otherwise the status update comes via the onStatus callback inside transcribe()
     }
 
     /**
@@ -185,4 +186,12 @@ class MainRecordingController @Inject constructor(
         private const val TAG = "MainRecordingController"
         private const val MAX_TRANSCRIPT_LENGTH = 10_000
     }
+}
+
+private fun TranscriptionFailureReason.toRecognizerError(): RecognizerError = when (this) {
+    TranscriptionFailureReason.TooShort       -> RecognizerError.TooShort
+    TranscriptionFailureReason.NothingCaught  -> RecognizerError.NoMatch
+    TranscriptionFailureReason.MicBlocked     -> RecognizerError.InsufficientPermissions
+    TranscriptionFailureReason.NetworkError   -> RecognizerError.NoInternet
+    TranscriptionFailureReason.ApiError       -> RecognizerError.ApiFailed
 }

@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wrait.app.data.api.OpenAiApiService
 import com.wrait.app.di.IoDispatcher
-import com.wrait.app.data.speech.SpeechRecognizerManager
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.MessageStripLevel
@@ -32,7 +32,7 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val entryRepository: EntryRepository,
-    private val speechRecognizerManager: SpeechRecognizerManager,
+    private val transcriptionService: TranscriptionService,
     private val openAiApiService: OpenAiApiService,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -55,7 +55,7 @@ class MainViewModel @Inject constructor(
     private val recordingController = MainRecordingController(
         languageState = languageState,
         entryRepository = entryRepository,
-        speechRecognizerManager = speechRecognizerManager,
+        transcriptionService = transcriptionService,
         openAiApiService = openAiApiService,
         ioDispatcher = ioDispatcher,
         scope = viewModelScope,
@@ -171,6 +171,7 @@ class MainViewModel @Inject constructor(
 sealed class RecordingState {
     data object Idle       : RecordingState()
     data object Listening  : RecordingState()
+    data object Uploading  : RecordingState()
     data object Processing : RecordingState()
     data class Saved(val entryId: Long) : RecordingState()
     data class Error(val error: RecognizerError) : RecordingState()

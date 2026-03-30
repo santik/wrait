@@ -337,6 +337,7 @@ private fun statusTextFor(
     return when (recordingState) {
         is RecordingState.Idle       -> if (hasEntries) "" else "tap to write"
         is RecordingState.Listening  -> "listening\u2026"
+        is RecordingState.Uploading  -> "uploading\u2026"
         is RecordingState.Processing -> "cleaning up\u2026"
         is RecordingState.Saved      -> "entry saved · swipe up to read"
         is RecordingState.Deleted    -> if (recordingState.count == 1) "entry deleted"
