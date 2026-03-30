@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -119,11 +120,31 @@ private fun EntryDetailContent(entry: Entry) {
         }
 
         // Body text
-        Text(
-            text  = entry.cleanedText ?: entry.rawTranscript,
-            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 1.7.em),
-            color = MaterialTheme.colorScheme.onBackground
-        )
+        SelectionContainer {
+            Column {
+                Text(
+                    text  = entry.cleanedText ?: entry.rawTranscript,
+                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 1.7.em),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+
+                // Raw transcript (debug) — only shown when cleaned text exists
+                if (entry.cleanedText != null) {
+                    Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
+                    Text(
+                        text  = "raw",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary,
+                    )
+                    Spacer(modifier = Modifier.height(DesignTokens.Spacing.xs))
+                    Text(
+                        text  = entry.rawTranscript,
+                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 1.6.em),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(DesignTokens.Spacing.xxl))
     }

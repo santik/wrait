@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +20,7 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     private object PreferencesKeys {
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
+        val HAS_PANEL_BEEN_OPENED = booleanPreferencesKey("has_panel_been_opened")
     }
 
     override val selectedLanguage: Flow<String> = dataStore.data
@@ -37,5 +39,13 @@ class PreferencesRepositoryImpl @Inject constructor(
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_LANGUAGE] = language
         }
+    }
+
+    override val hasPanelBeenOpened: Flow<Boolean> = dataStore.data
+        .catch { if (it is IOException) emit(emptyPreferences()) else throw it }
+        .map { it[PreferencesKeys.HAS_PANEL_BEEN_OPENED] ?: false }
+
+    override suspend fun markPanelOpened() {
+        dataStore.edit { it[PreferencesKeys.HAS_PANEL_BEEN_OPENED] = true }
     }
 }
