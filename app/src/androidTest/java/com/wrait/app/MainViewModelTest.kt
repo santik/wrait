@@ -14,7 +14,7 @@ import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.util.TimeProvider
 import com.wrait.app.test.fake.FakeOpenAiApiService
 import com.wrait.app.test.fake.FakePreferencesRepository
-import com.wrait.app.test.fake.FakeSpeechRecognizerManager
+import com.wrait.app.test.fake.FakeTranscriptionService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
@@ -43,7 +43,7 @@ class MainViewModelTest {
     private lateinit var entryDao: EntryDao
     private lateinit var entryRepository: EntryRepository
     private lateinit var fakeApi: FakeOpenAiApiService
-    private lateinit var fakeSpeech: FakeSpeechRecognizerManager
+    private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakeTime: FakeTimeProvider
     private val createdVms = mutableListOf<MainViewModel>()
 
@@ -58,7 +58,7 @@ class MainViewModelTest {
         fakeTime = FakeTimeProvider()
         entryRepository = EntryRepositoryImpl(entryDao, fakeTime)
         fakeApi = FakeOpenAiApiService()
-        fakeSpeech = FakeSpeechRecognizerManager(context)
+        fakeTranscription = FakeTranscriptionService()
     }
 
     @After
@@ -72,7 +72,7 @@ class MainViewModelTest {
     private fun createViewModel(): MainViewModel = MainViewModel(
         preferencesRepository = FakePreferencesRepository(),
         entryRepository = entryRepository,
-        speechRecognizerManager = fakeSpeech,
+        transcriptionService = fakeTranscription,
         openAiApiService = fakeApi,
         ioDispatcher = testDispatcher
     ).also { createdVms.add(it) }
@@ -81,7 +81,7 @@ class MainViewModelTest {
     @Test
     fun happyPath_transcriptSaved_withCleanedText() = runTest(testDispatcher) {
         fakeApi.result = CleanupResult.Success("This is cleaned text.")
-        fakeSpeech.nextResult = FakeSpeechRecognizerManager.FakeResult.FinalTranscript(
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
             "one two three four five"
         )
         val vm = createViewModel()
@@ -103,7 +103,7 @@ class MainViewModelTest {
     @Test
     fun apiFailure_entryRemainsAsDraft_uiStateShowsError() = runTest(testDispatcher) {
         fakeApi.result = CleanupResult.Failure("network error")
-        fakeSpeech.nextResult = FakeSpeechRecognizerManager.FakeResult.FinalTranscript(
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
             "one two three four five"
         )
         val vm = createViewModel()
@@ -146,7 +146,7 @@ class MainViewModelTest {
     // 4 — Too-short transcript
     @Test
     fun tooShortTranscript_noDbWrite_uiStateError() = runTest(testDispatcher) {
-        fakeSpeech.nextResult = FakeSpeechRecognizerManager.FakeResult.SpeechError(
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.SpeechError(
             RecognizerError.TooShort
         )
         val vm = createViewModel()

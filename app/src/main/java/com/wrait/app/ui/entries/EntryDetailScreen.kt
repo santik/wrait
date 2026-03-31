@@ -171,24 +171,8 @@ private fun EntryDetailContent(entry: Entry) {
                 Text(
                     text  = entry.cleanedText ?: entry.rawTranscript,
                     style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 1.7.em),
-                    color = MaterialTheme.colorScheme.onBackground
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                // Raw transcript (debug) — only shown when cleaned text exists
-                if (entry.cleanedText != null) {
-                    Spacer(modifier = Modifier.height(DesignTokens.Spacing.xl))
-                    Text(
-                        text  = "raw",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.tertiary,
-                    )
-                    Spacer(modifier = Modifier.height(DesignTokens.Spacing.xs))
-                    Text(
-                        text  = entry.rawTranscript,
-                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 1.6.em),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
         }
 
