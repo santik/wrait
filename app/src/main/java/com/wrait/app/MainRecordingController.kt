@@ -9,8 +9,6 @@ import com.wrait.app.data.speech.TranscriptionResult
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.data.speech.TranscriptionStatus
 import com.wrait.app.di.IoDispatcher
-import com.wrait.app.domain.model.Entry
-import com.wrait.app.domain.model.MessageType
 import com.wrait.app.domain.repository.EntryRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +29,6 @@ class MainRecordingController @Inject constructor(
     private val openAiApiService: OpenAiApiService,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope,
-    private val onMessage: (MessageType, Entry) -> Unit
 ) {
     private val _recordingState = MutableStateFlow<RecordingState>(RecordingState.Idle)
     val recordingState: StateFlow<RecordingState> = _recordingState.asStateFlow()
@@ -40,6 +37,7 @@ class MainRecordingController @Inject constructor(
     val shakeErrorKey: StateFlow<Int> = _shakeErrorKey.asStateFlow()
 
     private var listenJob: Job? = null
+    private var listeningStartedAt = 0L
 
     fun onMainButtonTapped() {
         val current = recordingState.value
@@ -78,6 +76,7 @@ class MainRecordingController @Inject constructor(
 
     private fun startListening() {
         listenJob?.cancel()
+        listeningStartedAt = System.currentTimeMillis()
         _recordingState.value = RecordingState.Listening
         listenJob = scope.launch {
             val language = languageState.value
@@ -97,6 +96,15 @@ class MainRecordingController @Inject constructor(
     }
 
     private fun stopListening(forceIdle: Boolean = false) {
+        if (!forceIdle) {
+            val elapsed = System.currentTimeMillis() - listeningStartedAt
+            if (elapsed < MIN_RECORDING_MS) {
+                transcriptionService.stopRecording()
+                listenJob?.cancel()
+                scope.launch { emitError(RecognizerError.TooShort) }
+                return
+            }
+        }
         transcriptionService.stopRecording()
         if (forceIdle) {
             listenJob?.cancel()
@@ -151,17 +159,6 @@ class MainRecordingController @Inject constructor(
                 val error = if (isNetworkFailure) RecognizerError.NoInternet
                             else RecognizerError.ApiFailed
                 _recordingState.value = RecordingState.Error(error)
-                if (isNetworkFailure) {
-                    val draftEntry = Entry(
-                        id            = entryId,
-                        rawTranscript = text,
-                        isDraft       = true,
-                        language      = language,
-                        createdAt     = System.currentTimeMillis(),
-                        wordCount     = 0,
-                    )
-                    onMessage(MessageType.NetworkError, draftEntry)
-                }
             }
         }
 
@@ -185,6 +182,7 @@ class MainRecordingController @Inject constructor(
     private companion object {
         private const val TAG = "MainRecordingController"
         private const val MAX_TRANSCRIPT_LENGTH = 10_000
+        private const val MIN_RECORDING_MS = 5_000L
     }
 }
 

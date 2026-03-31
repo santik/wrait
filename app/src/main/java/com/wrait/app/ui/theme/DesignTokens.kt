@@ -42,13 +42,6 @@ object DesignTokens {
         const val AlphaDisabled = 0.3f
         const val AlphaReduced = 0.5f
         const val AlphaFull = 1.0f
-        val DashedBorderWidth = 1.5.dp
-        val DashedBorderDash = 6.dp
-        val DashedBorderGap = 4.dp
-    }
-
-    object TopStrip {
-        val HeightDp = 3.dp
     }
 
     object StatusLine {

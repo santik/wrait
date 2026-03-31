@@ -5,11 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wrait.app.data.api.OpenAiApiService
 import com.wrait.app.di.IoDispatcher
-import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
-import com.wrait.app.domain.model.MessageStripLevel
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,7 +23,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
-import java.util.UUID
 import javax.inject.Inject
 
 @HiltViewModel
@@ -45,13 +42,6 @@ class MainViewModel @Inject constructor(
 
     val selectedLanguage: StateFlow<String> = languageState
 
-    private val messageCenter = MainMessageCenter(
-        entryRepository = entryRepository,
-        openAiApiService = openAiApiService,
-        ioDispatcher = ioDispatcher,
-        scope = viewModelScope
-    )
-
     private val recordingController = MainRecordingController(
         languageState = languageState,
         entryRepository = entryRepository,
@@ -59,7 +49,6 @@ class MainViewModel @Inject constructor(
         openAiApiService = openAiApiService,
         ioDispatcher = ioDispatcher,
         scope = viewModelScope,
-        onMessage = { type, entry -> messageCenter.addMessage(type, entry) }
     )
 
     val recordingState: StateFlow<RecordingState> = recordingController.recordingState
@@ -78,20 +67,8 @@ class MainViewModel @Inject constructor(
         .map { list -> computeStats(list) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EntryStats.Empty)
 
-    // region — messages panel
-
-    val messages = messageCenter.messages
-
-    val messageStripLevel: StateFlow<MessageStripLevel> = messageCenter.messageStripLevel
-
-    val hasPanelBeenOpened: StateFlow<Boolean> = preferencesRepository.hasPanelBeenOpened
-        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
-    // endregion
-
     internal val initJob: Job = viewModelScope.launch {
         entryRepository.deleteStaleDrafts()
-        messageCenter.retryPendingDrafts()
     }
 
     // region — button handling
@@ -117,21 +94,6 @@ class MainViewModel @Inject constructor(
 
     fun onEntriesDeleted(count: Int) {
         recordingController.onEntriesDeleted(count)
-    }
-
-    fun dismissMessage(id: UUID) {
-        messageCenter.dismissMessage(id)
-    }
-
-    fun markPanelOpened() {
-        viewModelScope.launch {
-            try { preferencesRepository.markPanelOpened() }
-            catch (e: Exception) { Log.e(TAG, "Failed to mark panel opened", e) }
-        }
-    }
-
-    fun retryCleanup(messageId: UUID, entryId: Long) {
-        messageCenter.retryCleanup(messageId, entryId)
     }
 
     // endregion
@@ -174,7 +136,7 @@ sealed class RecordingState {
     data object Uploading  : RecordingState()
     data object Processing : RecordingState()
     data class Saved(val entryId: Long) : RecordingState()
-    data class Error(val error: RecognizerError) : RecordingState()
+    data class Error(val error: com.wrait.app.data.speech.RecognizerError) : RecordingState()
     data class Deleted(val count: Int) : RecordingState()
 }
 
