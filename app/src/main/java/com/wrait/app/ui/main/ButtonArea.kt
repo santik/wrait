@@ -16,9 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.layout.offset
 import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
@@ -68,33 +65,6 @@ internal fun ButtonArea(
         shakeOffset.animateTo( 0f, tween(50))
     }
 
-    // --- dashed border for MicBlocked — always composed, fades in/out via alpha ---
-    val isMicBlocked = showBlockedMessage ||
-        (recordingState is RecordingState.Error &&
-         recordingState.error == RecognizerError.InsufficientPermissions)
-    val borderColor = MaterialTheme.colorScheme.error
-    val dashedBorderAlpha by animateFloatAsState(
-        targetValue = if (isMicBlocked) 1f else 0f,
-        animationSpec = if (animationsEnabled)
-            tween(durationMillis = DesignTokens.Animation.FadeDuration)
-        else
-            snap(),
-        label = "dashedBorderAlpha"
-    )
-    val dashedBorderModifier = Modifier.drawBehind {
-        val dashWidth  = DesignTokens.Button.DashedBorderDash.toPx()
-        val gapWidth   = DesignTokens.Button.DashedBorderGap.toPx()
-        val strokeWidth = DesignTokens.Button.DashedBorderWidth.toPx()
-        drawCircle(
-            color = borderColor.copy(alpha = dashedBorderAlpha),
-            radius = (size.minDimension / 2f) - strokeWidth / 2f,
-            style = Stroke(
-                width = strokeWidth,
-                pathEffect = PathEffect.dashPathEffect(floatArrayOf(dashWidth, gapWidth), 0f)
-            )
-        )
-    }
-
     val isEnabled = recordingState !is RecordingState.Processing && recordingState !is RecordingState.Uploading
     val isListening = recordingState is RecordingState.Listening
 
@@ -126,7 +96,6 @@ internal fun ButtonArea(
                 .size(DesignTokens.Button.SizeDp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary)
-                .then(dashedBorderModifier)
                 .clickable(enabled = isEnabled, onClick = onTap),
             contentAlignment = Alignment.Center
         ) {
@@ -149,6 +118,9 @@ internal fun buttonAlphaFor(recordingState: RecordingState, showBlockedMessage: 
         is RecordingState.Uploading  -> DesignTokens.Button.AlphaDisabled
         is RecordingState.Error -> when (recordingState.error) {
             RecognizerError.InsufficientPermissions -> DesignTokens.Button.AlphaDisabled
+            RecognizerError.NoInternet,
+            RecognizerError.Network,
+            RecognizerError.Timeout -> DesignTokens.Button.AlphaReduced
             else -> DesignTokens.Button.AlphaFull
         }
         else -> DesignTokens.Button.AlphaFull
