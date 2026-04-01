@@ -13,17 +13,21 @@ import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 import javax.inject.Inject
+import java.io.File
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -69,6 +73,7 @@ class MainViewModel @Inject constructor(
 
     internal val initJob: Job = viewModelScope.launch {
         entryRepository.deleteStaleDrafts()
+        retryPendingDrafts()
     }
 
     // region — button handling
@@ -127,6 +132,77 @@ class MainViewModel @Inject constructor(
 
     private companion object {
         private const val TAG = "MainViewModel"
+    }
+
+    private suspend fun retryPendingDrafts() = withContext(ioDispatcher) {
+        val drafts = try {
+            entryRepository.getPendingDrafts()
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to load pending drafts for retry: ${e.message}")
+            return@withContext
+        }
+
+        if (drafts.isEmpty()) return@withContext
+
+        drafts.sortedByDescending { it.createdAt }.forEach { entry ->
+            currentCoroutineContext().ensureActive()
+            try {
+                when {
+                    entry.audioPath != null -> retryAudioDraft(entry)
+                    entry.rawTranscript.isNotBlank() -> retryTextDraft(entry)
+                    else -> Unit
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Draft retry failed for entry ${entry.id}: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun retryTextDraft(entry: Entry) {
+        when (val result = openAiApiService.cleanupTranscript(entry.rawTranscript)) {
+            is com.wrait.app.data.api.CleanupResult.Success -> {
+                val cleaned = result.cleanedText
+                val wordCount = cleaned.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+                entryRepository.updateWithCleanedText(entry.id, cleaned, wordCount)
+            }
+            is com.wrait.app.data.api.CleanupResult.Failure -> Unit
+        }
+    }
+
+    private suspend fun retryAudioDraft(entry: Entry) {
+        val audioPath = entry.audioPath ?: return
+        val transcription = transcriptionService.transcribeAudioDraft(
+            audioPath = audioPath,
+            languageCode = entry.language,
+        )
+
+        when (transcription) {
+            is com.wrait.app.data.speech.TranscriptionResult.Success -> {
+                val rawTranscript = transcription.transcript
+                val rawWordCount = rawTranscript.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+
+                when (val cleanup = openAiApiService.cleanupTranscript(rawTranscript)) {
+                    is com.wrait.app.data.api.CleanupResult.Success -> {
+                        val cleaned = cleanup.cleanedText
+                        val cleanedWordCount = cleaned.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+                        entryRepository.finalizeDraftWithCleanedText(
+                            id = entry.id,
+                            rawTranscript = rawTranscript,
+                            cleanedText = cleaned,
+                            wordCount = cleanedWordCount,
+                        )
+                    }
+                    is com.wrait.app.data.api.CleanupResult.Failure -> {
+                        // Still valuable: convert audio-only draft into a text draft.
+                        entryRepository.updateDraftTranscript(entry.id, rawTranscript, rawWordCount)
+                    }
+                }
+
+                // Once we have text (cleaned or raw), the audio file is no longer needed.
+                try { File(audioPath).delete() } catch (_: Exception) { /* best-effort */ }
+            }
+            is com.wrait.app.data.speech.TranscriptionResult.Failure -> Unit
+        }
     }
 }
 

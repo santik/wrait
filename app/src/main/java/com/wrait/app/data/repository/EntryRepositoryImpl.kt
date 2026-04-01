@@ -52,6 +52,25 @@ class EntryRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateDraftTranscript(id: Long, rawTranscript: String, wordCount: Int) {
+        val affectedRows = entryDao.updateDraftTranscript(id, rawTranscript, wordCount)
+        if (affectedRows == 0) {
+            throw IllegalArgumentException("Entry with id $id not found or already deleted")
+        }
+    }
+
+    override suspend fun finalizeDraftWithCleanedText(
+        id: Long,
+        rawTranscript: String,
+        cleanedText: String,
+        wordCount: Int
+    ) {
+        val affectedRows = entryDao.finalizeDraftWithCleanedText(id, rawTranscript, cleanedText, wordCount)
+        if (affectedRows == 0) {
+            throw IllegalArgumentException("Entry with id $id not found or already deleted")
+        }
+    }
+
     override fun getAllEntries(): Flow<List<Entry>> {
         return entryDao.getAllEntries().map { list ->
             list.map { it.toDomain() }

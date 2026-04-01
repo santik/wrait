@@ -21,8 +21,19 @@ interface EntryDao {
     @Query("SELECT * FROM entries WHERE isDraft = 1")
     suspend fun getPendingDrafts(): List<EntryEntity>
 
-    @Query("UPDATE entries SET cleanedText = :cleanedText, wordCount = :wordCount, isDraft = 0 WHERE id = :id")
+    @Query("UPDATE entries SET cleanedText = :cleanedText, wordCount = :wordCount, isDraft = 0, audioPath = NULL WHERE id = :id")
     suspend fun updateCleanedText(id: Long, cleanedText: String, wordCount: Int): Int
+
+    @Query("UPDATE entries SET rawTranscript = :rawTranscript, wordCount = :wordCount, audioPath = NULL WHERE id = :id")
+    suspend fun updateDraftTranscript(id: Long, rawTranscript: String, wordCount: Int): Int
+
+    @Query("UPDATE entries SET rawTranscript = :rawTranscript, cleanedText = :cleanedText, wordCount = :wordCount, isDraft = 0, audioPath = NULL WHERE id = :id")
+    suspend fun finalizeDraftWithCleanedText(
+        id: Long,
+        rawTranscript: String,
+        cleanedText: String,
+        wordCount: Int,
+    ): Int
 
     @Query("SELECT * FROM entries WHERE id = :id")
     fun getEntryById(id: Long): Flow<EntryEntity?>

@@ -96,6 +96,20 @@ class WhisperTranscriptionService @Inject constructor(
         stopSignal.complete(Unit)
     }
 
+    override suspend fun transcribeAudioDraft(
+        audioPath: String,
+        languageCode: String,
+        onStatus: (TranscriptionStatus) -> Unit
+    ): TranscriptionResult {
+        val file = File(audioPath)
+        if (!file.exists() || file.length() <= 0L) {
+            Log.w(TAG, "Audio draft missing or empty: $audioPath")
+            return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+        }
+        onStatus(TranscriptionStatus.Uploading)
+        return upload(file, languageCode)
+    }
+
     private suspend fun record(file: File) = withContext(Dispatchers.IO) {
         @Suppress("DEPRECATION")
         val recorder = MediaRecorder()

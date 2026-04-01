@@ -7,6 +7,16 @@ interface TranscriptionService {
         onStatus: (TranscriptionStatus) -> Unit = {}
     ): TranscriptionResult
 
+    /**
+     * Optional: transcribe an existing audio file on disk (used for retrying audio drafts).
+     * Default implementation returns ApiError so implementations don't have to support it.
+     */
+    suspend fun transcribeAudioDraft(
+        audioPath: String,
+        languageCode: String,
+        onStatus: (TranscriptionStatus) -> Unit = {},
+    ): TranscriptionResult = TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+
     /** Signals the service to stop recording (non-suspending). */
     fun stopRecording()
 }
