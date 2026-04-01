@@ -15,10 +15,10 @@ The core loop takes about thirty seconds.
 ---
 
 <p align="center">
-  <img src="docs/light_start.png" width="270">
-  <img src="docs/light_listening.png" width="270">
-  <img src="docs/dark_start.png" width="270">
-  <img src="docs/dark_listening.png" width="270">
+  <img src="docs/light_start.png" width="170">
+  <img src="docs/light_listening.png" width="170">
+  <img src="docs/dark_start.png" width="170">
+  <img src="docs/dark_listening.png" width="170">
 </p>
 
 ---
