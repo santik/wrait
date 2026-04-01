@@ -11,7 +11,8 @@ fun EntryEntity.toDomain(): Entry {
         isDraft = isDraft,
         language = language,
         createdAt = createdAt,
-        wordCount = wordCount
+        wordCount = wordCount,
+        audioPath = audioPath,
     )
 }
 
@@ -23,6 +24,7 @@ fun Entry.toEntity(): EntryEntity {
         isDraft = isDraft,
         language = language,
         createdAt = createdAt,
-        wordCount = wordCount
+        wordCount = wordCount,
+        audioPath = audioPath,
     )
 }

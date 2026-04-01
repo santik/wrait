@@ -12,5 +12,7 @@ data class EntryEntity(
     val isDraft: Boolean,
     val language: String,
     val createdAt: Long,
-    val wordCount: Int
+    val wordCount: Int,
+    /** Non-null when this draft is backed by an on-disk audio recording awaiting transcription. */
+    val audioPath: String? = null,
 )

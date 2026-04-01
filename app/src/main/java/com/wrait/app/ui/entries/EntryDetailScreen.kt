@@ -169,7 +169,12 @@ private fun EntryDetailContent(entry: Entry) {
         SelectionContainer {
             Column {
                 Text(
-                    text  = entry.cleanedText ?: entry.rawTranscript,
+                    text  = when {
+                        !entry.cleanedText.isNullOrBlank() -> entry.cleanedText
+                        entry.rawTranscript.isNotBlank() -> entry.rawTranscript
+                        entry.audioPath != null -> "Audio draft. Not transcribed yet."
+                        else -> ""
+                    },
                     style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 1.7.em),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

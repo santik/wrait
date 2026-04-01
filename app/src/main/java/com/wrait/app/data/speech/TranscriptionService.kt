@@ -20,7 +20,11 @@ enum class TranscriptionStatus {
 
 sealed class TranscriptionResult {
     data class Success(val transcript: String) : TranscriptionResult()
-    data class Failure(val reason: TranscriptionFailureReason) : TranscriptionResult()
+    data class Failure(
+        val reason: TranscriptionFailureReason,
+        /** Non-null when an audio file was persisted as a draft (Whisper backend). */
+        val audioDraftPath: String? = null,
+    ) : TranscriptionResult()
 }
 
 enum class TranscriptionFailureReason {

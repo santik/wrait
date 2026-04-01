@@ -7,5 +7,7 @@ data class Entry(
     val isDraft: Boolean,
     val language: String,
     val createdAt: Long,
-    val wordCount: Int
+    val wordCount: Int,
+    /** Non-null when this entry is an audio-only draft (not yet transcribed). */
+    val audioPath: String? = null,
 )

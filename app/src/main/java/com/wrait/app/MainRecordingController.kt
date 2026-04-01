@@ -90,7 +90,17 @@ class MainRecordingController @Inject constructor(
             _recordingState.value = RecordingState.Processing
             when (result) {
                 is TranscriptionResult.Success  -> saveTranscript(result.transcript)
-                is TranscriptionResult.Failure  -> emitError(result.reason.toRecognizerError())
+                is TranscriptionResult.Failure  -> {
+                    if (result.audioDraftPath != null) {
+                        withContext(ioDispatcher) {
+                            entryRepository.saveAudioDraft(
+                                audioPath = result.audioDraftPath,
+                                language = language,
+                            )
+                        }
+                    }
+                    emitError(result.reason.toRecognizerError())
+                }
             }
         }
     }

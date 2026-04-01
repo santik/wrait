@@ -53,6 +53,8 @@ class WhisperTranscriptionService @Inject constructor(
     ): TranscriptionResult {
         stopSignal = CompletableDeferred()
         val tempFile = File(context.cacheDir, "wrait_recording_${System.currentTimeMillis()}.m4a")
+        var keepFileAsDraft = false
+        var draftPath: String? = null
         return try {
             record(tempFile)
             if (tempFile.length() < MIN_FILE_SIZE_BYTES) {
@@ -60,17 +62,32 @@ class WhisperTranscriptionService @Inject constructor(
                 return TranscriptionResult.Failure(TranscriptionFailureReason.TooShort)
             }
             onStatus(TranscriptionStatus.Uploading)
-            upload(tempFile, languageCode)
-        } finally {
-            if (!tempFile.delete()) {
-                Log.w(TAG, "Failed to delete temp file: ${tempFile.absolutePath}")
-                try {
-                    tempFile.deleteOnExit()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to schedule file deletion: ${e.message}")
+            when (val result = upload(tempFile, languageCode)) {
+                is TranscriptionResult.Success -> result
+                is TranscriptionResult.Failure -> {
+                    // Keep audio when upload/processing fails so the user doesn't lose the entry.
+                    // The UI can show an audio draft row, and we can retry transcription later.
+                    keepFileAsDraft = result.reason == TranscriptionFailureReason.NetworkError ||
+                        result.reason == TranscriptionFailureReason.ApiError
+                    if (keepFileAsDraft) {
+                        draftPath = persistDraftAudio(tempFile)
+                        keepFileAsDraft = draftPath != null
+                    }
+                    TranscriptionResult.Failure(result.reason, audioDraftPath = draftPath)
                 }
-            } else {
-                Log.d(TAG, "Temp file deleted: ${tempFile.name}")
+            }
+        } finally {
+            if (!keepFileAsDraft) {
+                if (!tempFile.delete()) {
+                    Log.w(TAG, "Failed to delete temp file: ${tempFile.absolutePath}")
+                    try {
+                        tempFile.deleteOnExit()
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to schedule file deletion: ${e.message}")
+                    }
+                } else {
+                    Log.d(TAG, "Temp file deleted: ${tempFile.name}")
+                }
             }
         }
     }
@@ -157,6 +174,23 @@ class WhisperTranscriptionService @Inject constructor(
             }
         }
         return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
+    }
+
+    private fun persistDraftAudio(tempFile: File): String? {
+        return try {
+            val dir = File(context.filesDir, "audio_drafts").apply { mkdirs() }
+            val dst = File(dir, "draft_${System.currentTimeMillis()}.m4a")
+            val moved = tempFile.renameTo(dst)
+            if (!moved) {
+                // Some devices disallow cross-filesystem rename; fallback to copy.
+                tempFile.copyTo(dst, overwrite = true)
+            }
+            Log.d(TAG, "Audio draft persisted: ${dst.absolutePath}")
+            dst.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to persist audio draft: ${e.message}")
+            null
+        }
     }
 
     private companion object {

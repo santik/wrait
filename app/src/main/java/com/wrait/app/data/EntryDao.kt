@@ -32,4 +32,10 @@ interface EntryDao {
 
     @Query("DELETE FROM entries WHERE id IN (:ids)")
     suspend fun deleteEntries(ids: List<Long>)
+
+    @Query("SELECT audioPath FROM entries WHERE id IN (:ids) AND audioPath IS NOT NULL")
+    suspend fun getAudioPathsByIds(ids: List<Long>): List<String>
+
+    @Query("SELECT audioPath FROM entries WHERE isDraft = 1 AND createdAt < :timestamp AND audioPath IS NOT NULL")
+    suspend fun getDraftAudioPathsOlderThan(timestamp: Long): List<String>
 }

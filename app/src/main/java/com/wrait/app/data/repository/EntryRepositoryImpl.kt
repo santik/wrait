@@ -26,7 +26,21 @@ class EntryRepositoryImpl @Inject constructor(
             isDraft = true,
             language = language,
             createdAt = timeProvider.currentTimeMillis(),
-            wordCount = calculatedWordCount
+            wordCount = calculatedWordCount,
+            audioPath = null,
+        )
+        return entryDao.insert(entity)
+    }
+
+    override suspend fun saveAudioDraft(audioPath: String, language: String): Long {
+        val entity = EntryEntity(
+            rawTranscript = "",
+            cleanedText = null,
+            isDraft = true,
+            language = language,
+            createdAt = timeProvider.currentTimeMillis(),
+            wordCount = 0,
+            audioPath = audioPath,
         )
         return entryDao.insert(entity)
     }
@@ -66,7 +80,15 @@ class EntryRepositoryImpl @Inject constructor(
     override suspend fun deleteStaleDrafts(daysOld: Int) {
         require(daysOld >= 0) { "daysOld cannot be negative" }
         val cutoffTimestamp = timeProvider.currentTimeMillis() - TimeUnit.DAYS.toMillis(daysOld.toLong())
+        val audioPaths = entryDao.getDraftAudioPathsOlderThan(cutoffTimestamp)
         entryDao.deleteDraftsOlderThan(cutoffTimestamp)
+        audioPaths.forEach { path ->
+            try {
+                java.io.File(path).delete()
+            } catch (_: Exception) {
+                // best-effort
+            }
+        }
     }
 
     override suspend fun deleteStaleDrafts() {
@@ -75,6 +97,14 @@ class EntryRepositoryImpl @Inject constructor(
 
     override suspend fun deleteEntries(ids: List<Long>) {
         if (ids.isEmpty()) return
+        val audioPaths = entryDao.getAudioPathsByIds(ids)
         entryDao.deleteEntries(ids)
+        audioPaths.forEach { path ->
+            try {
+                java.io.File(path).delete()
+            } catch (_: Exception) {
+                // best-effort
+            }
+        }
     }
 }

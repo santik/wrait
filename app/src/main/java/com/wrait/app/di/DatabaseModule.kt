@@ -114,6 +114,7 @@ object DatabaseModule {
             DB_NAME
         )
             .openHelperFactory(factory)
+            .addMigrations(WraitDatabase.MIGRATION_1_2)
             .fallbackToDestructiveMigration(true)
             .build()
     }

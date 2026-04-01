@@ -67,7 +67,6 @@ import com.wrait.app.ui.theme.DesignTokens
 import com.wrait.app.ui.theme.DesignTokens.Animation
 import com.wrait.app.ui.theme.DesignTokens.Gesture
 import com.wrait.app.ui.theme.DesignTokens.Spacing
-import com.wrait.app.ui.theme.SemanticError
 import com.wrait.app.ui.theme.SemanticWarning
 import com.wrait.app.ui.theme.WrAItTheme
 import java.time.Instant
@@ -327,9 +326,12 @@ private fun EntryCard(
 ) {
     val haptic      = LocalHapticFeedback.current
     val dateString  = formatEntryDate(entry.createdAt)
-    val displayText = (entry.cleanedText ?: entry.rawTranscript)
-        .lines()
-        .firstOrNull { it.isNotBlank() } ?: entry.rawTranscript
+    val displayText = when {
+        !entry.cleanedText.isNullOrBlank() -> entry.cleanedText
+        entry.rawTranscript.isNotBlank() -> entry.rawTranscript
+        entry.audioPath != null -> "audio draft · not transcribed yet"
+        else -> ""
+    }.lines().firstOrNull { it.isNotBlank() }.orEmpty()
     val textColor = if (entry.isDraft) {
         MaterialTheme.colorScheme.secondary
     } else {
