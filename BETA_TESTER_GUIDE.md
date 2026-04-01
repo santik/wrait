@@ -14,7 +14,19 @@ There's no account. Nothing goes to the cloud. Your entries stay encrypted on yo
 
 ## Installing the app
 
-You should have received an email from Google Play with a link to join the beta. Open that link on your Android phone and follow the steps — it installs like any other app. Updates happen automatically through the Play Store.
+If you received an APK file directly (outside of the Play Store), follow the steps below to install it.
+
+### Installing an APK from outside the Play Store
+
+Android blocks apps from unknown sources by default. You need to allow your file manager or browser to install APKs once.
+
+1. **Copy the APK to your phone** — download it directly in the browser, or transfer it via cable/cloud.
+2. **Open the APK file** — tap it in your Downloads folder or file manager. Android will show a warning that the install is blocked.
+3. **Grant install permission** — tap **Settings** in the warning dialog. You'll land on an "Install unknown apps" screen for that specific app (e.g. Chrome or Files). Toggle **Allow from this source** on.
+4. **Go back and tap Install** — Android will ask you to confirm once more, then install.
+5. Once installed, you can turn the permission back off: Settings → Apps → (the app you used to install) → Install unknown apps → toggle off.
+
+> This only needs to be done once. Future APK updates follow the same steps.
 
 **Requirements:** Android 8.0 or newer. If you're unsure, go to Settings → About Phone → Android version.
 
