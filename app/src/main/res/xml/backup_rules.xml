@@ -1,13 +1,23 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
--->
+<?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
     <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+      Privacy: exclude all user content and local secrets from Auto Backup.
+
+      Note: This file is used on API 30 and lower. On API 31+, see
+      `res/xml/data_extraction_rules.xml`.
+    -->
+
+    <!-- Room (SQLCipher) diary database -->
+    <exclude domain="database" path="wrait_db"/>
+    <exclude domain="database" path="wrait_db-wal"/>
+    <exclude domain="database" path="wrait_db-shm"/>
+
+    <!-- DataStore (preferences) -->
+    <exclude domain="file" path="datastore/wrait_preferences.preferences_pb"/>
+
+    <!-- Audio-only drafts (Whisper backend) -->
+    <exclude domain="file" path="audio_drafts"/>
+
+    <!-- DB encryption material (Tink keyset + encrypted SQLCipher password) -->
+    <exclude domain="sharedpref" path="wrait_prefs.xml"/>
 </full-backup-content>

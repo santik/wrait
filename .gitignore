@@ -43,3 +43,7 @@ output-metadata.json
 
 # Project changes documentation
 changes/
+
+.vscode/
+
+.gradle-codex/

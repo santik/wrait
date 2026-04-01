@@ -23,9 +23,11 @@ internal data class Language(val code: String, val displayName: String)
 
 /** Ordered list of supported languages in v1. Names shown in their own script. */
 internal val LANGUAGES: List<Language> = listOf(
-    Language("nl-NL", "Nederlands"),
-    Language("en-GB", "English (UK)"),
     Language("en-US", "English (US)"),
+    Language("nl-NL", "Nederlands"),
+    Language("ru-RU", "Русский"),
+    Language("uk-UA", "Українська"),
+    Language("en-GB", "English (UK)"),
     Language("de-DE", "Deutsch"),
     Language("fr-FR", "Français"),
     Language("es-ES", "Español"),
@@ -33,8 +35,6 @@ internal val LANGUAGES: List<Language> = listOf(
     Language("it-IT", "Italiano"),
     Language("pt-PT", "Português"),
     Language("tr-TR", "Türkçe"),
-    Language("ru-RU", "Русский"),
-    Language("uk-UA", "Українська"),
 )
 
 /**
