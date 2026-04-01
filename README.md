@@ -23,6 +23,14 @@ The core loop takes about thirty seconds.
 
 ---
 
+<p align="center">
+  <a href="https://github.com/santik/wrait/releases/latest">
+    <img src="https://img.shields.io/github/v/release/santik/wrait?label=download&style=for-the-badge" alt="Download latest release">
+  </a>
+</p>
+
+---
+
 ## Privacy model
 
 ### What stays on your device
