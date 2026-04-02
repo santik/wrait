@@ -47,6 +47,7 @@ object DesignTokens {
     object StatusLine {
         const val ClearDelayMs = 4_000
         val GapAboveDp = 12.dp
+        val MinHeightDp = 24.dp
     }
 
     object StatsLine {
