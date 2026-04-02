@@ -14,6 +14,7 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 val openAiApiKey: String = localProperties.getProperty("OPENAI_API_KEY", "")
+val deepgramApiKey: String = localProperties.getProperty("DEEPGRAM_API_KEY", "")
 val sttBackend: String = localProperties.getProperty("STT_BACKEND", "android")
 
 android {
@@ -30,6 +31,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "OPENAI_API_KEY", "\"$openAiApiKey\"")
+        buildConfigField("String", "DEEPGRAM_API_KEY", "\"$deepgramApiKey\"")
         buildConfigField("String", "STT_BACKEND", "\"$sttBackend\"")
     }
 
@@ -55,11 +57,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    kotlin {
-        compilerOptions {
-            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-        }
     }
     buildFeatures {
         compose = true
@@ -133,6 +130,12 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
 }
 
 ksp {

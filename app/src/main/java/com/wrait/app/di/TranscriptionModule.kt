@@ -2,6 +2,7 @@ package com.wrait.app.di
 
 import com.wrait.app.BuildConfig
 import com.wrait.app.data.speech.AndroidTranscriptionService
+import com.wrait.app.data.speech.DeepgramTranscriptionService
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.data.speech.WhisperTranscriptionService
 import dagger.Module
@@ -16,9 +17,14 @@ object TranscriptionModule {
 
     @Provides
     @Singleton
+    @Suppress("UNREACHABLE_CODE")
     fun provideTranscriptionService(
         androidService: AndroidTranscriptionService,
-        whisperService: WhisperTranscriptionService
-    ): TranscriptionService =
-        if (BuildConfig.STT_BACKEND == "whisper") whisperService else androidService
+        whisperService: WhisperTranscriptionService,
+        deepgramService: DeepgramTranscriptionService,
+    ): TranscriptionService = when (BuildConfig.STT_BACKEND) {
+        "whisper" -> whisperService
+        "deepgram" -> deepgramService
+        else -> androidService
+    }
 }
