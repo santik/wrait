@@ -49,14 +49,8 @@ object DesignTokens {
         val GapAboveDp = 12.dp
     }
 
-    object StreakDot {
-        val SizeDp = 6.dp
-        val SpacingDp = 6.dp
-        val GapAboveDp = 10.dp
-    }
-
     object StatsLine {
-        val GapAboveDp = 6.dp
+        val GapAboveDp = 16.dp
     }
 
     object LanguageLabel {

@@ -15,14 +15,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
@@ -101,9 +99,6 @@ fun MainScreen(
                 stats = stats,
                 onTap = if (showBlockedMessage) onStatusLineTap else null,
             )
-            Spacer(Modifier.height(DesignTokens.StreakDot.GapAboveDp))
-            // Streak dots
-            StreakDots(streakDays = stats.streakDays)
             Spacer(Modifier.height(DesignTokens.StatsLine.GapAboveDp))
             // Stats
             StatsLine(stats = stats)
@@ -184,30 +179,6 @@ private fun StatusLine(
             textAlign = TextAlign.Center,
             maxLines = 1,
         )
-    }
-}
-
-@Composable
-private fun StreakDots(
-    streakDays: List<Boolean>,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(DesignTokens.StreakDot.SpacingDp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        streakDays.forEach { active ->
-            Box(
-                modifier = Modifier
-                    .size(DesignTokens.StreakDot.SizeDp)
-                    .clip(CircleShape)
-                    .background(
-                        if (active) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.onBackground.copy(alpha = 0.35f)
-                    )
-            )
-        }
     }
 }
 
