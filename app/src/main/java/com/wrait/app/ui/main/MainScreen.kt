@@ -42,6 +42,7 @@ fun MainScreen(
     onLanguageTap: () -> Unit,
     onSwipeUp: () -> Unit,
     onStatusCleared: () -> Unit,
+    onTapToRead: (entryId: Long) -> Unit,
     onStatusLineTap: () -> Unit,
     onStatsLineTap: () -> Unit,
     modifier: Modifier = Modifier,
@@ -98,7 +99,14 @@ fun MainScreen(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
                 stats = stats,
-                onTap = if (showBlockedMessage) onStatusLineTap else null,
+                onTap = when {
+                    showBlockedMessage -> onStatusLineTap
+                    recordingState is RecordingState.Saved -> run {
+                        val entryId = recordingState.entryId
+                        { onStatusCleared(); onTapToRead(entryId) }
+                    }
+                    else -> null
+                },
             )
             Spacer(Modifier.height(DesignTokens.StatsLine.GapAboveDp))
             // Stats
@@ -159,14 +167,12 @@ private fun StatusLine(
         Settings.Global.ANIMATOR_DURATION_SCALE,
         1f
     ) != 0f
-    val tapModifier = if (onTap != null) {
-        Modifier
-            .minimumInteractiveComponentSize()
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() },
-                onClick = onTap,
-            )
+    val clickModifier = if (onTap != null) {
+        Modifier.clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() },
+            onClick = onTap,
+        )
     } else {
         Modifier
     }
@@ -181,7 +187,9 @@ private fun StatusLine(
             }
         },
         label = "statusLine",
-        modifier = modifier.then(tapModifier),
+        modifier = modifier
+            .minimumInteractiveComponentSize()
+            .then(clickModifier),
     ) { text ->
         Text(
             text = text,
@@ -199,27 +207,29 @@ private fun StatsLine(
     onTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val tapModifier = if (onTap != null) {
-        Modifier
-            .minimumInteractiveComponentSize()
-            .clickable(
-                indication = null,
-                interactionSource = remember { MutableInteractionSource() },
-                onClick = onTap,
-            )
+    val clickModifier = if (onTap != null) {
+        Modifier.clickable(
+            indication = null,
+            interactionSource = remember { MutableInteractionSource() },
+            onClick = onTap,
+        )
     } else {
         Modifier
     }
     Box(
-        modifier = modifier.then(tapModifier),
+        modifier = modifier
+            .minimumInteractiveComponentSize()
+            .then(clickModifier),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "${stats.entryCount} entries · ${stats.activeDays} days" +
-                (if (onTap != null) " \u203a" else ""),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        if (stats.entryCount > 0) {
+            Text(
+                text = "${stats.entryCount} entries · ${stats.activeDays} days" +
+                    (if (onTap != null) " \u203a" else ""),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
     }
 }
 
@@ -236,7 +246,7 @@ private fun statusTextFor(
         is RecordingState.Listening  -> "listening\u2026"
         is RecordingState.Uploading  -> "uploading\u2026"
         is RecordingState.Processing -> "cleaning up\u2026"
-        is RecordingState.Saved      -> "entry saved · swipe up to read"
+        is RecordingState.Saved      -> "tap to read"
         is RecordingState.Deleted    -> if (recordingState.count == 1) "entry deleted"
                                         else "${recordingState.count} entries deleted"
         is RecordingState.Error      -> when (recordingState.error) {

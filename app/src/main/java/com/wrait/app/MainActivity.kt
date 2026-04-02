@@ -142,6 +142,9 @@ class MainActivity : ComponentActivity() {
                     onEntriesDeleted = { count -> viewModel.onEntriesDeleted(count) },
                     onStatusCleared = { viewModel.onMainButtonTapped() },
                     onStatusLineTap = onStatusLineTap,
+                    onTapToRead = { id ->
+                        navController.navigate("entry/$id") { launchSingleTop = true }
+                    },
                     onSaveLanguage = { code -> viewModel.saveLanguage(code) },
                     onMainButtonTapped = {
                         if (recordingState is RecordingState.Error &&
@@ -196,6 +199,7 @@ private fun AppNavHost(
     onEntriesDeleted: (Int) -> Unit,
     onStatusCleared: () -> Unit,
     onStatusLineTap: () -> Unit,
+    onTapToRead: (Long) -> Unit,
     onStatsLineTap: () -> Unit = {
         navController.navigate("entries") { launchSingleTop = true }
     },
@@ -221,6 +225,7 @@ private fun AppNavHost(
                 onLanguageTap = { showLanguagePicker = true },
                 onSwipeUp = onStatsLineTap,
                 onStatusCleared = onStatusCleared,
+                onTapToRead = onTapToRead,
                 onStatusLineTap = onStatusLineTap,
                 onStatsLineTap = onStatsLineTap,
                 modifier = Modifier.fillMaxSize(),
