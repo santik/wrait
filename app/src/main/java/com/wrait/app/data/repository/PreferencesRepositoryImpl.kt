@@ -2,6 +2,7 @@ package com.wrait.app.data.repository
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -19,9 +20,10 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     private object PreferencesKeys {
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
+        val HAS_EVER_RECORDED = booleanPreferencesKey("has_ever_recorded")
     }
 
-    override val selectedLanguage: Flow<String> = dataStore.data
+    private val preferences: Flow<Preferences> = dataStore.data
         .catch { exception ->
             if (exception is IOException) {
                 emit(emptyPreferences())
@@ -29,13 +31,24 @@ class PreferencesRepositoryImpl @Inject constructor(
                 throw exception
             }
         }
-        .map { preferences ->
-            preferences[PreferencesKeys.SELECTED_LANGUAGE] ?: Locale.getDefault().toLanguageTag()
-        }
+
+    override val selectedLanguage: Flow<String> = preferences.map { stored ->
+        stored[PreferencesKeys.SELECTED_LANGUAGE] ?: Locale.getDefault().toLanguageTag()
+    }
+
+    override val hasEverRecorded: Flow<Boolean> = preferences.map { stored ->
+        stored[PreferencesKeys.HAS_EVER_RECORDED] ?: false
+    }
 
     override suspend fun setLanguage(language: String) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_LANGUAGE] = language
+        }
+    }
+
+    override suspend fun setHasEverRecorded(value: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.HAS_EVER_RECORDED] = value
         }
     }
 }

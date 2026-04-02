@@ -45,9 +45,13 @@ class MainViewModel @Inject constructor(
 
     val selectedLanguage: StateFlow<String> = languageState
 
+    val hasEverRecorded: StateFlow<Boolean> = preferencesRepository.hasEverRecorded
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     private val recordingController = MainRecordingController(
         languageState = languageState,
         entryRepository = entryRepository,
+        preferencesRepository = preferencesRepository,
         transcriptionService = transcriptionService,
         openAiApiService = openAiApiService,
         ioDispatcher = ioDispatcher,

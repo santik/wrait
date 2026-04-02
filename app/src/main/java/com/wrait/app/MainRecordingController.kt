@@ -10,6 +10,7 @@ import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.data.speech.TranscriptionStatus
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.repository.EntryRepository
+import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -25,6 +26,7 @@ import javax.inject.Inject
 class MainRecordingController @Inject constructor(
     private val languageState: StateFlow<String>,
     private val entryRepository: EntryRepository,
+    private val preferencesRepository: PreferencesRepository,
     private val transcriptionService: TranscriptionService,
     private val openAiApiService: OpenAiApiService,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
@@ -150,6 +152,15 @@ class MainRecordingController @Inject constructor(
             entryRepository.saveDraft(text, language)
         }
         Log.d(TAG, "Draft saved, id=$entryId")
+
+        // Trip the "has ever recorded" flag — fires even if API cleanup later fails.
+        withContext(ioDispatcher) {
+            try {
+                preferencesRepository.setHasEverRecorded(true)
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to persist hasEverRecorded flag", e)
+            }
+        }
 
         // Step 3 — cleanup
         when (val result = openAiApiService.cleanupTranscript(text)) {

@@ -62,6 +62,7 @@ class MainActivity : ComponentActivity() {
                 val shakeErrorKey by viewModel.shakeErrorKey.collectAsStateWithLifecycle()
                 val stats by viewModel.entryStats.collectAsStateWithLifecycle()
                 val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+                val hasEverRecorded by viewModel.hasEverRecorded.collectAsStateWithLifecycle()
 
                 val isPermissionGranted = remember {
                     mutableStateOf(
@@ -139,6 +140,7 @@ class MainActivity : ComponentActivity() {
                     shakeErrorKey = shakeErrorKey,
                     stats = stats,
                     selectedLanguage = selectedLanguage,
+                    hasEverRecorded = hasEverRecorded,
                     onEntriesDeleted = { count -> viewModel.onEntriesDeleted(count) },
                     onStatusCleared = { viewModel.onMainButtonTapped() },
                     onStatusLineTap = onStatusLineTap,
@@ -196,6 +198,7 @@ private fun AppNavHost(
     shakeErrorKey: Int,
     stats: com.wrait.app.domain.model.EntryStats,
     selectedLanguage: String,
+    hasEverRecorded: Boolean,
     onEntriesDeleted: (Int) -> Unit,
     onStatusCleared: () -> Unit,
     onStatusLineTap: () -> Unit,
@@ -221,6 +224,7 @@ private fun AppNavHost(
                 shakeErrorKey = shakeErrorKey,
                 stats = stats,
                 selectedLanguage = selectedLanguage,
+                hasEverRecorded = hasEverRecorded,
                 onButtonTap = onMainButtonTapped,
                 onLanguageTap = { showLanguagePicker = true },
                 onSwipeUp = onStatsLineTap,
