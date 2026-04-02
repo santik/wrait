@@ -38,6 +38,7 @@ fun MainScreen(
     shakeErrorKey: Int,
     stats: EntryStats,
     selectedLanguage: String,
+    hasEverRecorded: Boolean,
     onButtonTap: () -> Unit,
     onLanguageTap: () -> Unit,
     onSwipeUp: () -> Unit,
@@ -98,7 +99,7 @@ fun MainScreen(
             StatusLine(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
-                stats = stats,
+                hasEverRecorded = hasEverRecorded,
                 onTap = when {
                     showBlockedMessage -> onStatusLineTap
                     recordingState is RecordingState.Saved -> run {
@@ -156,12 +157,11 @@ private fun LanguageLabel(
 private fun StatusLine(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
-    stats: EntryStats,
+    hasEverRecorded: Boolean,
     onTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val hasEntries = stats.entryCount > 0
-    val statusText = statusTextFor(recordingState, showBlockedMessage, hasEntries)
+    val statusText = statusTextFor(recordingState, showBlockedMessage, hasEverRecorded)
     val animationsEnabled = Settings.Global.getFloat(
         LocalContext.current.contentResolver,
         Settings.Global.ANIMATOR_DURATION_SCALE,
@@ -235,14 +235,14 @@ private fun StatsLine(
 
 // --- Pure helper functions ---
 
-private fun statusTextFor(
+internal fun statusTextFor(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
-    hasEntries: Boolean,
+    hasEverRecorded: Boolean,
 ): String {
     if (showBlockedMessage) return "mic blocked · tap to open settings"
     return when (recordingState) {
-        is RecordingState.Idle       -> if (hasEntries) "" else "tap to write"
+        is RecordingState.Idle       -> if (!hasEverRecorded) "tap to write" else ""
         is RecordingState.Listening  -> "listening\u2026"
         is RecordingState.Uploading  -> "uploading\u2026"
         is RecordingState.Processing -> "cleaning up\u2026"
