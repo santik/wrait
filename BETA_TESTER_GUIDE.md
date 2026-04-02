@@ -57,13 +57,16 @@ Tap the language name above the button (e.g. "Nederlands" or "English"). Pick th
 
 ---
 
-## What happens to your voice
+## What happens to your data
 
-Your voice is recorded temporarily, sent to OpenAI for transcription, and then immediately deleted — it is never saved to your phone or stored anywhere. Only the text transcript is kept, encrypted on your device.
+When you record an entry, the text is sent to OpenAI to clean it up (removing filler words and
+fixing punctuation). If you're using a build with the Whisper backend, your audio is also sent
+to OpenAI for transcription. Nothing is ever sent to us — we have no servers.
 
-The transcript text is also sent to OpenAI briefly for cleanup (removing filler words etc.), and then that call ends. OpenAI does not store your diary entries.
+Your entries are saved encrypted on your phone only. Audio is discarded immediately after
+transcription and is never stored on your device.
 
-No audio or text is ever sent to the developer.
+For full details, see the [privacy policy](https://santik.github.io/wrait/PRIVACY).
 
 ---
 
