@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -108,23 +107,15 @@ class MainViewModel @Inject constructor(
     private fun computeStats(entries: List<Entry>): EntryStats {
         if (entries.isEmpty()) return EntryStats.Empty
 
-        val zone   = ZoneId.systemDefault()
-        val today  = LocalDate.now(zone)
-        val monday = today.with(DayOfWeek.MONDAY)
+        val zone = ZoneId.systemDefault()
 
-        // Build a Set once — O(n) — so the 7 streak lookups are O(1) each instead of O(n) each
         val entryDates: Set<LocalDate> = entries.mapTo(HashSet()) { entry ->
             Instant.ofEpochMilli(entry.createdAt).atZone(zone).toLocalDate()
-        }
-
-        val streakDays = (0..6).map { offset ->
-            monday.plusDays(offset.toLong()) in entryDates
         }
 
         return EntryStats(
             entryCount = entries.size,
             activeDays = entryDates.size,
-            streakDays = streakDays
         )
     }
 
