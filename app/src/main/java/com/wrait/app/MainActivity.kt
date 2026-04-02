@@ -196,6 +196,9 @@ private fun AppNavHost(
     onEntriesDeleted: (Int) -> Unit,
     onStatusCleared: () -> Unit,
     onStatusLineTap: () -> Unit,
+    onStatsLineTap: () -> Unit = {
+        navController.navigate("entries") { launchSingleTop = true }
+    },
     onMainButtonTapped: () -> Unit,
     onSaveLanguage: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -216,13 +219,10 @@ private fun AppNavHost(
                 selectedLanguage = selectedLanguage,
                 onButtonTap = onMainButtonTapped,
                 onLanguageTap = { showLanguagePicker = true },
-                onSwipeUp = {
-                    navController.navigate("entries") {
-                        launchSingleTop = true
-                    }
-                },
+                onSwipeUp = onStatsLineTap,
                 onStatusCleared = onStatusCleared,
                 onStatusLineTap = onStatusLineTap,
+                onStatsLineTap = onStatsLineTap,
                 modifier = Modifier.fillMaxSize(),
             )
 

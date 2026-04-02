@@ -43,6 +43,7 @@ fun MainScreen(
     onSwipeUp: () -> Unit,
     onStatusCleared: () -> Unit,
     onStatusLineTap: () -> Unit,
+    onStatsLineTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Saved auto-clear
@@ -101,7 +102,17 @@ fun MainScreen(
             )
             Spacer(Modifier.height(DesignTokens.StatsLine.GapAboveDp))
             // Stats
-            StatsLine(stats = stats)
+            StatsLine(
+                stats = stats,
+                onTap = if (recordingState is RecordingState.Listening ||
+                    recordingState is RecordingState.Processing ||
+                    recordingState is RecordingState.Uploading
+                ) {
+                    null
+                } else {
+                    onStatsLineTap
+                }
+            )
             // Lower flex spacer
             Spacer(Modifier.weight(1f))
         }
@@ -185,14 +196,29 @@ private fun StatusLine(
 @Composable
 private fun StatsLine(
     stats: EntryStats,
+    onTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    if (stats.entryCount > 0) {
+    val tapModifier = if (onTap != null) {
+        Modifier
+            .minimumInteractiveComponentSize()
+            .clickable(
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() },
+                onClick = onTap,
+            )
+    } else {
+        Modifier
+    }
+    Box(
+        modifier = modifier.then(tapModifier),
+        contentAlignment = Alignment.Center,
+    ) {
         Text(
-            text = "${stats.entryCount} entries · ${stats.activeDays} days",
+            text = "${stats.entryCount} entries · ${stats.activeDays} days" +
+                (if (onTap != null) " \u203a" else ""),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = modifier,
         )
     }
 }
