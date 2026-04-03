@@ -9,6 +9,7 @@ import com.wrait.app.data.speech.TranscriptionResult
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.data.speech.TranscriptionStatus
 import com.wrait.app.di.IoDispatcher
+import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -18,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -148,7 +150,8 @@ class MainRecordingController @Inject constructor(
         }
 
         // MODE_PRIVATE: save final entry immediately, skip cleanup
-        if (BuildConfig.PRIVACY_MODE == "MODE_PRIVATE") {
+        val mode = preferencesRepository.privacyMode.first()
+        if (mode == PrivacyMode.MODE_PRIVATE) {
             val entryId = withContext(ioDispatcher) {
                 entryRepository.saveEntry(text, language)
             }

@@ -27,7 +27,9 @@ import androidx.compose.ui.text.style.TextAlign
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.EntryStats
+import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.ui.theme.DesignTokens
+import com.wrait.app.ui.settings.SettingsPanel
 import kotlinx.coroutines.delay
 import java.util.Locale
 
@@ -39,9 +41,14 @@ fun MainScreen(
     stats: EntryStats,
     selectedLanguage: String,
     hasEverRecorded: Boolean,
+    showSettingsPanel: Boolean,
+    privacyMode: PrivacyMode,
     onButtonTap: () -> Unit,
     onLanguageTap: () -> Unit,
     onSwipeUp: () -> Unit,
+    onSwipeDown: () -> Unit,
+    onPrivacyModeToggle: (Boolean) -> Unit,
+    onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
     onTapToRead: (entryId: Long) -> Unit,
     onStatusLineTap: () -> Unit,
@@ -57,12 +64,13 @@ fun MainScreen(
     }
 
     val density = LocalDensity.current
+    val currentShowSettingsPanel by rememberUpdatedState(showSettingsPanel)
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .pointerInput(onSwipeUp) {
+            .pointerInput(onSwipeUp, onSwipeDown) {
                 val thresholdPx = with(density) { DesignTokens.Gesture.SwipeNavThresholdDp.toPx() }
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -73,7 +81,10 @@ fun MainScreen(
                         totalY += change.position.y - change.previousPosition.y
                         if (!change.pressed) break
                     }
-                    if (totalY < -thresholdPx) onSwipeUp()
+                    if (!currentShowSettingsPanel) {
+                        if (totalY < -thresholdPx) onSwipeUp()
+                        if (totalY > thresholdPx) onSwipeDown()
+                    }
                 }
             }
     ) {
@@ -124,6 +135,14 @@ fun MainScreen(
             )
             // Lower flex spacer
             Spacer(Modifier.weight(1f))
+        }
+
+        if (showSettingsPanel) {
+            SettingsPanel(
+                privacyMode = privacyMode,
+                onModeToggle = onPrivacyModeToggle,
+                onDismiss = onSettingsPanelDismiss,
+            )
         }
     }
 }

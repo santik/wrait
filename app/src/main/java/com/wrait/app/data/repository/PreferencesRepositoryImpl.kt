@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
+import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -21,6 +22,7 @@ class PreferencesRepositoryImpl @Inject constructor(
     private object PreferencesKeys {
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
         val HAS_EVER_RECORDED = booleanPreferencesKey("has_ever_recorded")
+        val PRIVACY_MODE = stringPreferencesKey("privacy_mode")
     }
 
     private val preferences: Flow<Preferences> = dataStore.data
@@ -40,6 +42,13 @@ class PreferencesRepositoryImpl @Inject constructor(
         stored[PreferencesKeys.HAS_EVER_RECORDED] ?: false
     }
 
+    override val privacyMode: Flow<PrivacyMode> = preferences.map { stored ->
+        when (stored[PreferencesKeys.PRIVACY_MODE]) {
+            PrivacyMode.MODE_PRIVATE.name -> PrivacyMode.MODE_PRIVATE
+            else -> PrivacyMode.MODE_BEST
+        }
+    }
+
     override suspend fun setLanguage(language: String) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.SELECTED_LANGUAGE] = language
@@ -49,6 +58,20 @@ class PreferencesRepositoryImpl @Inject constructor(
     override suspend fun setHasEverRecorded(value: Boolean) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.HAS_EVER_RECORDED] = value
+        }
+    }
+
+    override suspend fun savePrivacyMode(mode: PrivacyMode) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.PRIVACY_MODE] = mode.name
+        }
+    }
+
+    override suspend fun seedPrivacyModeOnce(default: PrivacyMode) {
+        dataStore.edit { preferences ->
+            if (!preferences.contains(PreferencesKeys.PRIVACY_MODE)) {
+                preferences[PreferencesKeys.PRIVACY_MODE] = default.name
+            }
         }
     }
 }

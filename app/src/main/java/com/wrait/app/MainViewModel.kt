@@ -8,6 +8,7 @@ import com.wrait.app.di.IoDispatcher
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
+import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -15,8 +16,11 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -48,6 +52,12 @@ class MainViewModel @Inject constructor(
     val hasEverRecorded: StateFlow<Boolean> = preferencesRepository.hasEverRecorded
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
+    val privacyMode: StateFlow<PrivacyMode> = preferencesRepository.privacyMode
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PrivacyMode.MODE_BEST)
+
+    private val _showSettingsPanel = MutableStateFlow(false)
+    val showSettingsPanel: StateFlow<Boolean> = _showSettingsPanel.asStateFlow()
+
     private val recordingController = MainRecordingController(
         languageState = languageState,
         entryRepository = entryRepository,
@@ -75,8 +85,15 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EntryStats.Empty)
 
     internal val initJob: Job = viewModelScope.launch {
+        preferencesRepository.seedPrivacyModeOnce(
+            default = if (BuildConfig.PRIVACY_MODE == PrivacyMode.MODE_PRIVATE.name) {
+                PrivacyMode.MODE_PRIVATE
+            } else {
+                PrivacyMode.MODE_BEST
+            }
+        )
         entryRepository.deleteStaleDrafts()
-        if (BuildConfig.PRIVACY_MODE != "MODE_PRIVATE") {
+        if (preferencesRepository.privacyMode.first() != PrivacyMode.MODE_PRIVATE) {
             retryPendingDrafts()
         }
     }
@@ -104,6 +121,23 @@ class MainViewModel @Inject constructor(
 
     fun onEntriesDeleted(count: Int) {
         recordingController.onEntriesDeleted(count)
+    }
+
+    fun onSwipeDown() {
+        if (recordingState.value.isActive) return
+        _showSettingsPanel.value = true
+    }
+
+    fun onSettingsPanelDismiss() {
+        _showSettingsPanel.value = false
+    }
+
+    fun onPrivacyModeToggle(enabled: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.savePrivacyMode(
+                if (enabled) PrivacyMode.MODE_PRIVATE else PrivacyMode.MODE_BEST
+            )
+        }
     }
 
     // endregion
@@ -211,6 +245,9 @@ sealed class RecordingState {
     data class Saved(val entryId: Long) : RecordingState()
     data class Error(val error: com.wrait.app.data.speech.RecognizerError) : RecordingState()
     data class Deleted(val count: Int) : RecordingState()
+
+    val isActive: Boolean
+        get() = this is Listening || this is Uploading || this is Processing
 }
 
 data class EntrySummary(

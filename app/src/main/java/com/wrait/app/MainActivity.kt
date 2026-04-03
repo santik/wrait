@@ -34,6 +34,7 @@ import androidx.navigation.navArgument
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.ui.entries.EntryDetailScreen
 import com.wrait.app.ui.entries.EntryDetailViewModel
 import com.wrait.app.ui.entries.EntryListScreen
@@ -63,6 +64,8 @@ class MainActivity : ComponentActivity() {
                 val stats by viewModel.entryStats.collectAsStateWithLifecycle()
                 val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
                 val hasEverRecorded by viewModel.hasEverRecorded.collectAsStateWithLifecycle()
+                val showSettingsPanel by viewModel.showSettingsPanel.collectAsStateWithLifecycle()
+                val privacyMode by viewModel.privacyMode.collectAsStateWithLifecycle()
 
                 val isPermissionGranted = remember {
                     mutableStateOf(
@@ -141,6 +144,11 @@ class MainActivity : ComponentActivity() {
                     stats = stats,
                     selectedLanguage = selectedLanguage,
                     hasEverRecorded = hasEverRecorded,
+                    showSettingsPanel = showSettingsPanel,
+                    privacyMode = privacyMode,
+                    onSwipeDown = viewModel::onSwipeDown,
+                    onPrivacyModeToggle = viewModel::onPrivacyModeToggle,
+                    onSettingsPanelDismiss = viewModel::onSettingsPanelDismiss,
                     onEntriesDeleted = { count -> viewModel.onEntriesDeleted(count) },
                     onStatusCleared = { viewModel.onMainButtonTapped() },
                     onStatusLineTap = onStatusLineTap,
@@ -199,6 +207,11 @@ private fun AppNavHost(
     stats: com.wrait.app.domain.model.EntryStats,
     selectedLanguage: String,
     hasEverRecorded: Boolean,
+    showSettingsPanel: Boolean,
+    privacyMode: PrivacyMode,
+    onSwipeDown: () -> Unit,
+    onPrivacyModeToggle: (Boolean) -> Unit,
+    onSettingsPanelDismiss: () -> Unit,
     onEntriesDeleted: (Int) -> Unit,
     onStatusCleared: () -> Unit,
     onStatusLineTap: () -> Unit,
@@ -225,9 +238,14 @@ private fun AppNavHost(
                 stats = stats,
                 selectedLanguage = selectedLanguage,
                 hasEverRecorded = hasEverRecorded,
+                showSettingsPanel = showSettingsPanel,
+                privacyMode = privacyMode,
                 onButtonTap = onMainButtonTapped,
                 onLanguageTap = { showLanguagePicker = true },
                 onSwipeUp = onStatsLineTap,
+                onSwipeDown = onSwipeDown,
+                onPrivacyModeToggle = onPrivacyModeToggle,
+                onSettingsPanelDismiss = onSettingsPanelDismiss,
                 onStatusCleared = onStatusCleared,
                 onTapToRead = onTapToRead,
                 onStatusLineTap = onStatusLineTap,
