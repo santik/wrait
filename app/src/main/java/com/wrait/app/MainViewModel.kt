@@ -76,7 +76,9 @@ class MainViewModel @Inject constructor(
 
     internal val initJob: Job = viewModelScope.launch {
         entryRepository.deleteStaleDrafts()
-        retryPendingDrafts()
+        if (BuildConfig.PRIVACY_MODE != "MODE_PRIVATE") {
+            retryPendingDrafts()
+        }
     }
 
     // region — button handling

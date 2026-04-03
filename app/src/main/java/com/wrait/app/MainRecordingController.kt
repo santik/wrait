@@ -147,6 +147,24 @@ class MainRecordingController @Inject constructor(
             Log.w(TAG, "Transcript exceeds max length (${text.length} chars), truncating")
         }
 
+        // MODE_PRIVATE: save final entry immediately, skip cleanup
+        if (BuildConfig.PRIVACY_MODE == "MODE_PRIVATE") {
+            val entryId = withContext(ioDispatcher) {
+                entryRepository.saveEntry(text, language)
+            }
+            Log.d(TAG, "MODE_PRIVATE: entry saved, id=$entryId")
+            withContext(ioDispatcher) {
+                try {
+                    preferencesRepository.setHasEverRecorded(true)
+                } catch (e: Exception) {
+                    Log.w(TAG, "Failed to persist hasEverRecorded flag", e)
+                }
+            }
+            _recordingState.value = RecordingState.Saved(entryId)
+            delayAndReset()
+            return
+        }
+
         // Step 2 — draft save (must complete before cleanup call begins)
         val entryId = withContext(ioDispatcher) {
             entryRepository.saveDraft(text, language)

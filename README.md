@@ -126,12 +126,12 @@ com.wrait.app/
 
 ### Transcription backends
 
-The STT backend is selected at build time via `STT_BACKEND` in `app/build.gradle.kts`:
+Recording mode is selected at build time via `PRIVACY_MODE` in `app/build.gradle.kts` (no runtime toggle):
 
-- **`android`** — uses Android `SpeechRecognizer` (on-device). Restarts silently across pauses, accumulates partial results, respects silence thresholds and a 2-minute hard cap. No audio leaves the device.
-- **`whisper`** — records raw audio with `MediaRecorder`, uploads the `.m4a` file to OpenAI Whisper, emits an explicit `Uploading` UI state during the upload. The audio file is deleted immediately after the API call.
+- **`MODE_BEST`** — Deepgram STT (network) + OpenAI cleanup (network).
+- **`MODE_PRIVATE`** — Android `SpeechRecognizer` (on-device) with no cleanup and no network calls.
 
-Both backends converge into the same cleanup pipeline after transcription.
+In `MODE_BEST`, transcription and cleanup converge into the same draft-first pipeline (DB write before any cleanup call).
 
 **Key decisions:**
 
