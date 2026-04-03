@@ -15,7 +15,7 @@ if (localPropertiesFile.exists()) {
 }
 val openAiApiKey: String = localProperties.getProperty("OPENAI_API_KEY", "")
 val deepgramApiKey: String = localProperties.getProperty("DEEPGRAM_API_KEY", "")
-val sttBackend: String = localProperties.getProperty("STT_BACKEND", "android")
+val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST")
 
 android {
     namespace = "com.wrait.app"
@@ -32,7 +32,7 @@ android {
 
         buildConfigField("String", "OPENAI_API_KEY", "\"$openAiApiKey\"")
         buildConfigField("String", "DEEPGRAM_API_KEY", "\"$deepgramApiKey\"")
-        buildConfigField("String", "STT_BACKEND", "\"$sttBackend\"")
+        buildConfigField("String", "PRIVACY_MODE", "\"$privacyMode\"")
     }
 
     signingConfigs {

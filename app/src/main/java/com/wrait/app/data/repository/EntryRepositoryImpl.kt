@@ -32,6 +32,20 @@ class EntryRepositoryImpl @Inject constructor(
         return entryDao.insert(entity)
     }
 
+    override suspend fun saveEntry(transcript: String, language: String): Long {
+        val calculatedWordCount = transcript.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+        val entity = EntryEntity(
+            rawTranscript = transcript,
+            cleanedText = null,
+            isDraft = false,
+            language = language,
+            createdAt = timeProvider.currentTimeMillis(),
+            wordCount = calculatedWordCount,
+            audioPath = null,
+        )
+        return entryDao.insert(entity)
+    }
+
     override suspend fun saveAudioDraft(audioPath: String, language: String): Long {
         val entity = EntryEntity(
             rawTranscript = "",

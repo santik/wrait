@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface EntryRepository {
     suspend fun saveDraft(transcript: String, language: String): Long
+    suspend fun saveEntry(transcript: String, language: String): Long
     suspend fun saveAudioDraft(audioPath: String, language: String): Long
     suspend fun updateWithCleanedText(id: Long, text: String, wordCount: Int)
     suspend fun updateDraftTranscript(id: Long, rawTranscript: String, wordCount: Int)
