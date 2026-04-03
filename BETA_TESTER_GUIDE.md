@@ -41,11 +41,11 @@ Android blocks apps from unknown sources by default. You need to allow your file
 3. Talk — up to 2 minutes
 4. Tap the button again to stop
 
-The app will clean up your recording automatically (removes filler words, fixes punctuation). This takes a second or two. When it's done, you'll see **"entry saved"** on screen.
+The app will clean up your recording automatically (removes filler words, fixes punctuation). This takes a second or two. When it's done, you'll see **"tap to read"** — tap it to open the new entry directly.
 
 ### Reading your entries
 
-Swipe up from anywhere on the main screen. Your entries appear newest first. Tap any entry to read the full text. The entry text is selectable — you can copy it to the clipboard if you want to use it elsewhere.
+Swipe up from anywhere on the main screen, or tap the stats line ("12 entries · 8 days") at the bottom. Your entries appear newest first. Tap any entry to read the full text. The entry text is selectable — you can copy it to the clipboard if you want to use it elsewhere.
 
 ### Deleting entries
 
@@ -55,16 +55,24 @@ In the entries list, long-press any entry to enter selection mode. Tap to select
 
 Tap the language name above the button (e.g. "Nederlands" or "English"). Pick the language you'll be speaking in. This tells the app which language to transcribe and clean up — it's important to set this correctly before recording.
 
+### Privacy mode
+
+Swipe down from the top of the main screen to open the settings panel. You'll see a **Private mode** toggle:
+
+- **Off (Best mode)** — Audio is sent to Deepgram for transcription. The transcript is sent to OpenAI for cleanup. Best accuracy, requires internet.
+- **On (Private mode)** — Everything stays on your phone. Android's on-device speech recognition is used. No internet needed. No cleanup step.
+
+The change takes effect on the next recording — no restart needed. The panel closes when you swipe up or tap outside it.
+
 ---
 
 ## What happens to your data
 
-When you record an entry, the text is sent to OpenAI to clean it up (removing filler words and
-fixing punctuation). If you're using a build with the Whisper backend, your audio is also sent
-to OpenAI for transcription. Nothing is ever sent to us — we have no servers.
+**In Best mode (default):** Your audio is sent to [Deepgram](https://deepgram.com) for transcription, and the raw transcript is sent to OpenAI to clean it up. Nothing is ever sent to us — we have no servers.
 
-Your entries are saved encrypted on your phone only. Audio is discarded immediately after
-transcription and is never stored on your device.
+**In Private mode:** Nothing leaves your phone. Transcription runs on-device. There is no cleanup step.
+
+In both modes, your entries are saved encrypted on your phone only. Audio is discarded immediately after transcription and is never stored on your device.
 
 For full details, see the [privacy policy](https://santik.github.io/wrait/PRIVACY).
 
@@ -89,11 +97,15 @@ Here are some things worth testing — especially in the first week:
 - Record a few entries in different styles: calm and slow, fast and stream-of-consciousness, emotional
 - Try recording in your language and check whether the cleaned text reads naturally — does it still sound like you?
 - Try pausing mid-sentence for a few seconds — the app should wait for you
+- After saving, tap "tap to read" to open the entry directly
+- Tap the stats line ("12 entries · 8 days") to navigate to the entry list
 - Swipe up to browse your entries — does the list update immediately after recording?
 - Switch languages and record in a different one
 - Try recording with a poor connection and check if the draft recovers on the next open
 - Long-press an entry to enter selection mode — try selecting multiple entries and deleting them
 - Open an entry and try copying the text
+- Swipe down from the top to open the settings panel — toggle Private mode on and record an entry; check whether the cleanup step is skipped
+- Toggle back to Best mode and record again — check that cleanup runs
 
 ---
 
@@ -106,6 +118,7 @@ This is an early beta. A few things are not finished yet:
 - No PIN or biometric lock
 - The design is not final — some screens are placeholder layouts
 - Animations may feel unpolished
+- In Private mode, transcription accuracy depends on your device's built-in speech recognition
 
 These are all on the list for the next version.
 

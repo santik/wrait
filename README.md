@@ -41,13 +41,26 @@ The core loop takes about thirty seconds.
 
 ### What leaves your device
 
-Two things, both in service of transcription and cleanup:
+This depends on your selected **privacy mode** (see below). In the default **Best** mode:
 
-1. **Voice audio** is sent to [OpenAI Whisper](https://openai.com/research/whisper) for transcription. This is a stateless API call — OpenAI does not retain the audio or use it for model training under their standard API terms. The audio is discarded immediately after transcription and never written to disk on the device.
+1. **Voice audio** is sent to [Deepgram](https://deepgram.com) (Nova-3) for transcription. This is a stateless API call — the audio is discarded immediately after transcription and never written to disk on the device.
 
 2. **The raw transcript text** (not the cleaned entry) is sent to OpenAI's GPT API for cleanup. Same stateless model — no session, no history.
 
 The cleaned entry text never leaves your device.
+
+In **Private** mode, nothing leaves your device at all — transcription runs on-device via Android SpeechRecognizer.
+
+### Privacy mode
+
+wrait has two modes, switchable at runtime from the settings panel (swipe down from the top of the main screen):
+
+| Mode | Transcription | Cleanup | Network required |
+|------|--------------|---------|-----------------|
+| **Best** | Deepgram Nova-3 (cloud) | OpenAI gpt-4o-mini (cloud) | Yes |
+| **Private** | Android SpeechRecognizer (on-device) | None | No |
+
+The selected mode takes effect on the next recording. No restart needed.
 
 ### What is never sent anywhere
 
@@ -85,7 +98,10 @@ Screenshots and the recent apps thumbnail are blocked via `FLAG_SECURE`.
    ```properties
    sdk.dir=/path/to/your/Android/sdk
    OPENAI_API_KEY=sk-...
+   DEEPGRAM_API_KEY=...
+   PRIVACY_MODE=MODE_BEST
    ```
+   Set `PRIVACY_MODE=MODE_PRIVATE` to default to on-device-only mode. Omit `DEEPGRAM_API_KEY` if building in `MODE_PRIVATE` only.
 
 3. Open in Android Studio and sync Gradle.
 
@@ -126,12 +142,12 @@ com.wrait.app/
 
 ### Transcription backends
 
-Recording mode is selected at build time via `PRIVACY_MODE` in `app/build.gradle.kts` (no runtime toggle):
+Privacy mode is a runtime user setting (swipe down → settings panel) backed by DataStore. The default is set at build time via `PRIVACY_MODE` in `local.properties`:
 
-- **`MODE_BEST`** — Deepgram STT (network) + OpenAI cleanup (network).
-- **`MODE_PRIVATE`** — Android `SpeechRecognizer` (on-device) with no cleanup and no network calls.
+- **`MODE_BEST`** — Deepgram Nova-3 STT (network) + OpenAI gpt-4o-mini cleanup (network). Draft-first pipeline: entry is written to DB before any API call.
+- **`MODE_PRIVATE`** — Android `SpeechRecognizer` (on-device). No cleanup, no network calls. Entry saved immediately as final.
 
-In `MODE_BEST`, transcription and cleanup converge into the same draft-first pipeline (DB write before any cleanup call).
+`ModeAwareTranscriptionService` reads the current DataStore value at call time, so switching modes takes effect on the next recording without restarting the app.
 
 **Key decisions:**
 
@@ -152,7 +168,7 @@ In `MODE_BEST`, transcription and cleanup converge into the same draft-first pip
 - **No search.** Planned for a later version once there are enough entries to make it useful.
 - **2-minute recording cap.** By design — longer recordings degrade cleanup quality and push the app toward voice memo territory.
 - **Android only.** No iOS plans in the near term.
-- **API key in binary.** In the closed beta build, the OpenAI key is compiled into the APK via `BuildConfig`. This is acceptable for a private friends-and-family beta with a hard spend cap set on the OpenAI account. 
+- **API key in binary.** In the closed beta build, the OpenAI and Deepgram keys are compiled into the APK via `BuildConfig`. This is acceptable for a private friends-and-family beta with hard spend caps set on both accounts.
 
 ---
 

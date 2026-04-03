@@ -4,6 +4,37 @@ All notable changes to wrait are documented here.
 
 ---
 
+## [1.1-beta] — 2026-04-03
+
+Closed beta update. UX improvements, Deepgram STT backend, runtime privacy mode, and onboarding fix.
+
+### UX improvements
+
+- **Tappable stats line** — "12 entries · 8 days" now shows a `›` chevron and navigates directly to the entry list. Tap it as an alternative to swiping up.
+- **Tap to read** — After saving an entry the status line reads "tap to read". One tap opens the new entry directly instead of requiring a swipe then a tap.
+- **"Tap to write" persists on first launch** — The hint no longer disappears after 4 seconds. It stays until you complete your first recording.
+- **Streak dots removed** — The Mon–Sun dot row has been removed. The stats line already shows days active.
+
+### New: Deepgram Nova-3 speech-to-text
+
+- Third STT option alongside Android on-device and OpenAI Whisper
+- Strong multilingual accuracy, including mixed-language audio
+- Requires a Deepgram API key; audio is sent to Deepgram's servers
+
+### New: Privacy mode (runtime)
+
+- Switch between **Best** (Deepgram STT + OpenAI cleanup) and **Private** (on-device only, nothing leaves your phone) without reinstalling
+- Swipe down from the top of the main screen to open the settings panel
+- Toggle takes effect on the next recording — no restart needed
+- Panel is locked during recording
+
+### Fixes
+
+- Status bar overlap on edge-to-edge layouts resolved
+- Swipe gesture conflict between settings panel dismiss and entry list navigation resolved
+
+---
+
 ## [1.0-beta] — 2026-04-01
 
 First closed beta release. Friends and family only.
@@ -46,7 +77,7 @@ First closed beta release. Friends and family only.
 - Single screen, one button, no tab bars or menus
 - Warm off-white light mode, near-black dark mode
 - Pulse ring while listening, button shake on errors
-- 7-dot weekly streak row, ambient entry count
+- 7-dot weekly streak row, ambient entry count (streak dots later removed in 1.1-beta)
 
 ### Known limitations in this release
 
