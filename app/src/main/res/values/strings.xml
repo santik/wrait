@@ -20,6 +20,7 @@
     <string name="no_transcripts_yet">No transcripts yet</string>
     <string name="entry_detail_draft_notice">not yet cleaned up — will update automatically</string>
     <string name="entry_detail_back_description">Navigate back to entry list</string>
+    <string name="entry_list_back_description">Navigate back to recording screen</string>
     <string name="entry_detail_error_loading">Error loading entry</string>
     <string name="deleted_singular">1 entry deleted</string>
     <string name="deleted_plural">%d entries deleted</string>

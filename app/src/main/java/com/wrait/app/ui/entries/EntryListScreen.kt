@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -74,6 +75,10 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import com.wrait.app.R
 
 @Composable
 fun EntryListScreen(
@@ -93,6 +98,7 @@ fun EntryListScreen(
     val sorted = remember(uiState.entries) {
         uiState.entries.sortedByDescending { it.createdAt }
     }
+    val backDescription = stringResource(R.string.entry_list_back_description)
 
     // Intercept system back: exit selection mode instead of navigating back
     BackHandler(enabled = uiState.selectionMode) { onExitSelection() }
@@ -192,7 +198,12 @@ fun EntryListScreen(
                         .padding(horizontal = Spacing.md),
                     verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
-                    item { Spacer(modifier = Modifier.height(Spacing.lg)) }
+                    item {
+                        Spacer(modifier = Modifier.height(
+                            if (uiState.selectionMode) Spacing.lg
+                            else Spacing.md + Spacing.xxl + Spacing.sm  // clear floating back button
+                        ))
+                    }
                     items(sorted, key = { it.id }) { entry ->
                         EntryCard(
                             entry             = entry,
@@ -208,6 +219,22 @@ fun EntryListScreen(
                     }
                     item { Spacer(modifier = Modifier.height(Spacing.lg)) }
                 }
+            }
+        }
+
+        if (!uiState.selectionMode) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = Spacing.md, start = Spacing.sm)
+                    .semantics { contentDescription = backDescription }
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,   // described by parent semantics above
+                    tint = MaterialTheme.colorScheme.surface
+                )
             }
         }
 
