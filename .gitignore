@@ -47,3 +47,5 @@ changes/
 .vscode/
 
 .gradle-codex/
+
+app/CLAUDE.md
