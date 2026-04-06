@@ -117,6 +117,7 @@ fun MainScreen(
                         val entryId = recordingState.entryId
                         { onStatusCleared(); onTapToRead(entryId) }
                     }
+                    recordingState is RecordingState.Idle && !hasEverRecorded -> onButtonTap
                     else -> null
                 },
             )
