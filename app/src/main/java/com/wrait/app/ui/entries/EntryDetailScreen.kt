@@ -119,7 +119,7 @@ fun EntryDetailScreen(
             Icon(
                 imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = null,   // described by parent semantics above
-                tint               = MaterialTheme.colorScheme.onBackground
+                tint               = MaterialTheme.colorScheme.surface
             )
         }
 
