@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -100,7 +101,9 @@ fun EntryListScreen(
     val sorted = remember(uiState.entries) {
         uiState.entries.sortedByDescending { it.createdAt }
     }
-    val backDescription = stringResource(R.string.entry_list_back_description)
+    val backDescription   = stringResource(R.string.entry_list_back_description)
+    val listTopPadding    = Spacing.md + Spacing.xxl + Spacing.sm   // back button + selection bar
+    val listBottomPadding = Spacing.xxl + Spacing.lg + Spacing.md   // delete button
 
     // Intercept system back: exit selection mode instead of navigating back
     BackHandler(enabled = uiState.selectionMode) { onExitSelection() }
@@ -168,61 +171,54 @@ fun EntryListScreen(
                 }
             }
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Action bar — slides in from top when selection mode activates
-            SelectionActionBar(
-                uiState       = uiState,
-                allCount      = sorted.size,
-                onExitSelection = onExitSelection,
-                onSelectAll   = onSelectAll,
-                onDeselectAll = onDeselectAll
-            )
-
-            // Entry list or empty state
-            if (sorted.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text  = "your entries will appear here",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.tertiary
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f)
-                        .padding(horizontal = Spacing.md),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.sm)
-                ) {
-                    item {
-                        Spacer(modifier = Modifier.height(
-                            if (uiState.selectionMode) Spacing.lg
-                            else Spacing.md + Spacing.xxl + Spacing.sm  // clear floating back button
-                        ))
-                    }
-                    items(sorted, key = { it.id }) { entry ->
-                        EntryCard(
-                            entry             = entry,
-                            selectionMode     = uiState.selectionMode,
-                            selected          = entry.id in uiState.selectedIds,
-                            onEntryClick      = onEntryClick,
-                            onToggleSelection = onToggleSelection,
-                            onLongPress       = onLongPress,
-                            modifier          = Modifier.animateItem(
-                                fadeOutSpec = tween(Animation.DeleteFadeDuration)
-                            )
+        // Entry list or empty state — fills the full Box; never resizes during selection transitions
+        if (sorted.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text  = "your entries will appear here",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = Spacing.md),
+                contentPadding = PaddingValues(
+                    top    = listTopPadding,
+                    bottom = listBottomPadding
+                ),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm)
+            ) {
+                items(sorted, key = { it.id }) { entry ->
+                    EntryCard(
+                        entry             = entry,
+                        selectionMode     = uiState.selectionMode,
+                        selected          = entry.id in uiState.selectedIds,
+                        onEntryClick      = onEntryClick,
+                        onToggleSelection = onToggleSelection,
+                        onLongPress       = onLongPress,
+                        modifier          = Modifier.animateItem(
+                            fadeOutSpec = tween(Animation.DeleteFadeDuration)
                         )
-                    }
-                    item { Spacer(modifier = Modifier.height(Spacing.lg)) }
+                    )
                 }
             }
         }
+
+        // Action bar — overlaid at top so it never pushes the list down
+        SelectionActionBar(
+            uiState         = uiState,
+            allCount        = sorted.size,
+            onExitSelection = onExitSelection,
+            onSelectAll     = onSelectAll,
+            onDeselectAll   = onDeselectAll,
+            modifier        = Modifier.align(Alignment.TopCenter)
+        )
 
         if (!uiState.selectionMode) {
             IconButton(
@@ -274,14 +270,16 @@ private fun SelectionActionBar(
     allCount: Int,
     onExitSelection: () -> Unit,
     onSelectAll: () -> Unit,
-    onDeselectAll: () -> Unit
+    onDeselectAll: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     AnimatedVisibility(
-        visible = uiState.selectionMode,
-        enter = fadeIn(tween(Animation.FadeDuration)) +
-                slideInVertically(tween(Animation.FadeDuration)) { -it },
-        exit  = fadeOut(tween(Animation.FadeDuration)) +
-                slideOutVertically(tween(Animation.FadeDuration)) { -it }
+        visible  = uiState.selectionMode,
+        enter    = fadeIn(tween(Animation.FadeDuration)) +
+                   slideInVertically(tween(Animation.FadeDuration)) { -it },
+        exit     = fadeOut(tween(Animation.FadeDuration)) +
+                   slideOutVertically(tween(Animation.FadeDuration)) { -it },
+        modifier = modifier
     ) {
         val allSelected = uiState.selectedIds.size == allCount && allCount > 0
         Row(
