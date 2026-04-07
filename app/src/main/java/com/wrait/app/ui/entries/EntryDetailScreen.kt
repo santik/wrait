@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -57,6 +60,8 @@ import java.util.Locale
 fun EntryDetailScreen(
     entryResult:       Result<Entry?>,
     showDeleteDialog:  Boolean,
+    editedText:        String?,
+    onTextChanged:     (String) -> Unit,
     onBack:            () -> Unit,
     onDeleteTapped:    () -> Unit,
     onDeleteCancelled: () -> Unit,
@@ -142,7 +147,7 @@ fun EntryDetailScreen(
                     message = entryResult.exceptionOrNull()?.message
                         ?: stringResource(R.string.entry_detail_error_loading)
                 )
-                entry != null -> EntryDetailContent(entry = entry)
+                entry != null -> EntryDetailContent(entry = entry, editedText = editedText, onTextChanged = onTextChanged)
                 // entry == null → initial load (null lasts at most one frame); render nothing
             }
         }
@@ -186,7 +191,7 @@ fun EntryDetailScreen(
 // ── Private composables ──────────────────────────────────────────────────────
 
 @Composable
-private fun EntryDetailContent(entry: Entry) {
+private fun EntryDetailContent(entry: Entry, editedText: String?, onTextChanged: (String) -> Unit) {
     val formattedDate = rememberFormattedDate(entry.createdAt)
     val draftNotice   = stringResource(R.string.entry_detail_draft_notice)
 
@@ -215,8 +220,18 @@ private fun EntryDetailContent(entry: Entry) {
         }
 
         // Body text
-        SelectionContainer {
-            Column {
+        if (!entry.isDraft && editedText != null) {
+            BasicTextField(
+                value = editedText,
+                onValueChange = onTextChanged,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                    lineHeight = 1.7.em,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                modifier = Modifier.fillMaxWidth().imePadding()
+            )
+        } else {
+            SelectionContainer {
                 Text(
                     text  = when {
                         !entry.cleanedText.isNullOrBlank() -> entry.cleanedText
@@ -291,6 +306,8 @@ private fun EntryDetailScreenDraftPreview() {
                 )
             ),
             showDeleteDialog  = false,
+            editedText        = null,
+            onTextChanged     = {},
             onBack            = {},
             onDeleteTapped    = {},
             onDeleteCancelled = {},
@@ -316,6 +333,8 @@ private fun EntryDetailScreenCleanPreview() {
                 )
             ),
             showDeleteDialog  = false,
+            editedText        = "The meeting this morning was difficult. I didn't expect the team to push back on the timeline so strongly. We need to rethink the whole approach before the next sprint.",
+            onTextChanged     = {},
             onBack            = {},
             onDeleteTapped    = {},
             onDeleteCancelled = {},
@@ -331,6 +350,8 @@ private fun EntryDetailScreenErrorPreview() {
         EntryDetailScreen(
             entryResult       = Result.failure(Exception("Database read failed")),
             showDeleteDialog  = false,
+            editedText        = null,
+            onTextChanged     = {},
             onBack            = {},
             onDeleteTapped    = {},
             onDeleteCancelled = {},
