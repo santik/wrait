@@ -288,14 +288,25 @@ private fun AppNavHost(
             )
         }
         composable(
-            route = "entry/{entryId}",
+            route     = "entry/{entryId}",
             arguments = listOf(navArgument("entryId") { type = NavType.LongType })
         ) {
             val detailViewModel: EntryDetailViewModel = hiltViewModel()
-            val entry by detailViewModel.entry.collectAsStateWithLifecycle()
+            val entry            by detailViewModel.entry.collectAsStateWithLifecycle()
+            val showDeleteDialog by detailViewModel.showDeleteDialog.collectAsStateWithLifecycle()
             EntryDetailScreen(
-                entryResult = entry,
-                onBack      = { navController.popBackStack() }
+                entryResult       = entry,
+                showDeleteDialog  = showDeleteDialog,
+                onBack            = { navController.popBackStack() },
+                onDeleteTapped    = detailViewModel::onDeleteTapped,
+                onDeleteCancelled = detailViewModel::onDeleteCancelled,
+                onDeleteConfirmed = {
+                    detailViewModel.confirmDelete {
+                        navController.navigate("entries") {
+                            popUpTo("entries") { inclusive = true }
+                        }
+                    }
+                }
             )
         }
     }
