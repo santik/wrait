@@ -294,10 +294,13 @@ private fun AppNavHost(
             val detailViewModel: EntryDetailViewModel = hiltViewModel()
             val entry            by detailViewModel.entry.collectAsStateWithLifecycle()
             val showDeleteDialog by detailViewModel.showDeleteDialog.collectAsStateWithLifecycle()
+            val editedText       by detailViewModel.editedText.collectAsStateWithLifecycle()
             EntryDetailScreen(
                 entryResult       = entry,
                 showDeleteDialog  = showDeleteDialog,
-                onBack            = { navController.popBackStack() },
+                editedText        = editedText,
+                onTextChanged     = detailViewModel::onTextChanged,
+                onBack            = { detailViewModel.flushEdit(); navController.popBackStack() },
                 onDeleteTapped    = detailViewModel::onDeleteTapped,
                 onDeleteCancelled = detailViewModel::onDeleteCancelled,
                 onDeleteConfirmed = {
