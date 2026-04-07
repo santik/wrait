@@ -5,19 +5,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -49,8 +55,12 @@ import java.util.Locale
 
 @Composable
 fun EntryDetailScreen(
-    entryResult: Result<Entry?>,
-    onBack: () -> Unit,
+    entryResult:       Result<Entry?>,
+    showDeleteDialog:  Boolean,
+    onBack:            () -> Unit,
+    onDeleteTapped:    () -> Unit,
+    onDeleteCancelled: () -> Unit,
+    onDeleteConfirmed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val entry = entryResult.getOrNull()
@@ -93,44 +103,83 @@ fun EntryDetailScreen(
 
     BackHandler(onBack = onBack)
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .nestedScroll(swipeToDismissConnection)
-            .verticalScroll(scrollState)
-            .semantics {
-                if (entry != null) {
-                    contentDescription = "Entry detail"
-                    if (entry.isDraft) stateDescription = "Draft entry"
-                }
-            }
     ) {
-        // Back button
-        IconButton(
-            onClick = onBack,
+        Column(
             modifier = Modifier
-                .padding(
-                    top   = DesignTokens.Spacing.md,
-                    start = DesignTokens.Spacing.sm
-                )
-                .semantics { contentDescription = backDescription }
+                .fillMaxSize()
+                .nestedScroll(swipeToDismissConnection)
+                .verticalScroll(scrollState)
+                .semantics {
+                    if (entry != null) {
+                        contentDescription = "Entry detail"
+                        if (entry.isDraft) stateDescription = "Draft entry"
+                    }
+                }
         ) {
-            Icon(
-                imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = null,   // described by parent semantics above
-                tint               = MaterialTheme.colorScheme.surface
-            )
+            // Back button
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier
+                    .padding(
+                        top   = DesignTokens.Spacing.md,
+                        start = DesignTokens.Spacing.sm
+                    )
+                    .semantics { contentDescription = backDescription }
+            ) {
+                Icon(
+                    imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = null,   // described by parent semantics above
+                    tint               = MaterialTheme.colorScheme.surface
+                )
+            }
+
+            when {
+                entryResult.isFailure -> ErrorState(
+                    message = entryResult.exceptionOrNull()?.message
+                        ?: stringResource(R.string.entry_detail_error_loading)
+                )
+                entry != null -> EntryDetailContent(entry = entry)
+                // entry == null → initial load (null lasts at most one frame); render nothing
+            }
         }
 
-        when {
-            entryResult.isFailure -> ErrorState(
-                message = entryResult.exceptionOrNull()?.message
-                    ?: stringResource(R.string.entry_detail_error_loading)
-            )
-            entry != null -> EntryDetailContent(entry = entry)
-            // entry == null → initial load (null lasts at most one frame); render nothing
+        // Delete icon button — top-right, symmetric with back button; only when entry loaded
+        if (entryResult.isSuccess && entry != null) {
+            IconButton(
+                onClick  = onDeleteTapped,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(end = 4.dp, top = 4.dp)
+                    .windowInsetsPadding(WindowInsets.statusBars)
+            ) {
+                Icon(
+                    imageVector        = Icons.Default.Delete,
+                    contentDescription = "Delete entry",
+                    tint               = MaterialTheme.colorScheme.surface
+                )
+            }
         }
+    }
+
+    // Confirmation dialog
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = onDeleteCancelled,
+            title   = { Text("Delete this entry?") },
+            text    = { Text("This cannot be undone.") },
+            confirmButton = {
+                TextButton(onClick = onDeleteConfirmed) {
+                    Text("Delete", color = WrAItTheme.semanticColors.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDeleteCancelled) { Text("Cancel") }
+            }
+        )
     }
 }
 
@@ -230,7 +279,7 @@ private fun rememberFormattedDate(createdAt: Long): String =
 private fun EntryDetailScreenDraftPreview() {
     WrAItTheme {
         EntryDetailScreen(
-            entryResult = Result.success(
+            entryResult       = Result.success(
                 Entry(
                     id            = 1L,
                     rawTranscript = "The meeting this morning was difficult. I didn't expect the team to push back on the timeline so strongly. We need to rethink the whole approach.",
@@ -241,7 +290,11 @@ private fun EntryDetailScreenDraftPreview() {
                     wordCount     = 0
                 )
             ),
-            onBack = {}
+            showDeleteDialog  = false,
+            onBack            = {},
+            onDeleteTapped    = {},
+            onDeleteCancelled = {},
+            onDeleteConfirmed = {}
         )
     }
 }
@@ -251,7 +304,7 @@ private fun EntryDetailScreenDraftPreview() {
 private fun EntryDetailScreenCleanPreview() {
     WrAItTheme {
         EntryDetailScreen(
-            entryResult = Result.success(
+            entryResult       = Result.success(
                 Entry(
                     id            = 2L,
                     rawTranscript = "raw text",
@@ -262,7 +315,11 @@ private fun EntryDetailScreenCleanPreview() {
                     wordCount     = 35
                 )
             ),
-            onBack = {}
+            showDeleteDialog  = false,
+            onBack            = {},
+            onDeleteTapped    = {},
+            onDeleteCancelled = {},
+            onDeleteConfirmed = {}
         )
     }
 }
@@ -272,8 +329,12 @@ private fun EntryDetailScreenCleanPreview() {
 private fun EntryDetailScreenErrorPreview() {
     WrAItTheme {
         EntryDetailScreen(
-            entryResult = Result.failure(Exception("Database read failed")),
-            onBack = {}
+            entryResult       = Result.failure(Exception("Database read failed")),
+            showDeleteDialog  = false,
+            onBack            = {},
+            onDeleteTapped    = {},
+            onDeleteCancelled = {},
+            onDeleteConfirmed = {}
         )
     }
 }
