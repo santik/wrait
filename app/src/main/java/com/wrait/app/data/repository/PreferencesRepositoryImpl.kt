@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.wrait.app.domain.model.PrivacyMode
+import com.wrait.app.domain.model.SUPPORTED_LANGUAGE_CODES
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -35,7 +36,9 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
 
     override val selectedLanguage: Flow<String> = preferences.map { stored ->
-        stored[PreferencesKeys.SELECTED_LANGUAGE] ?: Locale.getDefault().toLanguageTag()
+        val code = stored[PreferencesKeys.SELECTED_LANGUAGE]
+            ?: Locale.getDefault().toLanguageTag()
+        if (code in SUPPORTED_LANGUAGE_CODES) code else "en-US"
     }
 
     override val hasEverRecorded: Flow<Boolean> = preferences.map { stored ->
