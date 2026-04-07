@@ -72,6 +72,8 @@ import com.wrait.app.ui.theme.SemanticWarning
 import com.wrait.app.ui.theme.WrAItTheme
 import java.time.Instant
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -473,13 +475,13 @@ private fun EntryCard(
 }
 
 private fun formatEntryDate(createdAt: Long): String {
-    val date      = Instant.ofEpochMilli(createdAt)
-        .atZone(ZoneId.systemDefault())
-        .toLocalDate()
-    val dayOfWeek = date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
-    val day       = date.dayOfMonth
-    val month     = date.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
-    return "$dayOfWeek, $day $month"
+    val zdt       = Instant.ofEpochMilli(createdAt).atZone(ZoneId.systemDefault())
+    val dayOfWeek = zdt.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
+    val day       = zdt.dayOfMonth
+    val month     = zdt.month.getDisplayName(TextStyle.FULL, Locale.getDefault())
+    val base      = "$dayOfWeek, $day $month"
+    val time      = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT).withLocale(Locale.getDefault()).format(zdt)
+    return "$base · $time"
 }
 
 // --- Previews ---
