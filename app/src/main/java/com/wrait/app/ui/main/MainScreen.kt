@@ -266,7 +266,13 @@ internal fun statusTextFor(
         is RecordingState.Listening  -> "listening\u2026"
         is RecordingState.Uploading  -> "uploading\u2026"
         is RecordingState.Processing -> "cleaning up\u2026"
-        is RecordingState.Saved      -> "tap to read"
+        is RecordingState.Saved      -> if (recordingState.detectedLanguage != null) {
+                                            val name = LANGUAGES
+                                                .firstOrNull { it.code.substringBefore("-").lowercase() == recordingState.detectedLanguage.lowercase() }
+                                                ?.displayName
+                                                ?: Locale.forLanguageTag(recordingState.detectedLanguage).displayLanguage
+                                            "tap to read · detected $name"
+                                        } else "tap to read"
         is RecordingState.Deleted    -> if (recordingState.count == 1) "entry deleted"
                                         else "${recordingState.count} entries deleted"
         is RecordingState.Error      -> when (recordingState.error) {

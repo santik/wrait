@@ -9,7 +9,10 @@ import com.wrait.app.data.speech.TranscriptionStatus
 class FakeTranscriptionService : TranscriptionService {
 
     sealed class FakeResult {
-        data class FinalTranscript(val text: String) : FakeResult()
+        data class FinalTranscript(
+            val text: String,
+            val detectedLanguage: String? = null,
+        ) : FakeResult()
         data class SpeechError(val error: RecognizerError) : FakeResult()
         data class FailureWithAudioDraft(
             val reason: TranscriptionFailureReason,
@@ -32,7 +35,7 @@ class FakeTranscriptionService : TranscriptionService {
     ): TranscriptionResult {
         onStatus(TranscriptionStatus.RecordingEnded)
         return when (val r = nextResult) {
-            is FakeResult.FinalTranscript -> TranscriptionResult.Success(r.text)
+            is FakeResult.FinalTranscript -> TranscriptionResult.Success(r.text, r.detectedLanguage)
             is FakeResult.SpeechError -> TranscriptionResult.Failure(r.error.toFailureReason())
             is FakeResult.FailureWithAudioDraft ->
                 TranscriptionResult.Failure(r.reason, r.audioPath)

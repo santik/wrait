@@ -10,6 +10,7 @@ interface EntryRepository {
     suspend fun updateWithCleanedText(id: Long, text: String, wordCount: Int)
     suspend fun updateDraftTranscript(id: Long, rawTranscript: String, wordCount: Int)
     suspend fun finalizeDraftWithCleanedText(id: Long, rawTranscript: String, cleanedText: String, wordCount: Int)
+    suspend fun updateEntryLanguage(id: Long, language: String)
     fun getAllEntries(): Flow<List<Entry>>
     fun getEntryById(id: Long): Flow<Result<Entry?>>
     suspend fun getPendingDrafts(): List<Entry>

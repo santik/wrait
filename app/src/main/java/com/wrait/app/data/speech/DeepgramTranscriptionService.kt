@@ -152,7 +152,7 @@ class DeepgramTranscriptionService @Inject constructor(
     private suspend fun upload(file: File, languageCode: String): TranscriptionResult {
         val language = languageCode.substringBefore("-")
         val url =
-            "https://api.deepgram.com/v1/listen?model=nova-3&punctuate=true&smart_format=true&language=$language"
+            "https://api.deepgram.com/v1/listen?model=nova-3&punctuate=true&smart_format=true&language=$language&detect_language=true"
 
         repeat(MAX_UPLOAD_RETRIES) { attempt ->
             try {
@@ -169,7 +169,8 @@ class DeepgramTranscriptionService @Inject constructor(
                         Log.w(TAG, "Deepgram response has no channels")
                         TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
                     } else {
-                        val transcript = body.results.channels[0].alternatives
+                        val channel = body.results.channels[0]
+                        val transcript = channel.alternatives
                             .firstOrNull()
                             ?.transcript
                             .orEmpty()
@@ -177,8 +178,9 @@ class DeepgramTranscriptionService @Inject constructor(
                             Log.w(TAG, "Deepgram response contained empty transcript")
                             TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
                         } else {
-                            Log.d(TAG, "Transcription received: ${transcript.length} chars")
-                            TranscriptionResult.Success(transcript)
+                            val detected = channel.detected_language?.takeIf { it.isNotBlank() }
+                            Log.d(TAG, "Transcription received: ${transcript.length} chars, detected=$detected")
+                            TranscriptionResult.Success(transcript, detectedLanguage = detected)
                         }
                     }
                 } else {
@@ -231,7 +233,10 @@ private data class DeepgramResponse(val results: DeepgramResults)
 private data class DeepgramResults(val channels: List<DeepgramChannel>)
 
 @Serializable
-private data class DeepgramChannel(val alternatives: List<DeepgramAlternative>)
+private data class DeepgramChannel(
+    val alternatives: List<DeepgramAlternative>,
+    val detected_language: String? = null,
+)
 
 @Serializable
 private data class DeepgramAlternative(val transcript: String)

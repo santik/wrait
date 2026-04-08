@@ -29,7 +29,11 @@ enum class TranscriptionStatus {
 }
 
 sealed class TranscriptionResult {
-    data class Success(val transcript: String) : TranscriptionResult()
+    data class Success(
+        val transcript: String,
+        /** Language code detected by the backend (e.g. "fr"), or null if not available. */
+        val detectedLanguage: String? = null,
+    ) : TranscriptionResult()
     data class Failure(
         val reason: TranscriptionFailureReason,
         /** Non-null when an audio file was persisted as a draft (Whisper backend). */
