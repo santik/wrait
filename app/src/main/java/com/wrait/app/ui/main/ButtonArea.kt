@@ -19,6 +19,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.offset
 import android.provider.Settings
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
@@ -37,6 +39,19 @@ internal fun ButtonArea(
         Settings.Global.ANIMATOR_DURATION_SCALE,
         1f
     ) != 0f
+
+    // Button scales with actual container width: ~220 dp on Pixel 8 (393 dp wide),
+    // larger on tablets, clamped so it never goes absurdly small or large.
+    // LocalWindowInfo.containerSize reflects the real window in multi-window / foldable
+    // scenarios where Configuration.screenWidthDp can lag or be inaccurate.
+    // remember(containerWidthDp) skips recalculation on unrelated config changes
+    // (locale, font-scale) while still reacting to rotation / window resize.
+    val density = LocalDensity.current
+    val containerWidthDp = with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val buttonSize = remember(containerWidthDp) {
+        (containerWidthDp.value * DesignTokens.Button.ScreenWidthRatio)
+            .coerceIn(DesignTokens.Button.SizeMin.value, DesignTokens.Button.SizeMax.value).dp
+    }
 
     // --- alpha ---
     val targetAlpha = buttonAlphaFor(recordingState, showBlockedMessage)
@@ -72,7 +87,7 @@ internal fun ButtonArea(
 
     Box(
         modifier = modifier
-            .size(DesignTokens.Button.SizeDp * 2f)  // fixed — prevents layout shift when PulseRing appears
+            .size(buttonSize * 2f)  // fixed — prevents layout shift when PulseRing appears
             .alpha(animatedAlpha)
             .offset(x = shakeOffset.value.dp),
         contentAlignment = Alignment.Center
@@ -86,14 +101,14 @@ internal fun ButtonArea(
             exit = ExitTransition.None
         ) {
             PulseRing(
-                modifier = Modifier.size(DesignTokens.Button.SizeDp * 2f)
+                modifier = Modifier.size(buttonSize * 2f)
             )
         }
 
         // The button itself
         Box(
             modifier = Modifier
-                .size(DesignTokens.Button.SizeDp)
+                .size(buttonSize)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary)
                 .clickable(enabled = isEnabled, onClick = onTap),

@@ -117,7 +117,7 @@ fun WrAItTheme(
     CompositionLocalProvider(LocalWraitSemanticColors provides semanticColors) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = Typography,
+            typography = MediumTypography,
             content = content
         )
     }

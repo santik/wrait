@@ -6,7 +6,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
-val Typography = Typography(
+// Single typography scale — all sizes in sp so Android system font-scale is respected.
+// The record button adapts to screen width via DesignTokens.Button.ScreenWidthRatio;
+// text sizes are intentionally stable across screen sizes.
+internal val MediumTypography = Typography(
     // body — 16sp, primary reading text
     bodyLarge = TextStyle(
         fontFamily = FontFamily.Default,
