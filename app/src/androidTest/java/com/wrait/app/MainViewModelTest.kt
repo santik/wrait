@@ -11,10 +11,11 @@ import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.repository.EntryRepositoryImpl
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.repository.EntryRepository
-import com.wrait.app.domain.util.TimeProvider
+
 import com.wrait.app.test.fake.FakeOpenAiApiService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptionService
+import com.wrait.app.test.util.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
@@ -29,10 +30,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
-
-private class FakeTimeProvider(var time: Long = System.currentTimeMillis()) : TimeProvider {
-    override fun currentTimeMillis(): Long = time
-}
 
 @RunWith(AndroidJUnit4::class)
 class MainViewModelTest {
