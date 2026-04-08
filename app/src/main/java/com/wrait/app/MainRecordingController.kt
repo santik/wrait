@@ -93,7 +93,7 @@ class MainRecordingController @Inject constructor(
             // Ensure Processing before cleanup (no-op for Android which set it via callback)
             _recordingState.value = RecordingState.Processing
             when (result) {
-                is TranscriptionResult.Success  -> saveTranscript(result.transcript)
+                is TranscriptionResult.Success  -> saveTranscript(result.transcript, result.detectedLanguage)
                 is TranscriptionResult.Failure  -> {
                     if (result.audioDraftPath != null) {
                         withContext(ioDispatcher) {
@@ -134,9 +134,15 @@ class MainRecordingController @Inject constructor(
      * 3. Call OpenAI cleanup.
      * 4a. Success → update entry with cleaned text → Saved(entryId).
      * 4b. Failure → leave draft in DB → Error(NoInternet | ApiFailed).
+     *
+     * [detectedLanguage] is non-null when the backend detected a different language than selected.
+     * The entry is tagged with the detected language; the selector preference is unchanged.
      */
-    private suspend fun saveTranscript(text: String) {
-        val language = languageState.value
+    private suspend fun saveTranscript(text: String, detectedLanguage: String? = null) {
+        val selectedLanguage = languageState.value
+        val mismatch = isLanguageMismatch(detectedLanguage, selectedLanguage)
+        // Use detected language only when there is a genuine mismatch; otherwise keep the user's selection.
+        val language = if (mismatch) detectedLanguage!! else selectedLanguage
 
         // Step 1 — input guard (should not normally be reached; belt-and-braces)
         if (text.isBlank()) {
@@ -163,7 +169,10 @@ class MainRecordingController @Inject constructor(
                     Log.w(TAG, "Failed to persist hasEverRecorded flag", e)
                 }
             }
-            _recordingState.value = RecordingState.Saved(entryId)
+            _recordingState.value = RecordingState.Saved(
+                entryId,
+                detectedLanguage = if (mismatch) detectedLanguage else null,
+            )
             delayAndReset()
             return
         }
@@ -192,7 +201,10 @@ class MainRecordingController @Inject constructor(
                     entryRepository.updateWithCleanedText(entryId, result.cleanedText, wordCount)
                 }
                 Log.d(TAG, "Entry $entryId cleaned (${wordCount}w)")
-                _recordingState.value = RecordingState.Saved(entryId)
+                _recordingState.value = RecordingState.Saved(
+                    entryId,
+                    detectedLanguage = if (mismatch) detectedLanguage else null,
+                )
             }
             is CleanupResult.Failure -> {
                 val isNetworkFailure = result.reason == "network error"

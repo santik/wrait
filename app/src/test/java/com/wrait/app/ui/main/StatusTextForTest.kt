@@ -3,6 +3,8 @@ package com.wrait.app.ui.main
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StatusTextForTest {
@@ -164,6 +166,29 @@ class StatusTextForTest {
             hasEverRecorded = true,
         )
         assertEquals("mic blocked \u00b7 tap to open settings", text)
+    }
+
+    @Test
+    fun saved_noDetectedLanguage_showsTapToRead() {
+        val text = statusTextFor(
+            recordingState = RecordingState.Saved(entryId = 1L, detectedLanguage = null),
+            showBlockedMessage = false,
+            hasEverRecorded = true,
+        )
+        assertEquals("tap to read", text)
+    }
+
+    @Test
+    fun saved_withDetectedLanguage_showsDetectedHint() {
+        val text = statusTextFor(
+            recordingState = RecordingState.Saved(entryId = 1L, detectedLanguage = "fr"),
+            showBlockedMessage = false,
+            hasEverRecorded = true,
+        )
+        // Should contain the human-readable name, not raw code "fr"
+        assertTrue("Status should start with 'tap to read'", text.startsWith("tap to read"))
+        assertTrue("Status should mention detected language", text.contains("detected"))
+        assertFalse("Raw language code should not appear", text.endsWith("fr"))
     }
 
     @Test

@@ -211,6 +211,16 @@ class MainViewModel @Inject constructor(
             is com.wrait.app.data.speech.TranscriptionResult.Success -> {
                 val rawTranscript = transcription.transcript
                 val rawWordCount = rawTranscript.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
+                val detectedLanguage = transcription.detectedLanguage
+                val effectiveLanguage = detectedLanguage ?: entry.language
+                val mismatch = isLanguageMismatch(detectedLanguage, entry.language)
+                if (mismatch) {
+                    // Language mismatch during draft retry: silently re-tag the entry.
+                    // No UI state is emitted here because retries run in the background on init.
+                    Log.i(TAG, "Draft retry: language mismatch detected=${detectedLanguage}, " +
+                        "original=${entry.language}. Re-tagging entry ${entry.id}.")
+                    entryRepository.updateEntryLanguage(entry.id, effectiveLanguage)
+                }
 
                 when (val cleanup = openAiApiService.cleanupTranscript(rawTranscript)) {
                     is com.wrait.app.data.api.CleanupResult.Success -> {
@@ -242,7 +252,11 @@ sealed class RecordingState {
     data object Listening  : RecordingState()
     data object Uploading  : RecordingState()
     data object Processing : RecordingState()
-    data class Saved(val entryId: Long) : RecordingState()
+    data class Saved(
+        val entryId: Long,
+        /** Non-null when the backend detected a language different from the selected one. */
+        val detectedLanguage: String? = null,
+    ) : RecordingState()
     data class Error(val error: com.wrait.app.data.speech.RecognizerError) : RecordingState()
     data class Deleted(val count: Int) : RecordingState()
 

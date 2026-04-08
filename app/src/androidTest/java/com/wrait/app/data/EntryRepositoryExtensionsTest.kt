@@ -134,6 +134,34 @@ class EntryRepositoryExtensionsTest {
         repository.finalizeDraftWithCleanedText(999L, "raw", "clean", 1)
     }
 
+    // --- updateEntryLanguage ---
+
+    @Test
+    fun updateEntryLanguage_updatesLanguageField() = runTest {
+        val id = repository.saveEntry("Hello world test", "en-US")
+        repository.updateEntryLanguage(id, "fr")
+
+        val entries = repository.getAllEntries().first()
+        assertEquals("fr", entries.first().language)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun updateEntryLanguage_throws_forMissingId() = runTest {
+        repository.updateEntryLanguage(999L, "fr")
+    }
+
+    @Test
+    fun updateEntryLanguage_doesNotAffectOtherFields() = runTest {
+        val id = repository.saveEntry("Hello world five words here", "en-US")
+        repository.updateEntryLanguage(id, "de")
+
+        val entry = repository.getAllEntries().first().first()
+        assertEquals("de", entry.language)
+        assertFalse("isDraft should remain unchanged", entry.isDraft)
+        assertEquals("Hello world five words here", entry.rawTranscript)
+        assertEquals(6, entry.wordCount)
+    }
+
     // --- getEntryById ---
 
     @Test

@@ -180,6 +180,47 @@ class MainViewModelTest {
         assertTrue("No entries should remain", entryRepository.getAllEntries().first().isEmpty())
     }
 
+    // 7 — Audio draft retry with language mismatch
+    @Test
+    fun audioDraftRetry_languageMismatch_retagsEntry() = runTest(testDispatcher) {
+        fakeTime.time = System.currentTimeMillis()
+
+        // Retry transcription detects French
+        fakeTranscription.nextAudioDraftResult =
+            com.wrait.app.data.speech.TranscriptionResult.Success(
+                transcript = "Bonjour le monde",
+                detectedLanguage = "fr",
+            )
+        fakeApi.result = CleanupResult.Success("Bonjour le monde.")
+
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(1, entries.size)
+        assertEquals("Entry should be re-tagged with detected language", "fr", entries.first().language)
+        assertFalse("Entry should be finalized after retry", entries.first().isDraft)
+    }
+
+    @Test
+    fun audioDraftRetry_noLanguageMismatch_keepsOriginalLanguage() = runTest(testDispatcher) {
+        fakeTime.time = System.currentTimeMillis()
+        // Same base language — no mismatch
+        fakeTranscription.nextAudioDraftResult =
+            com.wrait.app.data.speech.TranscriptionResult.Success(
+                transcript = "Hello world",
+                detectedLanguage = "en",
+            )
+        fakeApi.result = CleanupResult.Success("Hello world.")
+
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(1, entries.size)
+        assertEquals("Language should remain as selected", "en-US", entries.first().language)
+    }
+
     // 6 — Stats update
     @Test
     fun statsUpdate_countsEntriesAndActiveDays() = runTest(testDispatcher) {

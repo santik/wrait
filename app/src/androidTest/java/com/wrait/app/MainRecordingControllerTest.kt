@@ -335,6 +335,80 @@ class MainRecordingControllerTest {
     }
 
     @Test
+    fun languageMismatch_modeBest_entryTaggedWithDetectedLanguage() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeApi.result = CleanupResult.Success("Cleaned text.")
+        // Selected language is "en-US" but Deepgram detected "fr"
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "Bonjour le monde",
+            detectedLanguage = "fr",
+        )
+        val controller = buildController(prefs = fakePrefs)
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(1, entries.size)
+        assertEquals("Entry should be tagged with detected language", "fr", entries.first().language)
+        assertFalse("Entry should not be a draft", entries.first().isDraft)
+    }
+
+    @Test
+    fun languageMismatch_modePrivate_entryTaggedWithDetectedLanguage() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "Bonjour le monde",
+            detectedLanguage = "fr",
+        )
+        val controller = buildController(prefs = fakePrefs)
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(1, entries.size)
+        assertEquals("Entry should be tagged with detected language", "fr", entries.first().language)
+        assertFalse("Entry should not be a draft", entries.first().isDraft)
+    }
+
+    @Test
+    fun noLanguageMismatch_entryTaggedWithSelectedLanguage() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeApi.result = CleanupResult.Success("Cleaned text.")
+        // Detected language matches selected (en == en-US base)
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "Hello world",
+            detectedLanguage = "en",
+        )
+        val controller = buildController(prefs = fakePrefs)
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(1, entries.size)
+        // No mismatch — effectiveLanguage == "en", which differs from "en-US" only by region
+        // but base codes match so mismatch=false; language stays as selected "en-US"
+        assertEquals("Entry should keep selected language when no mismatch", "en-US", entries.first().language)
+    }
+
+    @Test
+    fun noDetectedLanguage_entryTaggedWithSelectedLanguage() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeApi.result = CleanupResult.Success("Cleaned text.")
+        // On-device backend returns null detectedLanguage
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "Hello world",
+            detectedLanguage = null,
+        )
+        val controller = buildController(prefs = fakePrefs)
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(1, entries.size)
+        assertEquals("Entry should keep selected language when no detection", "en-US", entries.first().language)
+    }
+
+    @Test
     fun shakeErrorKey_doesNotIncrement_onNetworkError() = runTest(testDispatcher) {
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.SpeechError(RecognizerError.NoInternet)

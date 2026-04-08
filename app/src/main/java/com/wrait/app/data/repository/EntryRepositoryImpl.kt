@@ -85,6 +85,13 @@ class EntryRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun updateEntryLanguage(id: Long, language: String) {
+        val affectedRows = entryDao.updateEntryLanguage(id, language)
+        if (affectedRows == 0) {
+            throw IllegalArgumentException("Entry with id $id not found or already deleted")
+        }
+    }
+
     override fun getAllEntries(): Flow<List<Entry>> {
         return entryDao.getAllEntries().map { list ->
             list.map { it.toDomain() }
