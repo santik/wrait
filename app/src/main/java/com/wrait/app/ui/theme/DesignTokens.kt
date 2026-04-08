@@ -36,7 +36,22 @@ object DesignTokens {
     }
 
     object Button {
-        val SizeDp = 220.dp
+        // Adaptive size: buttonSize = containerWidthDp × ScreenWidthRatio, clamped to [SizeMin, SizeMax].
+        // Width is read from LocalWindowInfo.containerSize (px → dp) so it is accurate in
+        // multi-window and foldable scenarios where Configuration.screenWidthDp can lag.
+        //
+        // Calibration: 393 dp (Pixel 8) × 0.56 = 220 dp — matches the original design intent.
+        //
+        // Landscape: a phone rotated to landscape (e.g. Pixel 8 ≈ 852 dp wide) would compute
+        // 477 dp — far too large — so SizeMax caps it at 280 dp, keeping the button prominent
+        // without overflowing the layout.
+        //
+        // EntryListScreen / EntryDetailScreen: pure text/list layouts; Material's default column
+        // width and sp-based typography already adapt to screen size, so no explicit responsive
+        // overrides are needed for S-043.
+        const val ScreenWidthRatio = 0.56f
+        val SizeMin = 160.dp   // floor: prevents button becoming tiny in split-screen / narrow windows
+        val SizeMax = 280.dp   // ceiling: caps tablets and landscape phones at a sensible size
         const val PulseScaleMax = 1.6f
         const val PulseAlphaStart = 0.6f
         const val AlphaDisabled = 0.3f
