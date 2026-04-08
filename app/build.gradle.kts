@@ -16,6 +16,14 @@ if (localPropertiesFile.exists()) {
 val openAiApiKey: String = localProperties.getProperty("OPENAI_API_KEY", "")
 val deepgramApiKey: String = localProperties.getProperty("DEEPGRAM_API_KEY", "")
 val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST")
+val keystorePath: String? = localProperties.getProperty("KEYSTORE_PATH")
+val releaseKeystorePassword: String? = localProperties.getProperty("KEYSTORE_PASSWORD")
+val releaseKeyAlias: String? = localProperties.getProperty("KEY_ALIAS")
+val releaseKeyPassword: String? = localProperties.getProperty("KEY_PASSWORD")
+val hasReleaseSigning: Boolean = !keystorePath.isNullOrBlank() &&
+    !releaseKeystorePassword.isNullOrBlank() &&
+    !releaseKeyAlias.isNullOrBlank() &&
+    !releaseKeyPassword.isNullOrBlank()
 
 android {
     namespace = "com.wrait.app"
@@ -36,17 +44,21 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            storeFile = file(localProperties["KEYSTORE_PATH"] as String)
-            storePassword = localProperties["KEYSTORE_PASSWORD"] as String
-            keyAlias = localProperties["KEY_ALIAS"] as String
-            keyPassword = localProperties["KEY_PASSWORD"] as String
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(keystorePath!!)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
         }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
