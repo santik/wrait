@@ -11,9 +11,9 @@ composeBom = "2026.03.01"
 hilt = "2.59.2"
 room = "2.8.4"
 ksp = "2.3.2"
-sqlcipher = "4.14.0"
+sqlcipher = "4.14.1"
 sqlite = "2.6.2"
-ktor = "3.4.1"
+ktor = "3.4.2"
 coroutines = "1.10.2"
 datastore = "1.2.1"
 tink = "1.21.0"
@@ -78,7 +78,6 @@ tink-android = { group = "com.google.crypto.tink", name = "tink-android", versio
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

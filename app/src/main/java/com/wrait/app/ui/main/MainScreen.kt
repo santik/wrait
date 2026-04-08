@@ -65,6 +65,7 @@ fun MainScreen(
 
     val density = LocalDensity.current
     val currentShowSettingsPanel by rememberUpdatedState(showSettingsPanel)
+    val swipesEnabled by rememberUpdatedState(!recordingState.isActive)
 
     Box(
         modifier = modifier
@@ -81,7 +82,7 @@ fun MainScreen(
                         totalY += change.position.y - change.previousPosition.y
                         if (!change.pressed) break
                     }
-                    if (!currentShowSettingsPanel) {
+                    if (swipesEnabled && !currentShowSettingsPanel) {
                         if (totalY < -thresholdPx) onSwipeUp()
                         if (totalY > thresholdPx) onSwipeDown()
                     }
