@@ -11,9 +11,20 @@ class FakeTranscriptionService : TranscriptionService {
     sealed class FakeResult {
         data class FinalTranscript(val text: String) : FakeResult()
         data class SpeechError(val error: RecognizerError) : FakeResult()
+        data class FailureWithAudioDraft(
+            val reason: TranscriptionFailureReason,
+            val audioPath: String,
+        ) : FakeResult()
     }
 
     var nextResult: FakeResult = FakeResult.FinalTranscript("one two three four five")
+    var nextAudioDraftResult: TranscriptionResult =
+        TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+
+    fun reset() {
+        nextResult = FakeResult.FinalTranscript("one two three four five")
+        nextAudioDraftResult = TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+    }
 
     override suspend fun transcribe(
         languageCode: String,
@@ -22,9 +33,17 @@ class FakeTranscriptionService : TranscriptionService {
         onStatus(TranscriptionStatus.RecordingEnded)
         return when (val r = nextResult) {
             is FakeResult.FinalTranscript -> TranscriptionResult.Success(r.text)
-            is FakeResult.SpeechError     -> TranscriptionResult.Failure(r.error.toFailureReason())
+            is FakeResult.SpeechError -> TranscriptionResult.Failure(r.error.toFailureReason())
+            is FakeResult.FailureWithAudioDraft ->
+                TranscriptionResult.Failure(r.reason, r.audioPath)
         }
     }
+
+    override suspend fun transcribeAudioDraft(
+        audioPath: String,
+        languageCode: String,
+        onStatus: (TranscriptionStatus) -> Unit,
+    ): TranscriptionResult = nextAudioDraftResult
 
     override fun stopRecording() { /* no-op */ }
 }

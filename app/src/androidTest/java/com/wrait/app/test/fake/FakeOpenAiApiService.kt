@@ -5,5 +5,15 @@ import com.wrait.app.data.api.OpenAiApiService
 
 class FakeOpenAiApiService : OpenAiApiService {
     var result: CleanupResult = CleanupResult.Success("cleaned text")
-    override suspend fun cleanupTranscript(rawText: String): CleanupResult = result
+    var callCount: Int = 0
+
+    fun reset() {
+        result = CleanupResult.Success("cleaned text")
+        callCount = 0
+    }
+
+    override suspend fun cleanupTranscript(rawText: String): CleanupResult {
+        callCount++
+        return result
+    }
 }
