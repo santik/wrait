@@ -39,6 +39,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -74,6 +76,13 @@ fun EntryDetailScreen(
     val swipeThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { 120.dp.toPx() }
     var swipeAccumPx by remember { mutableFloatStateOf(0f) }
     var swipeTriggered by remember { mutableStateOf(false) }
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    val dismissAndBack: () -> Unit = {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+        onBack()
+    }
 
     val swipeToDismissConnection = remember {
         object : NestedScrollConnection {
@@ -83,7 +92,7 @@ fun EntryDetailScreen(
                     swipeAccumPx += available.y
                     if (!swipeTriggered && swipeAccumPx >= swipeThresholdPx) {
                         swipeTriggered = true
-                        onBack()
+                        dismissAndBack()
                     }
                 } else {
                     swipeAccumPx = 0f
@@ -106,7 +115,7 @@ fun EntryDetailScreen(
         }
     }
 
-    BackHandler(onBack = onBack)
+    BackHandler(onBack = dismissAndBack)
 
     Box(
         modifier = modifier
@@ -127,7 +136,7 @@ fun EntryDetailScreen(
         ) {
             // Back button
             IconButton(
-                onClick = onBack,
+                onClick = dismissAndBack,
                 modifier = Modifier
                     .padding(
                         top   = DesignTokens.Spacing.md,
