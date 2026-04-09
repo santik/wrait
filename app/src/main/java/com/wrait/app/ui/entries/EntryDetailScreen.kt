@@ -1,19 +1,20 @@
 package com.wrait.app.ui.entries
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -21,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -39,6 +41,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -72,10 +76,16 @@ fun EntryDetailScreen(
 ) {
     val entry = entryResult.getOrNull()
     val backDescription = stringResource(R.string.entry_detail_back_description)
+    val shareDescription = stringResource(R.string.entry_detail_share_description)
+    val shareSheetTitle = stringResource(R.string.entry_detail_share_title)
+    val shareUnavailableMessage = stringResource(R.string.entry_detail_share_unavailable)
     val scrollState = rememberScrollState()
-    val swipeThresholdPx = with(androidx.compose.ui.platform.LocalDensity.current) { 120.dp.toPx() }
+    val swipeThresholdPx = with(LocalDensity.current) { 120.dp.toPx() }
     var swipeAccumPx by remember { mutableFloatStateOf(0f) }
     var swipeTriggered by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val formattedDate = entry?.let { rememberFormattedDate(it.createdAt) }
+    val shareText = entry?.shareableTextForShare()
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val dismissAndBack: () -> Unit = {
@@ -134,21 +144,70 @@ fun EntryDetailScreen(
                     }
                 }
         ) {
-            // Back button
-            IconButton(
-                onClick = dismissAndBack,
+            // Header actions: back on the left, share/delete on the right
+            Row(
                 modifier = Modifier
-                    .padding(
-                        top   = DesignTokens.Spacing.md,
-                        start = DesignTokens.Spacing.sm
-                    )
-                    .semantics { contentDescription = backDescription }
+                    .fillMaxWidth()
+                    .padding(top = DesignTokens.Spacing.md, start = DesignTokens.Spacing.sm, end = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(
-                    imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = null,   // described by parent semantics above
-                    tint               = MaterialTheme.colorScheme.surface
-                )
+                IconButton(
+                    onClick = dismissAndBack,
+                    modifier = Modifier.semantics { contentDescription = backDescription },
+                ) {
+                    Icon(
+                        imageVector        = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = null,   // described by parent semantics above
+                        tint               = MaterialTheme.colorScheme.surface
+                    )
+                }
+
+                Row {
+                    if (shareText != null && formattedDate != null) {
+                        IconButton(
+                            onClick = {
+                                val intent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, buildShareMessage(formattedDate, shareText))
+                                }
+                                if (intent.resolveActivity(context.packageManager) != null) {
+                                    try {
+                                        context.startActivity(Intent.createChooser(intent, shareSheetTitle))
+                                    } catch (_: ActivityNotFoundException) {
+                                        Toast.makeText(
+                                            context,
+                                            shareUnavailableMessage,
+                                            Toast.LENGTH_SHORT,
+                                        ).show()
+                                    }
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        shareUnavailableMessage,
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = shareDescription,
+                                tint = MaterialTheme.colorScheme.surface,
+                            )
+                        }
+                    }
+
+                    if (entryResult.isSuccess && entry != null) {
+                        IconButton(onClick = onDeleteTapped) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete entry",
+                                tint = MaterialTheme.colorScheme.surface,
+                            )
+                        }
+                    }
+                }
             }
 
             when {
@@ -156,27 +215,16 @@ fun EntryDetailScreen(
                     message = entryResult.exceptionOrNull()?.message
                         ?: stringResource(R.string.entry_detail_error_loading)
                 )
-                entry != null -> EntryDetailContent(entry = entry, editedText = editedText, onTextChanged = onTextChanged)
+                entry != null && formattedDate != null -> EntryDetailContent(
+                    entry = entry,
+                    formattedDate = formattedDate,
+                    editedText = editedText,
+                    onTextChanged = onTextChanged,
+                )
                 // entry == null → initial load (null lasts at most one frame); render nothing
             }
         }
 
-        // Delete icon button — top-right, symmetric with back button; only when entry loaded
-        if (entryResult.isSuccess && entry != null) {
-            IconButton(
-                onClick  = onDeleteTapped,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = 4.dp, top = 4.dp)
-                    .windowInsetsPadding(WindowInsets.statusBars)
-            ) {
-                Icon(
-                    imageVector        = Icons.Default.Delete,
-                    contentDescription = "Delete entry",
-                    tint               = MaterialTheme.colorScheme.surface
-                )
-            }
-        }
     }
 
     // Confirmation dialog
@@ -200,8 +248,12 @@ fun EntryDetailScreen(
 // ── Private composables ──────────────────────────────────────────────────────
 
 @Composable
-private fun EntryDetailContent(entry: Entry, editedText: String?, onTextChanged: (String) -> Unit) {
-    val formattedDate = rememberFormattedDate(entry.createdAt)
+private fun EntryDetailContent(
+    entry: Entry,
+    formattedDate: String,
+    editedText: String?,
+    onTextChanged: (String) -> Unit,
+) {
     val draftNotice   = stringResource(R.string.entry_detail_draft_notice)
 
     Column(
@@ -257,6 +309,16 @@ private fun EntryDetailContent(entry: Entry, editedText: String?, onTextChanged:
         Spacer(modifier = Modifier.height(DesignTokens.Spacing.xxl))
     }
 }
+
+internal fun Entry.shareableTextForShare(): String? {
+    if (isDraft) return null
+    if (!cleanedText.isNullOrBlank()) return cleanedText
+    if (rawTranscript.isNotBlank()) return rawTranscript
+    return null
+}
+
+internal fun buildShareMessage(formattedDate: String, body: String): String =
+    "$formattedDate\n\n$body"
 
 @Composable
 private fun ErrorState(message: String) {
