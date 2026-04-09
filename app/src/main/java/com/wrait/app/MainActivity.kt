@@ -67,6 +67,20 @@ class MainActivity : ComponentActivity() {
                 val showSettingsPanel by viewModel.showSettingsPanel.collectAsStateWithLifecycle()
                 val privacyMode by viewModel.privacyMode.collectAsStateWithLifecycle()
 
+                LaunchedEffect(recordingState.isActive) {
+                    val keepScreenOnFlagSet = activity.window.attributes.flags and
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON != 0
+                    when (keepScreenOnCommand(recordingState.isActive, keepScreenOnFlagSet)) {
+                        KeepScreenOnCommand.AddFlag -> {
+                            activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                        KeepScreenOnCommand.ClearFlag -> {
+                            activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                        KeepScreenOnCommand.None -> Unit
+                    }
+                }
+
                 val isPermissionGranted = remember {
                     mutableStateOf(
                         ContextCompat.checkSelfPermission(
@@ -114,6 +128,12 @@ class MainActivity : ComponentActivity() {
                     lifecycleOwner.lifecycle.addObserver(observer)
                     onDispose {
                         lifecycleOwner.lifecycle.removeObserver(observer)
+                    }
+                }
+
+                DisposableEffect(Unit) {
+                    onDispose {
+                        activity.window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                 }
 
@@ -195,6 +215,23 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+}
+
+internal enum class KeepScreenOnCommand {
+    AddFlag,
+    ClearFlag,
+    None,
+}
+
+internal fun keepScreenOnCommand(
+    isRecordingActive: Boolean,
+    keepScreenOnFlagSet: Boolean,
+): KeepScreenOnCommand {
+    return when {
+        isRecordingActive && !keepScreenOnFlagSet -> KeepScreenOnCommand.AddFlag
+        !isRecordingActive && keepScreenOnFlagSet -> KeepScreenOnCommand.ClearFlag
+        else -> KeepScreenOnCommand.None
     }
 }
 
