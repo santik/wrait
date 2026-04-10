@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -52,6 +53,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -80,6 +82,8 @@ import java.util.Locale
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import com.wrait.app.R
 
@@ -353,17 +357,19 @@ private fun EntryCard(
 ) {
     val haptic      = LocalHapticFeedback.current
     val dateString  = formatEntryDate(entry.createdAt)
-    val displayText = when {
-        !entry.cleanedText.isNullOrBlank() -> entry.cleanedText
-        entry.rawTranscript.isNotBlank() -> entry.rawTranscript
-        entry.audioPath != null -> "audio draft · not transcribed yet"
-        else -> ""
-    }.lines().firstOrNull { it.isNotBlank() }.orEmpty()
-    val textColor = if (entry.isDraft) {
+    val audioDraftPreview = stringResource(R.string.entry_list_audio_draft_preview)
+    val audioDraftDisabledDescription = stringResource(R.string.entry_list_audio_draft_state_description)
+    val displayText = entryCardDisplayText(entry, audioDraftPreview)
+    val isAudioDraft = entry.isAudioOnlyDraftCard()
+    val isAudioDraftDisabled = isAudioDraft && !selectionMode
+    val textColor = if (isAudioDraftDisabled) {
+        MaterialTheme.colorScheme.tertiary
+    } else if (entry.isDraft) {
         MaterialTheme.colorScheme.secondary
     } else {
         MaterialTheme.colorScheme.onSurface
     }
+    val interactionSource = remember { MutableInteractionSource() }
 
     val selectedTint  = WrAItTheme.semanticColors.warningContainer.copy(alpha = 0.5f)
     val defaultColor  = MaterialTheme.colorScheme.surface
@@ -378,9 +384,15 @@ private fun EntryCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = if (isAudioDraftDisabled) null else LocalIndication.current,
                     onClick = {
-                        if (selectionMode) onToggleSelection(entry.id)
-                        else onEntryClick(entry.id)
+                        when {
+                            selectionMode -> onToggleSelection(entry.id)
+                            !isAudioDraft -> onEntryClick(entry.id)
+                            // isAudioDraft && !selectionMode: intentional no-op
+                            else -> Unit
+                        }
                     },
                     onLongClick = {
                         if (!selectionMode) {
@@ -389,15 +401,27 @@ private fun EntryCard(
                         }
                     }
                 ),
+            // Accessibility: expose audio-only drafts as temporarily disabled outside selection mode.
+            // Long-press still works for entering selection mode.
+            // Visual cue: disabled audio draft text is rendered with tertiary color.
+            // The card remains visible and selectable once selection mode is active.
+            // This keeps behavior explicit for screen-reader users.
             shape         = RoundedCornerShape(DesignTokens.Radius.card),
             color         = cardColor,
             tonalElevation = if (entry.isDraft) Spacing.xs else Spacing.sm
         ) {
             Column(
-                modifier = Modifier.padding(
-                    horizontal = Spacing.md,
-                    vertical   = 14.dp
-                )
+                modifier = Modifier
+                    .semantics {
+                        if (isAudioDraftDisabled) {
+                            disabled()
+                            stateDescription = audioDraftDisabledDescription
+                        }
+                    }
+                    .padding(
+                        horizontal = Spacing.md,
+                        vertical   = 14.dp
+                    )
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -482,6 +506,22 @@ private fun formatEntryDate(createdAt: Long): String {
     return "$base · $time"
 }
 
+internal fun Entry.isAudioOnlyDraftCard(): Boolean =
+    audioPath != null && cleanedText.isNullOrBlank() && rawTranscript.isBlank()
+
+internal fun entryCardDisplayText(
+    entry: Entry,
+    audioDraftPreview: String,
+): String {
+    val preview = when {
+        !entry.cleanedText.isNullOrBlank() -> entry.cleanedText
+        entry.rawTranscript.isNotBlank() -> entry.rawTranscript
+        entry.isAudioOnlyDraftCard() -> audioDraftPreview
+        else -> ""
+    }
+    return preview.lines().firstOrNull { it.isNotBlank() }.orEmpty()
+}
+
 // --- Previews ---
 
 @Preview(showBackground = true)
@@ -508,6 +548,16 @@ private fun EntryListScreenPreview() {
                         language      = "en",
                         createdAt     = System.currentTimeMillis() - 86_400_000L,
                         wordCount     = 11
+                    ),
+                    Entry(
+                        id            = 3L,
+                        rawTranscript = "",
+                        cleanedText   = null,
+                        isDraft       = true,
+                        language      = "en",
+                        createdAt     = System.currentTimeMillis() - 172_800_000L,
+                        wordCount     = 0,
+                        audioPath     = "/tmp/test.m4a"
                     )
                 )
             ),
