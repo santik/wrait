@@ -1,8 +1,14 @@
 package com.wrait.app.ui.entries
 
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.AnchoredDraggableDefaults
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,32 +19,47 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.wrait.app.R
@@ -55,11 +76,14 @@ import java.time.format.FormatStyle
 import java.time.format.TextStyle
 import java.util.Locale
 
+private enum class SwipeState { Default, Revealed }
+
 @Composable
 fun EntryListScreen(
     uiState: EntryListUiState,
     onEntryClick: (Long) -> Unit,
     onBack: () -> Unit,
+    onDeleteEntry: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val sorted = remember(uiState.entries) {
@@ -67,6 +91,8 @@ fun EntryListScreen(
     }
     val backDescription = stringResource(R.string.entry_list_back_description)
     val emptyStateText  = stringResource(R.string.entry_list_empty_state)
+
+    var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
 
     // Top: room for the overlaid back-button IconButton (Spacing.md offset + ~48 dp touch target)
     val listTopPadding    = Spacing.md + Spacing.xxl
@@ -137,9 +163,11 @@ fun EntryListScreen(
             ) {
                 items(sorted, key = { it.id }) { entry ->
                     EntryCard(
-                        entry        = entry,
-                        onEntryClick = onEntryClick,
-                        modifier     = Modifier.animateItem(
+                        entry           = entry,
+                        onEntryClick    = onEntryClick,
+                        pendingDeleteId = pendingDeleteId,
+                        onSwipeRevealed = { id -> pendingDeleteId = id },
+                        modifier        = Modifier.animateItem(
                             fadeOutSpec = tween(Animation.DeleteFadeDuration)
                         )
                     )
@@ -160,6 +188,30 @@ fun EntryListScreen(
                 tint = MaterialTheme.colorScheme.surface
             )
         }
+
+        if (pendingDeleteId != null) {
+            AlertDialog(
+                onDismissRequest = { pendingDeleteId = null },
+                title   = { Text(stringResource(R.string.swipe_delete_dialog_title)) },
+                text    = { Text(stringResource(R.string.swipe_delete_dialog_message)) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        pendingDeleteId?.let { onDeleteEntry(it) }
+                        pendingDeleteId = null
+                    }) {
+                        Text(
+                            text  = stringResource(R.string.swipe_delete_confirm),
+                            color = WrAItTheme.semanticColors.error
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingDeleteId = null }) {
+                        Text(stringResource(R.string.swipe_delete_cancel))
+                    }
+                }
+            )
+        }
     }
 }
 
@@ -167,8 +219,42 @@ fun EntryListScreen(
 private fun EntryCard(
     entry: Entry,
     onEntryClick: (Long) -> Unit,
+    pendingDeleteId: Long?,
+    onSwipeRevealed: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val density = LocalDensity.current
+    val haptic  = LocalHapticFeedback.current
+    // Anchors passed to constructor so .offset is valid on the first draw frame.
+    val draggableState = remember(density) {
+        val revealPx = with(density) { Gesture.SwipeDeleteRevealDp.toPx() }
+        AnchoredDraggableState(
+            initialValue = SwipeState.Default,
+            anchors      = DraggableAnchors {
+                SwipeState.Default  at 0f
+                SwipeState.Revealed at revealPx
+            }
+        )
+    }
+
+    // Trigger the dialog and haptic feedback when swipe fully settles at Revealed.
+    // currentValue only changes once the animation completes, so the dialog never fires mid-drag.
+    LaunchedEffect(draggableState.currentValue) {
+        if (draggableState.currentValue == SwipeState.Revealed) {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onSwipeRevealed(entry.id)
+        }
+    }
+
+    // Snap back when dialog is dismissed (pendingDeleteId → null) or another card is revealed.
+    // Losing pendingDeleteId on rotation is intentional — the dialog dismisses and the card
+    // resets, which is the correct UX for an in-progress destructive action.
+    LaunchedEffect(pendingDeleteId) {
+        if (pendingDeleteId != entry.id && draggableState.currentValue == SwipeState.Revealed) {
+            draggableState.animateTo(SwipeState.Default)
+        }
+    }
+
     val dateString  = formatEntryDate(entry.createdAt)
     val audioDraftPreview = stringResource(R.string.entry_list_audio_draft_preview)
     val audioDraftDisabledDescription = stringResource(R.string.entry_list_audio_draft_state_description)
@@ -182,12 +268,53 @@ private fun EntryCard(
         MaterialTheme.colorScheme.onSurface
     }
 
-    Box(modifier = modifier) {
+    val cardShape = RoundedCornerShape(DesignTokens.Radius.card)
+    val deleteActionLabel = stringResource(R.string.swipe_delete_action_label)
+
+    Box(
+        modifier = modifier.semantics {
+            // Expose delete as an accessibility action so screen-reader users can
+            // trigger the confirmation dialog without performing the swipe gesture.
+            customActions = listOf(
+                CustomAccessibilityAction(label = deleteActionLabel) {
+                    onSwipeRevealed(entry.id)
+                    true
+                }
+            )
+        }
+    ) {
+        // Red delete background — purely decorative; excluded from accessibility tree
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .clip(cardShape)
+                .background(WrAItTheme.semanticColors.error)
+                .semantics { contentDescription = "" },
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Icon(
+                imageVector        = Icons.Filled.Delete,
+                contentDescription = null,
+                tint               = WrAItTheme.semanticColors.onSemantic,
+                modifier           = Modifier.padding(start = Spacing.lg)
+            )
+        }
+
+        // Sliding card — offset runs in draw phase to avoid recomposition per drag frame
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
+                .offset { IntOffset(draggableState.offset.toInt(), 0) }
+                .anchoredDraggable(
+                    state         = draggableState,
+                    orientation   = Orientation.Horizontal,
+                    flingBehavior = AnchoredDraggableDefaults.flingBehavior(
+                        state         = draggableState,
+                        animationSpec = tween(durationMillis = Animation.SwipeDeleteFlingDurationMs)
+                    )
+                )
                 .clickable(enabled = !isAudioDraft) { onEntryClick(entry.id) },
-            shape          = RoundedCornerShape(DesignTokens.Radius.card),
+            shape          = cardShape,
             color          = MaterialTheme.colorScheme.surface,
             tonalElevation = if (entry.isDraft) Spacing.xs else Spacing.sm
         ) {
@@ -260,12 +387,10 @@ private fun formatEntryDate(createdAt: Long): String {
     return "$base · $time"
 }
 
-// Private: only used by EntryCard above. Exposed as internal previously when selection mode
-// needed it from the screen level; now self-contained within this file.
-private fun Entry.isAudioOnlyDraftCard(): Boolean =
+internal fun Entry.isAudioOnlyDraftCard(): Boolean =
     audioPath != null && cleanedText.isNullOrBlank() && rawTranscript.isBlank()
 
-private fun entryCardDisplayText(
+internal fun entryCardDisplayText(
     entry: Entry,
     audioDraftPreview: String,
 ): String {
@@ -307,8 +432,9 @@ private fun EntryListScreenPreview() {
                     )
                 )
             ),
-            onEntryClick = {},
-            onBack       = {}
+            onEntryClick  = {},
+            onBack        = {},
+            onDeleteEntry = {}
         )
     }
 }
@@ -334,8 +460,9 @@ private fun EntryListAudioDraftPreview() {
                     )
                 )
             ),
-            onEntryClick = {},
-            onBack       = {}
+            onEntryClick  = {},
+            onBack        = {},
+            onDeleteEntry = {}
         )
     }
 }
@@ -345,9 +472,10 @@ private fun EntryListAudioDraftPreview() {
 private fun EntryListScreenEmptyPreview() {
     WrAItTheme {
         EntryListScreen(
-            uiState      = EntryListUiState(),
-            onEntryClick = {},
-            onBack       = {}
+            uiState       = EntryListUiState(),
+            onEntryClick  = {},
+            onBack        = {},
+            onDeleteEntry = {}
         )
     }
 }

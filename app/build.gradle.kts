@@ -55,6 +55,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Separate package ID so the debug/test APK installs alongside the release app
+            // without a signature conflict, and never touches the release app's data.
+            applicationIdSuffix = ".debug"
+        }
         release {
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")

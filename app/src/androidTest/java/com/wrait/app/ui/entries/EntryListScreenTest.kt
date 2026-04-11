@@ -6,6 +6,8 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeRight
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wrait.app.MainActivity
 import com.wrait.app.data.EntryDao
@@ -134,6 +136,60 @@ class EntryListScreenTest {
     }
 
     @Test
+    fun swipeDelete_confirmDialog_removesCard() {
+        val text = "Entry to be deleted"
+        insertEntry(text)
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        navigateToList("1 entry")
+
+        composeRule.onNodeWithText(text).performTouchInput { swipeRight() }
+
+        composeRule.waitUntil(timeoutMillis = 2_000) {
+            runCatching {
+                composeRule.onNodeWithText("Delete entry?").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("Delete").performClick()
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onNodeWithText(text).assertDoesNotExist()
+    }
+
+    @Test
+    fun swipeDelete_cancelDialog_cardSnapsBack() {
+        val text = "Entry to keep"
+        insertEntry(text)
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        navigateToList("1 entry")
+
+        composeRule.onNodeWithText(text).performTouchInput { swipeRight() }
+
+        composeRule.waitUntil(timeoutMillis = 2_000) {
+            runCatching {
+                composeRule.onNodeWithText("Delete entry?").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("Cancel").performClick()
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onNodeWithText(text).assertIsDisplayed()
+    }
+
+    @Test
     fun entryList_tapEntry_navigatesToDetail() {
         insertEntry("Detail navigation entry text")
 
@@ -156,6 +212,40 @@ class EntryListScreenTest {
             }.getOrDefault(false)
         }
         composeRule.onNodeWithContentDescription("Navigate back to entry list").assertIsDisplayed()
+    }
+
+    @Test
+    fun swipeDelete_audioDraftCard_showsDialog() {
+        // Audio drafts are non-tappable but should still be swipeable for deletion.
+        runBlocking {
+            entryDao.insert(EntryEntity(
+                rawTranscript = "",
+                cleanedText   = null,
+                isDraft       = true,
+                language      = "en-US",
+                createdAt     = System.currentTimeMillis(),
+                wordCount     = 0,
+                audioPath     = "/tmp/pending.m4a"
+            ))
+        }
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        navigateToList("1 entry")
+
+        composeRule.onNodeWithText("pending · will retry").performTouchInput { swipeRight() }
+
+        composeRule.waitUntil(timeoutMillis = 2_000) {
+            runCatching {
+                composeRule.onNodeWithText("Delete entry?").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        composeRule.onNodeWithText("Delete entry?").assertIsDisplayed()
     }
 
     @Test
