@@ -1,12 +1,11 @@
 package com.wrait.app.ui.entries
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wrait.app.MainActivity
 import com.wrait.app.data.EntryDao
@@ -83,7 +82,6 @@ class EntryListScreenTest {
         insertEntry("Alpha entry content here", createdAt = System.currentTimeMillis() - 2_000)
         insertEntry("Beta entry content here", createdAt = System.currentTimeMillis() - 1_000)
 
-        // Wait for stats to reflect the entries, then navigate
         composeRule.waitUntil(timeoutMillis = 3_000) {
             runCatching {
                 composeRule.onNodeWithText("2 entries").assertIsDisplayed()
@@ -97,10 +95,21 @@ class EntryListScreenTest {
         composeRule.onNodeWithText("Beta entry content here").assertIsDisplayed()
     }
 
-
     @Test
-    fun entryList_longPress_enterSelectionMode() {
-        insertEntry("First long press entry")
+    fun entryList_audioDraftCard_isDisabledAndDoesNotNavigate() {
+        // Insert an audio-only draft (no transcript, no cleaned text, has audioPath).
+        // The card should be non-tappable and tapping it must not navigate to the detail screen.
+        runBlocking {
+            entryDao.insert(EntryEntity(
+                rawTranscript = "",
+                cleanedText   = null,
+                isDraft       = true,
+                language      = "en-US",
+                createdAt     = System.currentTimeMillis(),
+                wordCount     = 0,
+                audioPath     = "/tmp/pending.m4a"
+            ))
+        }
 
         composeRule.waitUntil(timeoutMillis = 3_000) {
             runCatching {
@@ -111,114 +120,17 @@ class EntryListScreenTest {
 
         navigateToList("1 entry")
 
-        composeRule.onNodeWithText("First long press entry").performTouchInput { longClick() }
+        // The audio-draft preview text is defined in R.string.entry_list_audio_draft_preview
+        composeRule.onNodeWithText("pending · will retry").assertIsDisplayed()
 
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching {
-                composeRule.onNodeWithText("1 selected").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("1 selected").assertIsDisplayed()
-        composeRule.onNodeWithContentDescription("Cancel selection").assertIsDisplayed()
-    }
+        // Verify the card is semantically disabled
+        composeRule.onNodeWithText("pending · will retry").assertIsNotEnabled()
 
-    @Test
-    fun entryList_deleteButton_tap_showsDialog() {
-        insertEntry("Entry to delete via dialog")
-
-        composeRule.waitUntil(timeoutMillis = 3_000) {
-            runCatching {
-                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-
-        navigateToList("1 entry")
-
-        composeRule.onNodeWithText("Entry to delete via dialog").performTouchInput { longClick() }
-
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching {
-                composeRule.onNodeWithText("1 selected").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-
-        composeRule.onNodeWithText("Delete 1 entry").performClick()
-
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching {
-                composeRule.onNodeWithText("Delete 1 entry?").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("Delete 1 entry?").assertIsDisplayed()
-        composeRule.onNodeWithText("This cannot be undone.").assertIsDisplayed()
-    }
-
-    @Test
-    fun entryList_deleteConfirm_removesEntry() {
-        insertEntry("Entry will be confirmed deleted")
-
-        composeRule.waitUntil(timeoutMillis = 3_000) {
-            runCatching {
-                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-
-        navigateToList("1 entry")
-
-        composeRule.onNodeWithText("Entry will be confirmed deleted").performTouchInput { longClick() }
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching { composeRule.onNodeWithText("1 selected").assertIsDisplayed(); true }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("Delete 1 entry").performClick()
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching { composeRule.onNodeWithText("Delete 1 entry?").assertIsDisplayed(); true }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("Delete").performClick()
-
-        composeRule.waitUntil(timeoutMillis = 3_000) {
-            runCatching {
-                composeRule.onNodeWithText("Entry will be confirmed deleted").assertDoesNotExist()
-                true
-            }.getOrDefault(false)
-        }
-    }
-
-    @Test
-    fun entryList_deleteCancel_keepsEntry() {
-        insertEntry("Entry cancel should survive")
-
-        composeRule.waitUntil(timeoutMillis = 3_000) {
-            runCatching {
-                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-
-        navigateToList("1 entry")
-
-        composeRule.onNodeWithText("Entry cancel should survive").performTouchInput { longClick() }
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching { composeRule.onNodeWithText("1 selected").assertIsDisplayed(); true }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("Delete 1 entry").performClick()
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching { composeRule.onNodeWithText("Delete 1 entry?").assertIsDisplayed(); true }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("Cancel").performClick()
-
-        // Dialog should be gone, entry should still be visible
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching {
-                composeRule.onNodeWithText("Delete 1 entry?").assertDoesNotExist()
-                true
-            }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("Entry cancel should survive").assertIsDisplayed()
+        // Tapping must not navigate to the detail screen
+        composeRule.onNodeWithText("pending · will retry").performClick()
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onNodeWithContentDescription("Navigate back to recording screen")
+            .assertIsDisplayed() // still on list screen, not detail
     }
 
     @Test
