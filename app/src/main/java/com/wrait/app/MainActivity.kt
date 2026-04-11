@@ -169,7 +169,6 @@ class MainActivity : ComponentActivity() {
                     onSwipeDown = viewModel::onSwipeDown,
                     onPrivacyModeToggle = viewModel::onPrivacyModeToggle,
                     onSettingsPanelDismiss = viewModel::onSettingsPanelDismiss,
-                    onEntriesDeleted = { count -> viewModel.onEntriesDeleted(count) },
                     onStatusCleared = { viewModel.onMainButtonTapped() },
                     onStatusLineTap = onStatusLineTap,
                     onTapToRead = { id ->
@@ -249,16 +248,15 @@ private fun AppNavHost(
     onSwipeDown: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
     onSettingsPanelDismiss: () -> Unit,
-    onEntriesDeleted: (Int) -> Unit,
     onStatusCleared: () -> Unit,
     onStatusLineTap: () -> Unit,
     onTapToRead: (Long) -> Unit,
-    onStatsLineTap: () -> Unit = {
-        navController.navigate("entries") { launchSingleTop = true }
-    },
     onMainButtonTapped: () -> Unit,
     onSaveLanguage: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onStatsLineTap: () -> Unit = {
+        navController.navigate("entries") { launchSingleTop = true }
+    }
 ) {
     NavHost(
         navController = navController,
@@ -302,26 +300,9 @@ private fun AppNavHost(
             val entryListViewModel: EntryListViewModel = hiltViewModel()
             val entryListUiState by entryListViewModel.uiState.collectAsStateWithLifecycle()
             EntryListScreen(
-                uiState           = entryListUiState,
-                onEntryClick      = { id -> navController.navigate("entry/$id") },
-                onBack            = {
-                    val deleted = entryListUiState.lastDeletedCount
-                    if (deleted > 0) {
-                        onEntriesDeleted(deleted)
-                        entryListViewModel.clearDeletedCount()
-                    }
-                    navController.popBackStack()
-                },
-                onLongPress       = entryListViewModel::enterSelectionMode,
-                onToggleSelection = entryListViewModel::toggleSelection,
-                onSelectAll       = {
-                    entryListViewModel.selectAll(entryListUiState.entries.map { it.id })
-                },
-                onDeselectAll     = entryListViewModel::deselectAll,
-                onExitSelection   = entryListViewModel::exitSelectionMode,
-                onDeleteTapped    = entryListViewModel::onDeleteButtonTapped,
-                onDeleteCancelled = entryListViewModel::onDeleteCancelled,
-                onDeleteConfirmed = entryListViewModel::confirmDelete
+                uiState      = entryListUiState,
+                onEntryClick = { id -> navController.navigate("entry/$id") },
+                onBack       = { navController.popBackStack() }
             )
         }
         composable(
