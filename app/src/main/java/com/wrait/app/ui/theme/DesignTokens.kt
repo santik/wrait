@@ -9,6 +9,7 @@ object DesignTokens {
         const val ShakeDuration = 310       // ms — error shake (~310ms total, 5 steps)
         const val PulseDuration = 1800      // ms — recording pulse loop
         const val DeleteFadeDuration = 200  // ms — deleted card fade out in LazyColumn
+        const val SwipeDeleteFlingDurationMs = 250 // ms — swipe-to-delete snap animation
         const val StripColorDuration = 400  // ms — top strip colour transition
         const val ButtonAlphaDuration = 200 // ms — button opacity (Processing fade)
     }
@@ -33,6 +34,9 @@ object DesignTokens {
     object Gesture {
         const val SwipeBackThresholdPx  = 200f  // px — accumulated overscroll to trigger back
         val SwipeNavThresholdDp         = 80.dp // dp — single-frame delta to trigger navigation
+
+        // Swipe-to-delete card reveal
+        val SwipeDeleteRevealDp = 80.dp  // how far the card slides before stopping
     }
 
     object Button {

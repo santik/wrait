@@ -300,9 +300,10 @@ private fun AppNavHost(
             val entryListViewModel: EntryListViewModel = hiltViewModel()
             val entryListUiState by entryListViewModel.uiState.collectAsStateWithLifecycle()
             EntryListScreen(
-                uiState      = entryListUiState,
-                onEntryClick = { id -> navController.navigate("entry/$id") },
-                onBack       = { navController.popBackStack() }
+                uiState       = entryListUiState,
+                onEntryClick  = { id -> navController.navigate("entry/$id") },
+                onBack        = { navController.popBackStack() },
+                onDeleteEntry = entryListViewModel::deleteEntry
             )
         }
         composable(

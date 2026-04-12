@@ -75,6 +75,28 @@ class EntryListViewModelTest {
     }
 
     @Test
+    fun deleteEntry_removesEntryFromUiState() = runTest(testDispatcher) {
+        val id = insertEntry("entry to delete")
+        val vm = createVm()
+        advanceUntilIdle()
+
+        assertEquals(1, vm.uiState.value.entries.size)
+
+        vm.deleteEntry(id)
+        advanceUntilIdle()
+
+        assertTrue(vm.uiState.value.entries.isEmpty())
+    }
+
+    @Test
+    fun deleteEntry_unknownId_doesNotThrow() = runTest(testDispatcher) {
+        val vm = createVm()
+        vm.deleteEntry(9999L)
+        advanceUntilIdle()
+        assertTrue(vm.uiState.value.entries.isEmpty())
+    }
+
+    @Test
     fun uiState_entriesList_reflectsDbChanges() = runTest(testDispatcher) {
         val vm = createVm()
         val initialState = vm.uiState.first { true }
