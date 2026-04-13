@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.animateTo
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
@@ -91,6 +93,7 @@ fun EntryListScreen(
     }
     val backDescription = stringResource(R.string.entry_list_back_description)
     val emptyStateText  = stringResource(R.string.entry_list_empty_state)
+    val haptic          = LocalHapticFeedback.current
 
     var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
 
@@ -141,7 +144,30 @@ fun EntryListScreen(
     ) {
         if (sorted.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        var accumulated = 0f
+                        var hasFired    = false
+                        detectVerticalDragGestures(
+                            onDragEnd    = { accumulated = 0f; hasFired = false },
+                            onDragCancel = { accumulated = 0f; hasFired = false },
+                            onVerticalDrag = { change, dragAmount ->
+                                change.consume()
+                                if (hasFired) return@detectVerticalDragGestures
+                                if (dragAmount > 0f) {
+                                    accumulated += dragAmount
+                                    if (accumulated > Gesture.SwipeBackThresholdPx) {
+                                        hasFired = true
+                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        onBack()
+                                    }
+                                } else {
+                                    accumulated = 0f
+                                }
+                            }
+                        )
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Text(

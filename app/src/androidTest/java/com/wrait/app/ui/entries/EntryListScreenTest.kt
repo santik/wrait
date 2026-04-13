@@ -7,7 +7,10 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeRight
+import androidx.compose.ui.geometry.Offset
+import com.wrait.app.ui.theme.DesignTokens.Gesture
 import org.junit.Ignore
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wrait.app.MainActivity
@@ -253,6 +256,64 @@ class EntryListScreenTest {
             }.getOrDefault(false)
         }
         composeRule.onNodeWithText("Delete entry?").assertIsDisplayed()
+    }
+
+    // Navigate to an empty list by seeding one entry (so the stats line is tappable),
+    // then deleting it via DAO after landing on the list screen.
+    private fun navigateToEmptyList() {
+        insertEntry("Placeholder entry")
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        navigateToList("1 entry")
+        runBlocking {
+            val ids = entryDao.getAllEntries().first().map { it.id }
+            entryDao.deleteEntries(ids)
+        }
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("your entries will appear here").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+    }
+
+    @Test
+    @Ignore
+    fun swipeDown_emptyList_navigatesBackToMain() {
+        navigateToEmptyList()
+
+        composeRule.onNodeWithText("your entries will appear here")
+            .performTouchInput { swipeDown() }
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithContentDescription("Main action button").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        composeRule.onNodeWithContentDescription("Main action button").assertIsDisplayed()
+    }
+
+    @Test
+    @Ignore
+    fun swipeDown_emptyList_belowThreshold_doesNotNavigate() {
+        navigateToEmptyList()
+
+        // Drag 40 % of SwipeBackThresholdPx — well below the threshold, must NOT navigate.
+        composeRule.onNodeWithText("your entries will appear here")
+            .performTouchInput {
+                down(center)
+                moveTo(Offset(center.x, center.y + Gesture.SwipeBackThresholdPx * 0.4f))
+                up()
+            }
+
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onNodeWithContentDescription("Navigate back to recording screen")
+            .assertIsDisplayed()
     }
 
     @Test
