@@ -30,7 +30,7 @@
     <string name="entry_detail_error_loading">Error loading entry</string>
     <string name="deleted_singular">1 entry deleted</string>
     <string name="deleted_plural">%d entries deleted</string>
-    <string name="tap_to_write">tap to write</string>
+    <string name="tap_to_write">tap button to write</string>
     <string name="status_listening">listening…</string>
     <string name="status_processing">cleaning up…</string>
     <string name="status_saved">entry saved · swipe up to read</string>
