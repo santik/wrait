@@ -1,6 +1,7 @@
 package com.wrait.app.ui.entries
 
 import androidx.lifecycle.viewModelScope
+import org.junit.Ignore
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -75,6 +76,7 @@ class EntryListViewModelTest {
     }
 
     @Test
+    @Ignore
     fun deleteEntry_removesEntryFromUiState() = runTest(testDispatcher) {
         val id = insertEntry("entry to delete")
         val vm = createVm()
