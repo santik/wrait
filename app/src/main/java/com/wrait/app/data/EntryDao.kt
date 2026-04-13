@@ -47,6 +47,9 @@ interface EntryDao {
     @Query("DELETE FROM entries WHERE id IN (:ids)")
     suspend fun deleteEntries(ids: List<Long>)
 
+    @Query("DELETE FROM entries")
+    suspend fun deleteAllEntries()
+
     @Query("SELECT audioPath FROM entries WHERE id IN (:ids) AND audioPath IS NOT NULL")
     suspend fun getAudioPathsByIds(ids: List<Long>): List<String>
 

@@ -5,7 +5,9 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
+import androidx.test.rule.GrantPermissionRule
 import org.junit.Ignore
+import kotlinx.coroutines.test.advanceUntilIdle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wrait.app.MainActivity
 import com.wrait.app.data.EntryDao
@@ -33,6 +35,10 @@ class MainScreenTest {
     val hiltRule = HiltAndroidRule(this)
 
     @get:Rule(order = 1)
+    val permissionRule: GrantPermissionRule =
+        GrantPermissionRule.grant(android.Manifest.permission.RECORD_AUDIO)
+
+    @get:Rule(order = 2)
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Inject lateinit var entryDao: EntryDao
@@ -102,7 +108,6 @@ class MainScreenTest {
     }
 
     @Test
-    @Ignore
     fun statsLine_showsEntryCount_afterSave() {
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
@@ -112,38 +117,15 @@ class MainScreenTest {
 
         composeRule.waitUntil(timeoutMillis = 5_000) {
             runCatching {
-                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
+                composeRule.onNodeWithText("1 entry", substring = true).assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
-        composeRule.onNodeWithText("1 entry").assertIsDisplayed()
-    }
+        composeRule.onNodeWithText("1 entry", substring = true).assertIsDisplayed()
 
-    @Test
-    @Ignore
-    fun statsLine_tap_navigatesToEntryList() {
-        // Insert an entry so the stats line is visible
-        runBlocking {
-            entryDao.insert(EntryEntity(
-                rawTranscript = "Hello world entry",
-                cleanedText = "Hello world entry",
-                isDraft = false,
-                language = "en-US",
-                createdAt = System.currentTimeMillis(),
-                wordCount = 3,
-            ))
-        }
+        composeRule.waitForIdle();
 
-        // Wait for stats to appear
-        composeRule.waitUntil(timeoutMillis = 3_000) {
-            runCatching {
-                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-
-        // Tap the stats line to navigate to the entry list
-        composeRule.onNodeWithText("1 entry").performClick()
+        composeRule.onNodeWithText("1 entry", substring = true).performClick()
 
         // Verify the list screen is now showing (back button visible)
         composeRule.waitUntil(timeoutMillis = 3_000) {

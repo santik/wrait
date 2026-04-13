@@ -44,7 +44,7 @@ class MainRecordingControllerTest {
     private lateinit var db: WraitDatabase
     private lateinit var entryDao: EntryDao
     private lateinit var entryRepository: EntryRepository
-    private lateinit var fakeApi: FakeOpenAiApiService
+    private lateinit var fakeOpenApi: FakeOpenAiApiService
     private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakePrefs: FakePreferencesRepository
     private val languageState = MutableStateFlow("en-US")
@@ -58,7 +58,7 @@ class MainRecordingControllerTest {
             .build()
         entryDao = db.entryDao()
         entryRepository = EntryRepositoryImpl(entryDao, FakeTimeProvider())
-        fakeApi = FakeOpenAiApiService()
+        fakeOpenApi = FakeOpenAiApiService()
         fakeTranscription = FakeTranscriptionService()
         fakePrefs = FakePreferencesRepository()
     }
@@ -72,7 +72,7 @@ class MainRecordingControllerTest {
 
     private fun buildController(
         prefs: FakePreferencesRepository = fakePrefs,
-        api: FakeOpenAiApiService = fakeApi,
+        api: FakeOpenAiApiService = fakeOpenApi,
         transcription: FakeTranscriptionService = fakeTranscription,
         language: StateFlow<String> = languageState,
         scope: CoroutineScope = testScope,
@@ -135,7 +135,7 @@ class MainRecordingControllerTest {
     @Test
     @Ignore
     fun tapFromSaved_resetsToIdle() = runTest(testDispatcher) {
-        fakeApi.result = CleanupResult.Success("cleaned text here")
+        fakeOpenApi.result = CleanupResult.Success("cleaned text here")
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
         val controller = buildController()
@@ -155,7 +155,7 @@ class MainRecordingControllerTest {
         // First trigger an error
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.SpeechError(RecognizerError.NoInternet)
-        fakeApi.result = CleanupResult.Success("cleaned")
+        fakeOpenApi.result = CleanupResult.Success("cleaned")
         val controller = buildController()
         controller.onMainButtonTapped()
         advanceUntilIdle()
@@ -185,18 +185,21 @@ class MainRecordingControllerTest {
     @Test
     @Ignore
     fun modeBest_success_savesAsDraftThenFinalizes() = runTest(testDispatcher) {
+        entryDao.deleteAllEntries()
         fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
-        fakeApi.result = CleanupResult.Success("Cleaned text.")
+        val cleanedText = "modeBest_success_savesAsDraftThenFinalizes"
+        fakeOpenApi.result = CleanupResult.Success(cleanedText)
         fakeTranscription.nextResult =
-            FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
+            FakeTranscriptionService.FakeResult.FinalTranscript("modeBest_success_savesAsDraftThenFinalizes one two three four five")
         val controller = buildController(prefs = fakePrefs)
+        advanceUntilIdle()
         controller.onMainButtonTapped()
         advanceUntilIdle()
 
         val entries = entryRepository.getAllEntries().first()
         assertEquals(1, entries.size)
         assertFalse("Entry should not be a draft after cleanup", entries.first().isDraft)
-        assertEquals("Cleaned text.", entries.first().cleanedText)
+        assertEquals(cleanedText, entries.first().cleanedText)
     }
 
     @Test
@@ -204,7 +207,7 @@ class MainRecordingControllerTest {
         fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("private journal entry words")
-        val controller = buildController(prefs = fakePrefs, api = fakeApi)
+        val controller = buildController(prefs = fakePrefs, api = fakeOpenApi)
         controller.onMainButtonTapped()
         advanceUntilIdle()
 
@@ -212,16 +215,17 @@ class MainRecordingControllerTest {
         assertEquals(1, entries.size)
         assertFalse("MODE_PRIVATE entry should not be a draft", entries.first().isDraft)
         assertNull("MODE_PRIVATE entry should have no cleanedText", entries.first().cleanedText)
-        assertEquals("OpenAI API must not be called in MODE_PRIVATE", 0, fakeApi.callCount)
+        assertEquals("OpenAI API must not be called in MODE_PRIVATE", 0, fakeOpenApi.callCount)
     }
 
     @Test
     @Ignore
     fun apiFailure_network_leavesEntryAsDraft() = runTest(testDispatcher) {
-        fakeApi.result = CleanupResult.Failure("network error")
+        fakeOpenApi.result = CleanupResult.Failure("network error")
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
         val controller = buildController()
+        advanceUntilIdle()
         controller.onMainButtonTapped()
         advanceUntilIdle()
 
@@ -237,7 +241,7 @@ class MainRecordingControllerTest {
     @Test
     @Ignore
     fun apiFailure_rateLimit_emitsApiFailed() = runTest(testDispatcher) {
-        fakeApi.result = CleanupResult.Failure("rate limit")
+        fakeOpenApi.result = CleanupResult.Failure("rate limit")
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
         val controller = buildController()
@@ -342,14 +346,17 @@ class MainRecordingControllerTest {
     @Test
     @Ignore
     fun languageMismatch_modeBest_entryTaggedWithDetectedLanguage() = runTest(testDispatcher) {
+        entryDao.deleteAllEntries()
         fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
-        fakeApi.result = CleanupResult.Success("Cleaned text.")
+        val cleanedText = "modeBest_success_savesAsDraftThenFinalizes"
+        fakeOpenApi.result = CleanupResult.Success(cleanedText)
         // Selected language is "en-US" but Deepgram detected "fr"
         fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
             text = "Bonjour le monde",
             detectedLanguage = "fr",
         )
         val controller = buildController(prefs = fakePrefs)
+        advanceUntilIdle()
         controller.onMainButtonTapped()
         advanceUntilIdle()
 
@@ -379,7 +386,7 @@ class MainRecordingControllerTest {
     @Test
     fun noLanguageMismatch_entryTaggedWithSelectedLanguage() = runTest(testDispatcher) {
         fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
-        fakeApi.result = CleanupResult.Success("Cleaned text.")
+        fakeOpenApi.result = CleanupResult.Success("Cleaned text.")
         // Detected language matches selected (en == en-US base)
         fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
             text = "Hello world",
@@ -399,7 +406,7 @@ class MainRecordingControllerTest {
     @Test
     fun noDetectedLanguage_entryTaggedWithSelectedLanguage() = runTest(testDispatcher) {
         fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
-        fakeApi.result = CleanupResult.Success("Cleaned text.")
+        fakeOpenApi.result = CleanupResult.Success("Cleaned text.")
         // On-device backend returns null detectedLanguage
         fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
             text = "Hello world",

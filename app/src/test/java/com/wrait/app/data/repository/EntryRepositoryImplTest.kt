@@ -106,6 +106,10 @@ class EntryRepositoryImplTest {
             ids.forEach(entries::remove)
         }
 
+        override suspend fun deleteAllEntries() {
+            entries.clear()
+        }
+
         override suspend fun getAudioPathsByIds(ids: List<Long>): List<String> =
             ids.mapNotNull { id -> entries[id]?.audioPath }
 

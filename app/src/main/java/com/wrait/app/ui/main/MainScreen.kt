@@ -244,8 +244,10 @@ private fun StatsLine(
         contentAlignment = Alignment.Center,
     ) {
         if (stats.entryCount > 0) {
+            val entryWord = if (stats.entryCount == 1) "entry" else "entries"
+            val dayWord   = if (stats.activeDays  == 1) "day"   else "days"
             Text(
-                text = "${stats.entryCount} entries · ${stats.activeDays} days" +
+                text = "${stats.entryCount} $entryWord · ${stats.activeDays} $dayWord" +
                     (if (onTap != null) " \u203a" else ""),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onBackground,
