@@ -15,6 +15,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.offset
 import android.provider.Settings
@@ -22,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
+import com.wrait.app.R
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.ui.theme.DesignTokens
@@ -84,6 +88,7 @@ internal fun ButtonArea(
     val isListening = recordingState is RecordingState.Listening
 
     val label = buttonLabelFor(recordingState)
+    val buttonDescription = stringResource(R.string.main_button_description)
 
     Box(
         modifier = modifier
@@ -109,6 +114,9 @@ internal fun ButtonArea(
         Box(
             modifier = Modifier
                 .size(buttonSize)
+                .semantics(mergeDescendants = true) {
+                    contentDescription = buttonDescription
+                }
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.primary)
                 .clickable(enabled = isEnabled, onClick = onTap),

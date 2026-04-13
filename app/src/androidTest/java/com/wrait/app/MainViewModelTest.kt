@@ -184,6 +184,19 @@ class MainViewModelTest {
     @Test
     fun audioDraftRetry_languageMismatch_retagsEntry() = runTest(testDispatcher) {
         fakeTime.time = System.currentTimeMillis()
+        
+        // Insert an audio draft with English language (will mismatch with detected French)
+        entryDao.insert(
+            EntryEntity(
+                rawTranscript = "",
+                cleanedText = null,
+                isDraft = true,
+                language = "en-US",
+                createdAt = fakeTime.currentTimeMillis(),
+                wordCount = 0,
+                audioPath = "/fake/audio/path.m4a"
+            )
+        )
 
         // Retry transcription detects French
         fakeTranscription.nextAudioDraftResult =
@@ -205,6 +218,20 @@ class MainViewModelTest {
     @Test
     fun audioDraftRetry_noLanguageMismatch_keepsOriginalLanguage() = runTest(testDispatcher) {
         fakeTime.time = System.currentTimeMillis()
+        
+        // Insert an audio draft with English language (no mismatch with detected English)
+        entryDao.insert(
+            EntryEntity(
+                rawTranscript = "",
+                cleanedText = null,
+                isDraft = true,
+                language = "en-US",
+                createdAt = fakeTime.currentTimeMillis(),
+                wordCount = 0,
+                audioPath = "/fake/audio/path.m4a"
+            )
+        )
+        
         // Same base language — no mismatch
         fakeTranscription.nextAudioDraftResult =
             com.wrait.app.data.speech.TranscriptionResult.Success(
