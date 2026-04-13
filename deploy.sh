@@ -20,8 +20,10 @@ fi
 # Ensure no stale daemon pinned to an invalid JDK is reused.
 ./gradlew --stop >/dev/null 2>&1 || true
 
-#./gradlew --no-daemon testDebugUnitTest assembleRelease
-./gradlew --no-daemon testDebugUnitTest connectedDebugAndroidTest assembleRelease
+./gradlew --no-daemon testDebugUnitTest
+./gradlew --no-daemon connectedDebugAndroidTest
+./gradlew --no-daemon assembleRelease
+
 
 # Remove the debug APK (com.wrait.app.debug) installed by connectedDebugAndroidTest.
 # The release app (com.wrait.app) is a separate package and is never touched.

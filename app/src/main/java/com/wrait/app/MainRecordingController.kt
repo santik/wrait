@@ -50,7 +50,8 @@ class MainRecordingController @Inject constructor(
             RecordingState.Listening   -> stopListening()
             RecordingState.Uploading,
             RecordingState.Processing  -> Unit
-            is RecordingState.Saved    -> _recordingState.value = RecordingState.Idle
+//            is RecordingState.Saved    -> _recordingState.value = RecordingState.Idle
+            is RecordingState.Saved    -> startListening()
             is RecordingState.Deleted  -> _recordingState.value = RecordingState.Idle
             is RecordingState.Error    -> {
                 // Any non-permission error should immediately restart recording.
