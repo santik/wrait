@@ -4,6 +4,43 @@ All notable changes to wrait are documented here.
 
 ---
 
+## [1.2-beta] — 2026-04-13
+
+Major UX improvements: edit entries, share entries, swipe-to-delete, language detection, and responsive layout.
+
+### New features
+
+- **Edit entries** — Finalized entries are now editable in-place on the detail screen. Changes save automatically ~500 ms after the last keystroke with no save button. Draft entries remain read-only.
+- **Share entries** — Share a single non-draft entry from the entry detail screen via Android share sheet. Sends date + body text (cleaned text when available, otherwise raw transcript).
+- **Swipe right to delete** — Swipe right on any entry card in the entries list to reveal a delete button. Confirmation dialog required before deletion.
+- **Language detection** — When using Deepgram transcription, if you speak in a different language than selected, the app detects it and shows "tap to read · detected <lang>" in the status line. The entry is tagged with the detected language.
+- **Keep screen on while recording** — The display stays awake during active recording states, preventing the screen from turning off mid-recording.
+- **Responsive layout** — UI elements now scale by screen size. The main button uses a continuous ratio (0.56 of screen width) with min/max bounds (160–280 dp) for consistent feel across phones and tablets.
+
+### Improvements
+
+- **Delete from detail screen** — Added a delete button on the entry detail screen with confirmation dialog. After deletion, you're always returned to the entries list.
+- **Keyboard dismissal** — Keyboard and cursor are dismissed before navigating back from the entry detail screen (applies to swipe-down, system back, and back button).
+- **Tap to start new recording** — Tapping the main button while "tap to read" is showing now immediately starts a new recording (previously required two taps).
+- **Swipe down on empty list** — Swipe-down-to-back gesture now works even when the entry list is empty.
+
+### Fixes
+
+- **Entry list visual jump** — Fixed visual jump when entering or exiting selection mode (selection mode has been removed entirely, see below).
+- **Audio draft handling** — Audio drafts are now only saved after recoverable Deepgram errors (network, rate limit, server errors). Empty responses (no speech detected) no longer create drafts that will never resolve.
+- **Draft retry UX** — Audio-only draft cards show "pending · will retry" and are non-tappable.
+
+### Removed features
+
+- **Batch select and delete** — Removed multi-select and batch delete from the entries list screen. The screen now supports single-tap navigation only. Swipe right to delete individual entries instead.
+
+### Testing
+
+- **Comprehensive test coverage** — Added ~128 tests across DAO, repositories, preferences, database migration, ViewModels, recording controller state machine, all UI screens, and end-to-end user journeys. The suite now has ~141 tests covering all application layers.
+- **Test pipeline** — Deploy script now runs the full test suite (unit + instrumented) before every release build. Debug builds use a separate package ID to avoid conflicts with release app data.
+
+---
+
 ## [1.1-beta] — 2026-04-03
 
 Closed beta update. UX improvements, Deepgram STT backend, runtime privacy mode, and onboarding fix.

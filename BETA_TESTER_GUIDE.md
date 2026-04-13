@@ -47,13 +47,23 @@ The app will clean up your recording automatically (removes filler words, fixes 
 
 Swipe up from anywhere on the main screen, or tap the stats line ("12 entries · 8 days") at the bottom. Your entries appear newest first. Tap any entry to read the full text. The entry text is selectable — you can copy it to the clipboard if you want to use it elsewhere.
 
+### Editing entries
+
+Finalized entries can be edited in-place on the detail screen. Just tap and type — changes save automatically about 500 ms after you stop typing. Draft entries cannot be edited.
+
+### Sharing entries
+
+Share a finalized entry from the detail screen using the share icon in the top-right corner. This opens the Android share sheet with the entry's date and text.
+
 ### Deleting entries
 
-In the entries list, long-press any entry to enter selection mode. Tap to select more entries. Tap the delete button at the bottom, then confirm. The main screen will briefly confirm how many entries were deleted.
+Swipe right on any entry in the entries list to reveal a delete button. Tap it and confirm to delete that entry. You can also delete from the entry detail screen using the delete button in the top-right corner.
 
 ### Changing the language
 
 Tap the language name above the button (e.g. "Nederlands" or "English"). Pick the language you'll be speaking in. This tells the app which language to transcribe and clean up — it's important to set this correctly before recording.
+
+If you speak in a different language than selected, the app will detect it and show "tap to read · detected <lang>" after saving. The entry will be tagged with the detected language.
 
 ### Privacy mode
 
@@ -80,7 +90,7 @@ For full details, see the [privacy policy](https://santik.github.io/wrait/PRIVAC
 
 ## A few things to know before you start
 
-**Entries can be deleted, but not edited.** To delete one or more entries, go to the entries list, long-press any entry to enter selection mode, select what you want to remove, then tap the delete button. A confirmation dialog appears before anything is deleted. Entry text itself is read-only for now.
+**Entries can be edited, deleted, and shared.** Edit finalized entries directly on the detail screen — changes save automatically. Delete by swiping right on any entry card or using the delete button on the detail screen. Share entries using the share icon on the detail screen.
 
 **There's no backup.** If you uninstall the app or factory reset your phone, your entries are gone. This is intentional (privacy by design), but worth knowing upfront.
 
@@ -101,11 +111,14 @@ Here are some things worth testing — especially in the first week:
 - Tap the stats line ("12 entries · 8 days") to navigate to the entry list
 - Swipe up to browse your entries — does the list update immediately after recording?
 - Switch languages and record in a different one
+- Try recording in a different language than selected — check if the app detects it and shows the detected language
 - Try recording with a poor connection and check if the draft recovers on the next open
-- Long-press an entry to enter selection mode — try selecting multiple entries and deleting them
-- Open an entry and try copying the text
+- Swipe right on an entry to delete it — confirm the dialog and check it's gone
+- Open an entry and try editing the text — check that it saves automatically
+- Open an entry and try sharing it — check that the share sheet opens with the correct text
 - Swipe down from the top to open the settings panel — toggle Private mode on and record an entry; check whether the cleanup step is skipped
 - Toggle back to Best mode and record again — check that cleanup runs
+- Tap the main button while "tap to read" is showing — check that it immediately starts a new recording
 
 ---
 
@@ -113,7 +126,6 @@ Here are some things worth testing — especially in the first week:
 
 This is an early beta. A few things are not finished yet:
 
-- No edit — entry text is read-only after saving
 - No export of your entries
 - No PIN or biometric lock
 - The design is not final — some screens are placeholder layouts

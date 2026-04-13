@@ -160,7 +160,6 @@ Privacy mode is a runtime user setting (swipe down → settings panel) backed by
 
 ## Known v1 limitations
 
-- **No edit.** Entry text is read-only after saving. Revisit based on beta feedback.
 - **No export.** Planned for v2 (plain text markdown files, one per entry).
 - **No backup.** Factory reset means data loss. This is documented in the beta guide.
 - **No biometric or PIN lock.** App-level lock planned for v2 as an opt-in setting.

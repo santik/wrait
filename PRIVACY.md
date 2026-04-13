@@ -2,7 +2,7 @@
 
 # wrait Privacy Policy (Closed Beta)
 
-Last updated: 2026-04-03
+Last updated: 2026-04-13
 
 This privacy policy describes what data the wrait app ("wrait", "we") processes when you record voice diary entries, where that data goes, and the choices you have.
 
