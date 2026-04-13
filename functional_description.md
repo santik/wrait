@@ -532,23 +532,5 @@ The app manages recording through a sealed class state machine:
 - Cleanup: N/A (no cleanup in Private mode)
 - Retry: N/A (no network dependency)
 
----
-
-## Future Enhancements (Planned)
-
-**v2**:
-- Entry editing capability
-- Export to markdown files
-- Biometric/PIN lock (opt-in)
-- Search functionality
-
-**Later**:
-- Tags and categories
-- Entry reminders
-- Analytics dashboard
-- Cross-platform sync (optional, encrypted)
-- Voice commands for navigation
-
----
 
 *Document generated on April 12, 2026*

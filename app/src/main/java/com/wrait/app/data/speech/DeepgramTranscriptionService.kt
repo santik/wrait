@@ -167,7 +167,7 @@ class DeepgramTranscriptionService @Inject constructor(
                     val body = response.body<DeepgramResponse>()
                     if (body.results.channels.isEmpty()) {
                         Log.w(TAG, "Deepgram response has no channels")
-                        TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+                        TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
                     } else {
                         val channel = body.results.channels[0]
                         val transcript = channel.alternatives
@@ -176,7 +176,7 @@ class DeepgramTranscriptionService @Inject constructor(
                             .orEmpty()
                         if (transcript.isBlank()) {
                             Log.w(TAG, "Deepgram response contained empty transcript")
-                            TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+                            TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
                         } else {
                             val detected = channel.detected_language?.takeIf { it.isNotBlank() }
                             Log.d(TAG, "Transcription received: ${transcript.length} chars, detected=$detected")
