@@ -1116,9 +1116,9 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
 
 2. **`delayAndReset()` uses a separate `resetJob` coroutine**
    - `delayAndReset()` is a non-suspend function that launches a fire-and-forget coroutine on `scope`, tracked by `resetJob`
-   - After `AUTO_CLEAR_DELAY_MS` (1.5s), it resets to Idle only if the current state is not active (`Listening`, `Uploading`, `Processing`)
+   - After `AUTO_CLEAR_DELAY_MS` (3s), it resets to Idle only if the current state is not active (`Listening`, `Uploading`, `Processing`)
    - `startListening()` cancels `resetJob` so a new recording isn't interrupted by a pending reset
-   - Both controller-level (1.5s via `delayAndReset`) and UI-level (4s via `LaunchedEffect` → `resetToIdle()`) auto-clear timers exist for `Saved` state; the controller fires first
+   - Both controller-level (3s via `delayAndReset`) and UI-level (4s via `LaunchedEffect` → `resetToIdle()`) auto-clear timers exist for `Saved` state; the controller fires first
 
 3. **`onStatusCleared` calls `resetToIdle()`**
    - `onStatusCleared` (used by LaunchedEffect auto-clear timer) calls `resetToIdle()`, which sets state to Idle without starting a new recording
