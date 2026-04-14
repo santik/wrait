@@ -133,7 +133,6 @@ internal fun ButtonArea(
 
 private fun buttonLabelFor(recordingState: RecordingState): String = when (recordingState) {
     is RecordingState.Listening -> "stop"
-    is RecordingState.Saved -> "new"
     else -> "wrait"
 }
 

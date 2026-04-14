@@ -15,7 +15,7 @@ class StatusTextForTest {
             showBlockedMessage = false,
             hasEverRecorded = false,
         )
-        assertEquals("tap to write", text)
+        assertEquals("tap button to write", text)
     }
 
     @Test

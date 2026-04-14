@@ -250,7 +250,7 @@ class MainRecordingController @Inject constructor(
         private const val TAG = "MainRecordingController"
         private const val MAX_TRANSCRIPT_LENGTH = 10_000
         private const val MIN_RECORDING_MS = 5_000L
-        private const val AUTO_CLEAR_DELAY_MS = 1_500L
+        private const val AUTO_CLEAR_DELAY_MS = 3_000L
     }
 }
 
