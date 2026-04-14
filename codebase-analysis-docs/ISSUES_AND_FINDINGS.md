@@ -57,6 +57,7 @@
 | 33 | P3 | Architecture | No ProGuard/R8 rules for Ktor serialization models |
 | 34 | P3 | Code Quality | Inconsistent TAG usage — some use string constants, some use inline strings |
 | 35 | P3 | UX | `resolveActivity()` returns null on API 30+ due to package visibility |
+| 36 | P1 | UX | ✅ RESOLVED — Private mode recording fails without internet (airplane mode) |
 
 ---
 
@@ -367,6 +368,56 @@ the first Deleted window and started a recording, the second coroutine's
 
 **Recommendation**: Track the job in a `deletedJob: Job?` variable and cancel
 the previous one on re-entry, like `resetJob`.
+
+---
+
+### 36. ✅ RESOLVED — Private mode recording fails without internet (airplane mode)
+
+**Category**: UX  
+**Files**: `SpeechRecognizerManager.kt`, `AndroidTranscriptionService.kt`  
+**Status**: **RESOLVED** (April 14, 2026)
+
+**Issue**: In `MODE_PRIVATE`, the `ModeAwareTranscriptionService` correctly
+routes to `AndroidTranscriptionService` (on-device Android speech recognizer)
+and the `MainRecordingController` correctly skips the OpenAI cleanup step.
+However, Android's `SpeechRecognizer.createSpeechRecognizer()` sends audio to
+Google's servers by default, which requires an active internet connection. When
+the device is in airplane mode, the recognizer immediately fails with
+`ERROR_NETWORK` or `ERROR_NETWORK_TIMEOUT`, which maps to
+`RecognizerError.Network` → `TranscriptionFailureReason.NetworkError` →
+`RecognizerError.NoInternet`. The user sees "no connection · saved as draft"
+even though private mode should be fully offline.
+
+**Root cause**: `SpeechRecognizerManager.listen()` always created a
+network-dependent speech recognizer regardless of the privacy mode.
+
+**Impact**: Private mode was non-functional without internet. Users who chose
+private mode specifically for offline/privacy reasons were blocked.
+
+**Fix applied**:
+1. Added a `preferOffline: Boolean` parameter to
+   `SpeechRecognizerManager.listen()` (default `false`).
+2. When `preferOffline = true` and API 31+ (`Build.VERSION_CODES.S`):
+   - Uses `SpeechRecognizer.createOnDeviceSpeechRecognizer(context)` instead of
+     `createSpeechRecognizer(context)`.
+   - Checks `SpeechRecognizer.isOnDeviceRecognitionAvailable()` instead of
+     `isRecognitionAvailable()`.
+3. When `preferOffline = true` on all API levels: adds
+   `RecognizerIntent.EXTRA_PREFER_OFFLINE = true` to the recognition intent.
+4. `AndroidTranscriptionService` (the private-mode backend) now passes
+   `preferOffline = true` when calling `listen()`.
+5. `FakeSpeechRecognizerManager` test double updated to match the new signature.
+
+**Files changed**:
+- `app/src/main/java/com/wrait/app/data/speech/SpeechRecognizerManager.kt`
+- `app/src/main/java/com/wrait/app/data/speech/AndroidTranscriptionService.kt`
+- `app/src/androidTest/java/com/wrait/app/test/fake/FakeSpeechRecognizerManager.kt`
+
+**Note**: On-device speech recognition requires the user to have downloaded the
+appropriate language model on their device (Settings → System → Languages →
+Speech → Offline speech recognition). If the on-device model is not available,
+the recognizer will report `NotAvailable`. A future improvement could display a
+user-friendly message guiding the user to download the offline language pack.
 
 ---
 

@@ -16,7 +16,10 @@ class FakeSpeechRecognizerManager(context: Context) : SpeechRecognizerManager(co
 
     var nextResult: FakeResult = FakeResult.FinalTranscript("one two three four five")
 
-    override fun listen(languageCode: String): Flow<RecognitionResult> = flow {
+    override fun listen(
+        languageCode: String,
+        preferOffline: Boolean,
+    ): Flow<RecognitionResult> = flow {
         emit(RecognitionResult.ListeningEnded)
         when (val r = nextResult) {
             is FakeResult.FinalTranscript -> emit(RecognitionResult.Final(r.text))

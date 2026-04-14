@@ -435,17 +435,11 @@ All DI is configured via Hilt modules in `app/src/main/java/com/wrait/app/di/`.
 TranscriptionService
   └─ ModeAwareTranscriptionService (reads PrivacyMode at call time)
        ├─ DeepgramTranscriptionService   (MODE_BEST)
-       └─ AndroidTranscriptionService    (MODE_PRIVATE)
-            └─ SpeechRecognizerManager
+       └─ AndroidTranscriptionService    (MODE_PRIVATE, preferOffline=true)
+            └─ SpeechRecognizerManager   (on-device recognizer when offline)
 
 OpenAiApiService
   └─ OpenAiApiServiceImpl (Ktor HTTP client → OpenAI API)
-
-EntryRepository
-  └─ EntryRepositoryImpl(EntryDao, TimeProvider)
-
-PreferencesRepository
-  └─ PreferencesRepositoryImpl(DataStore<Preferences>)
 ```
 
 ### Note on `MainRecordingController`
@@ -465,7 +459,7 @@ PreferencesRepository
 2. **State machine**: `RecordingState.Idle → Listening → Processing → Saved`
 3. **Recording**:
    - **MODE_BEST**: `DeepgramTranscriptionService.record()` uses `MediaRecorder` → AAC/M4A → uploaded via Ktor to `api.deepgram.com/v1/listen?model=nova-3`
-   - **MODE_PRIVATE**: `AndroidTranscriptionService` wraps `SpeechRecognizerManager.listen()` which creates a `callbackFlow` over Android's `SpeechRecognizer`
+   - **MODE_PRIVATE**: `AndroidTranscriptionService` wraps `SpeechRecognizerManager.listen(preferOffline = true)` which creates a `callbackFlow` over Android's `SpeechRecognizer` using **on-device recognition** (no internet required). On API 31+ it uses `createOnDeviceSpeechRecognizer()`; on older APIs it sets `EXTRA_PREFER_OFFLINE`.
 4. **Duration**: Min 5 seconds (`MIN_RECORDING_MS` in controller), max 2 minutes (`RecognitionConfig.HardCapMs`)
 5. **Cleanup (MODE_BEST only)**: `OpenAiApiServiceImpl.cleanupTranscript()` sends raw text to GPT-4o-mini with a cleanup prompt
 6. **Draft-first save**: In MODE_BEST, entry is saved as a draft *before* the cleanup API call
@@ -1184,6 +1178,13 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
     - The cleanup prompt (CLEANUP_PROMPT) is a string constant in `OpenAiApiServiceImpl`
     - It explicitly instructs the model to never translate — important for multilingual entries
 
+15. **MODE_PRIVATE uses on-device recognition — requires offline language model**
+    - `AndroidTranscriptionService` passes `preferOffline = true` to `SpeechRecognizerManager.listen()`
+    - On API 31+, this uses `SpeechRecognizer.createOnDeviceSpeechRecognizer()` for fully offline recognition
+    - On older APIs, `EXTRA_PREFER_OFFLINE` intent flag is set (best-effort, may still fail without network on some devices)
+    - The user must have downloaded the appropriate offline speech recognition language pack on their device (Settings → System → Languages → Speech → Offline speech recognition)
+    - If on-device recognition is not available, `RecognizerError.NotAvailable` is emitted
+
 ---
 
 ## 15. Glossary
@@ -1201,11 +1202,8 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
 | **RecordingState**     | Sealed class representing the current state of the recording pipeline            |
 | **TranscriptionResult**| Sealed class for transcription outcomes (Success/Failure)                        |
 | **CleanupResult**      | Sealed class for OpenAI cleanup outcomes (Success/Failure)                       |
-| **BCP-47**             | Language tag format used throughout (e.g., "en-US", "fr-FR")                    |
-| **Tink AEAD**          | Google's authenticated encryption library used to protect the DB password        |
-| **SQLCipher**          | Open-source SQLite extension providing transparent 256-bit AES encryption        |
-| **Hard Cap**           | 2-minute absolute maximum recording duration                                     |
-| **Silence Timeout**    | 5-second silence before SpeechRecognizer auto-stops (then restarts)              |
+| **RecognitionResult**    | Sealed class for SpeechRecognizer results (Partial/Final/Error/ListeningEnded/Restarted) |
+| **RecognizerError**      | Sealed class for SpeechRecognizer errors (NoMatch/TooShort/Network/Audio/Client/Server/Timeout/NotAvailable/InsufficientPermissions/NoInternet/ApiFailed/Unknown(code)) |
 
 ---
 
@@ -1393,5 +1391,4 @@ Defined in: `app/src/main/java/com/wrait/app/domain/model/SupportedLanguages.kt`
 ---
 
 *End of codebase knowledge document.*
-
 
