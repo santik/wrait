@@ -116,7 +116,7 @@ fun MainScreen(
                     showBlockedMessage -> onStatusLineTap
                     recordingState is RecordingState.Saved -> run {
                         val entryId = recordingState.entryId
-                        { onStatusCleared(); onTapToRead(entryId) }
+                        { onTapToRead(entryId) }
                     }
                     recordingState is RecordingState.Idle && !hasEverRecorded -> onButtonTap
                     else -> null
@@ -265,7 +265,7 @@ internal fun statusTextFor(
 ): String {
     if (showBlockedMessage) return "mic blocked · tap to open settings"
     return when (recordingState) {
-        is RecordingState.Idle       -> if (!hasEverRecorded) "tap to write" else ""
+        is RecordingState.Idle       -> if (!hasEverRecorded) "tap button to write" else ""
         is RecordingState.Listening  -> "listening\u2026"
         is RecordingState.Uploading  -> "uploading\u2026"
         is RecordingState.Processing -> "cleaning up\u2026"

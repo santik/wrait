@@ -28,8 +28,26 @@ open class SpeechRecognizerManager @Inject constructor(
     private var timer: CountDownTimer? = null
     @Volatile private var userStoppedManually = false
 
-    open fun listen(languageCode: String): Flow<RecognitionResult> = callbackFlow {
-        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+    /**
+     * Starts speech recognition and emits [RecognitionResult] events.
+     *
+     * @param languageCode BCP-47 language code (e.g. "en-US").
+     * @param preferOffline When `true`, uses on-device recognition so no
+     *     internet connection is required. On API 31+ this creates a
+     *     dedicated on-device recognizer; on older devices the
+     *     [RecognizerIntent.EXTRA_PREFER_OFFLINE] hint is set.
+     */
+    open fun listen(
+        languageCode: String,
+        preferOffline: Boolean = false,
+    ): Flow<RecognitionResult> = callbackFlow {
+        if (preferOffline && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            if (!SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+                trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
+                close()
+                return@callbackFlow
+            }
+        } else if (!SpeechRecognizer.isRecognitionAvailable(context)) {
             trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
             close()
             return@callbackFlow
@@ -47,7 +65,14 @@ open class SpeechRecognizerManager @Inject constructor(
         launch(Dispatchers.Main) {
             userStoppedManually = false
 
-            val speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)
+            val speechRecognizer = if (
+                preferOffline &&
+                android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S
+            ) {
+                SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+            } else {
+                SpeechRecognizer.createSpeechRecognizer(context)
+            }
             synchronized(lock) { recognizer = speechRecognizer }
 
             // Session-scoped state — lives inside this coroutine, closed over by the listener
@@ -80,6 +105,9 @@ open class SpeechRecognizerManager @Inject constructor(
                          RecognitionConfig.SilenceTimeoutMs)
                 putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS,
                          RecognitionConfig.MinimumUtteranceMs)
+                if (preferOffline) {
+                    putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
+                }
             }
 
             speechRecognizer.setRecognitionListener(object : RecognitionListener {

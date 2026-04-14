@@ -131,8 +131,10 @@ internal fun ButtonArea(
     }
 }
 
-private fun buttonLabelFor(recordingState: RecordingState): String =
-    if (recordingState is RecordingState.Listening) "stop" else "wrait"
+private fun buttonLabelFor(recordingState: RecordingState): String = when (recordingState) {
+    is RecordingState.Listening -> "stop"
+    else -> "wrait"
+}
 
 internal fun buttonAlphaFor(recordingState: RecordingState, showBlockedMessage: Boolean): Float {
     if (showBlockedMessage) return DesignTokens.Button.AlphaDisabled
@@ -140,10 +142,7 @@ internal fun buttonAlphaFor(recordingState: RecordingState, showBlockedMessage: 
         is RecordingState.Processing,
         is RecordingState.Uploading  -> DesignTokens.Button.AlphaDisabled
         is RecordingState.Error -> when (recordingState.error) {
-            RecognizerError.InsufficientPermissions -> DesignTokens.Button.AlphaDisabled
-            RecognizerError.NoInternet,
-            RecognizerError.Network,
-            RecognizerError.Timeout -> DesignTokens.Button.AlphaReduced
+            RecognizerError.InsufficientPermissions -> DesignTokens.Button.AlphaReduced
             else -> DesignTokens.Button.AlphaFull
         }
         else -> DesignTokens.Button.AlphaFull

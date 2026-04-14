@@ -14,7 +14,7 @@ class AndroidTranscriptionService @Inject constructor(
     ): TranscriptionResult {
         var result: TranscriptionResult? = null
 
-        speechRecognizerManager.listen(languageCode).collect { event ->
+        speechRecognizerManager.listen(languageCode, preferOffline = true).collect { event ->
             when (event) {
                 RecognitionResult.ListeningEnded -> onStatus(TranscriptionStatus.RecordingEnded)
                 is RecognitionResult.Final       -> result = TranscriptionResult.Success(event.text)

@@ -41,6 +41,7 @@ class MainRecordingController @Inject constructor(
     val shakeErrorKey: StateFlow<Int> = _shakeErrorKey.asStateFlow()
 
     private var listenJob: Job? = null
+    private var resetJob: Job? = null
     private var listeningStartedAt = 0L
 
     fun onMainButtonTapped() {
@@ -52,7 +53,7 @@ class MainRecordingController @Inject constructor(
             RecordingState.Processing  -> Unit
 //            is RecordingState.Saved    -> _recordingState.value = RecordingState.Idle
             is RecordingState.Saved    -> startListening()
-            is RecordingState.Deleted  -> _recordingState.value = RecordingState.Idle
+            is RecordingState.Deleted  -> startListening()
             is RecordingState.Error    -> {
                 // Any non-permission error should immediately restart recording.
                 if (current.error == RecognizerError.InsufficientPermissions) {
@@ -62,6 +63,11 @@ class MainRecordingController @Inject constructor(
                 }
             }
         }
+    }
+
+    /** Resets the state to [RecordingState.Idle] without starting a new recording. */
+    fun resetToIdle() {
+        _recordingState.value = RecordingState.Idle
     }
 
     fun onPermissionRevoked() {
@@ -80,6 +86,7 @@ class MainRecordingController @Inject constructor(
     }
 
     private fun startListening() {
+        resetJob?.cancel()
         listenJob?.cancel()
         listeningStartedAt = System.currentTimeMillis()
         _recordingState.value = RecordingState.Listening
@@ -220,7 +227,7 @@ class MainRecordingController @Inject constructor(
         delayAndReset()
     }
 
-    private suspend fun emitError(error: RecognizerError) {
+    private fun emitError(error: RecognizerError) {
         if (error == RecognizerError.NoMatch || error == RecognizerError.TooShort) {
             _shakeErrorKey.update { it + 1 }
         }
@@ -228,16 +235,22 @@ class MainRecordingController @Inject constructor(
         delayAndReset()
     }
 
-    private suspend fun delayAndReset() {
-        listenJob?.cancel()
-        delay(1_500)
-        _recordingState.value = RecordingState.Idle
+    private fun delayAndReset() {
+        resetJob?.cancel()
+        resetJob = scope.launch {
+            delay(AUTO_CLEAR_DELAY_MS)
+            val current = _recordingState.value
+            if (!current.isActive) {
+                _recordingState.value = RecordingState.Idle
+            }
+        }
     }
 
     private companion object {
         private const val TAG = "MainRecordingController"
         private const val MAX_TRANSCRIPT_LENGTH = 10_000
         private const val MIN_RECORDING_MS = 5_000L
+        private const val AUTO_CLEAR_DELAY_MS = 3_000L
     }
 }
 

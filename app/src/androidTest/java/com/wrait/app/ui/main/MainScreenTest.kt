@@ -6,12 +6,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.test.rule.GrantPermissionRule
-import org.junit.Ignore
-import kotlinx.coroutines.test.advanceUntilIdle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wrait.app.MainActivity
 import com.wrait.app.data.EntryDao
-import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.api.OpenAiApiService
 import com.wrait.app.data.speech.TranscriptionService
@@ -66,11 +63,11 @@ class MainScreenTest {
         // least one entry exists (stats must be non-zero to show the tappable stats line).
         composeRule.waitUntil(timeoutMillis = 2_000) {
             runCatching {
-                composeRule.onNodeWithText("tap to write").assertIsDisplayed()
+                composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
-        composeRule.onNodeWithText("tap to write").assertIsDisplayed()
+        composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
     }
 
     @Test
@@ -123,7 +120,7 @@ class MainScreenTest {
         }
         composeRule.onNodeWithText("1 entry", substring = true).assertIsDisplayed()
 
-        composeRule.waitForIdle();
+        composeRule.waitForIdle()
 
         composeRule.onNodeWithText("1 entry", substring = true).performClick()
 

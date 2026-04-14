@@ -169,9 +169,10 @@ class MainActivity : ComponentActivity() {
                     onSwipeDown = viewModel::onSwipeDown,
                     onPrivacyModeToggle = viewModel::onPrivacyModeToggle,
                     onSettingsPanelDismiss = viewModel::onSettingsPanelDismiss,
-                    onStatusCleared = { viewModel.onMainButtonTapped() },
+                    onStatusCleared = { viewModel.resetToIdle() },
                     onStatusLineTap = onStatusLineTap,
                     onTapToRead = { id ->
+                        viewModel.resetToIdle()
                         navController.navigate("entry/$id") { launchSingleTop = true }
                     },
                     onSaveLanguage = { code -> viewModel.saveLanguage(code) },
