@@ -169,7 +169,7 @@ class MainActivity : ComponentActivity() {
                     onSwipeDown = viewModel::onSwipeDown,
                     onPrivacyModeToggle = viewModel::onPrivacyModeToggle,
                     onSettingsPanelDismiss = viewModel::onSettingsPanelDismiss,
-                    onStatusCleared = { viewModel.onMainButtonTapped() },
+                    onStatusCleared = { viewModel.resetToIdle() },
                     onStatusLineTap = onStatusLineTap,
                     onTapToRead = { id ->
                         viewModel.resetToIdle()
