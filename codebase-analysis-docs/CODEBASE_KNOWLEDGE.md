@@ -746,15 +746,15 @@ stateDiagram-v2
 
 ### Key Timing Constants
 
-| Constant                      | Value    | Location                        |
-|------------------------------|---------|----------------------------------|
-| `MIN_RECORDING_MS`           | 5,000 ms | `MainRecordingController`        |
+| Constant                      | Value      | Location                        |
+|------------------------------|------------|----------------------------------|
+| `MIN_RECORDING_MS`           | 5,000 ms   | `MainRecordingController`        |
 | `HardCapMs`                  | 120,000 ms | `RecognitionConfig`             |
-| `SilenceTimeoutMs`           | 5,000 ms | `RecognitionConfig`              |
-| `MaxRestartAttempts`         | 100      | `RecognitionConfig`              |
-| `StatusLine.ClearDelayMs`    | 4,000 ms | `DesignTokens`                   |
-| `delayAndReset` delay        | 1,500 ms | `MainRecordingController`        |
-| Deleted auto-clear           | 3,000 ms | `MainRecordingController`        |
+| `SilenceTimeoutMs`           | 5,000 ms   | `RecognitionConfig`              |
+| `MaxRestartAttempts`         | 100        | `RecognitionConfig`              |
+| `StatusLine.ClearDelayMs`    | 4,000 ms   | `DesignTokens`                   |
+| `delayAndReset` delay        | 3,000 ms   | `MainRecordingController`        |
+| Deleted auto-clear           | 3,000 ms   | `MainRecordingController`        |
 
 ---
 
