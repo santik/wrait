@@ -64,6 +64,11 @@ class MainRecordingController @Inject constructor(
         }
     }
 
+    /** Resets the state to [RecordingState.Idle] without starting a new recording. */
+    fun resetToIdle() {
+        _recordingState.value = RecordingState.Idle
+    }
+
     fun onPermissionRevoked() {
         stopListening(forceIdle = true)
     }

@@ -104,6 +104,11 @@ class MainViewModel @Inject constructor(
         recordingController.onMainButtonTapped()
     }
 
+    /** Resets to idle without starting a new recording session. */
+    fun resetToIdle() {
+        recordingController.resetToIdle()
+    }
+
     fun saveLanguage(code: String) {
         viewModelScope.launch {
             try {

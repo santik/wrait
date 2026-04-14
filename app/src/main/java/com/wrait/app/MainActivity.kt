@@ -172,6 +172,7 @@ class MainActivity : ComponentActivity() {
                     onStatusCleared = { viewModel.onMainButtonTapped() },
                     onStatusLineTap = onStatusLineTap,
                     onTapToRead = { id ->
+                        viewModel.resetToIdle()
                         navController.navigate("entry/$id") { launchSingleTop = true }
                     },
                     onSaveLanguage = { code -> viewModel.saveLanguage(code) },

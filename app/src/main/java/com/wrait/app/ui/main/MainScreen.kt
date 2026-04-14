@@ -116,7 +116,7 @@ fun MainScreen(
                     showBlockedMessage -> onStatusLineTap
                     recordingState is RecordingState.Saved -> run {
                         val entryId = recordingState.entryId
-                        { onStatusCleared(); onTapToRead(entryId) }
+                        { onTapToRead(entryId) }
                     }
                     recordingState is RecordingState.Idle && !hasEverRecorded -> onButtonTap
                     else -> null

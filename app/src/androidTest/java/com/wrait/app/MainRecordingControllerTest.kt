@@ -133,21 +133,63 @@ class MainRecordingControllerTest {
     }
 
     @Test
-    @Ignore
-    fun tapFromSaved_resetsToIdle() = runTest(testDispatcher) {
-        fakeOpenApi.result = CleanupResult.Success("cleaned text here")
+    fun tapFromSaved_startsNewRecording() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
-        val controller = buildController()
+        val controller = buildController(prefs = fakePrefs)
+
+        // First recording produces a Saved state
         controller.onMainButtonTapped()
         advanceUntilIdle()
-        // Advance past the 1.5s auto-reset delay
-        advanceTimeBy(2_000)
-        // Now state is Idle; set it manually to Saved for test
-        // (In real usage Saved persists for 1.5s then resets)
-        // We verify the Saved → Idle transition from onMainButtonTapped
-        val state = controller.recordingState.value
-        assertEquals("Should have auto-reset to Idle after delay", RecordingState.Idle, state)
+        assertTrue(
+            "State should be Saved after first recording",
+            controller.recordingState.value is RecordingState.Saved
+        )
+
+        // Configure a second recording result
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.FinalTranscript("second recording six seven eight nine ten")
+
+        // Tap the main button while Saved — should start a new recording
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(
+            "Two recordings should have produced two entries",
+            2, entries.size
+        )
+    }
+
+    @Test
+    fun resetToIdle_fromSaved_doesNotStartRecording() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
+        val controller = buildController(prefs = fakePrefs)
+
+        // First recording produces a Saved state
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+        assertTrue(
+            "State should be Saved after recording",
+            controller.recordingState.value is RecordingState.Saved
+        )
+
+        // resetToIdle should go to Idle without starting a new recording
+        controller.resetToIdle()
+        advanceUntilIdle()
+
+        assertEquals(
+            "State should be Idle after resetToIdle",
+            RecordingState.Idle, controller.recordingState.value
+        )
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(
+            "Only one entry should exist (no new recording started)",
+            1, entries.size
+        )
     }
 
     @Test
