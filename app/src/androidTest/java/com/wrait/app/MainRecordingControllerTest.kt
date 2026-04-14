@@ -193,6 +193,45 @@ class MainRecordingControllerTest {
     }
 
     @Test
+    fun errorState_autoClearsToIdle() = runTest(testDispatcher) {
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.SpeechError(RecognizerError.NoInternet)
+        val controller = buildController()
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+        assertTrue(
+            "State should be Error after failed recording",
+            controller.recordingState.value is RecordingState.Error
+        )
+        // Advance past the 1.5s auto-clear delay
+        advanceTimeBy(2_000)
+        assertEquals(
+            "Error state should auto-clear to Idle",
+            RecordingState.Idle, controller.recordingState.value
+        )
+    }
+
+    @Test
+    fun savedState_autoClearsToIdle() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
+        val controller = buildController(prefs = fakePrefs)
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+        assertTrue(
+            "State should be Saved after recording",
+            controller.recordingState.value is RecordingState.Saved
+        )
+        // Advance past the 1.5s auto-clear delay
+        advanceTimeBy(2_000)
+        assertEquals(
+            "Saved state should auto-clear to Idle",
+            RecordingState.Idle, controller.recordingState.value
+        )
+    }
+
+    @Test
     fun tapFromError_nonPermission_restartsRecording() = runTest(testDispatcher) {
         // First trigger an error
         fakeTranscription.nextResult =

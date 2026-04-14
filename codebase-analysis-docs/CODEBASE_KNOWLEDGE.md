@@ -489,7 +489,7 @@ PreferencesRepository
 - Audio file > 10MB: Mapped to `ApiError` failure (Deepgram backend)
 - Audio file < 1KB: Mapped to `TooShort` failure (Deepgram backend)
 - `stopRecording()` in `ModeAwareTranscriptionService` stops BOTH backends (cheap no-op on idle one)
-- `delayAndReset()` cancels its own coroutine — actual auto-reset is driven by UI-layer `LaunchedEffect`
+- `delayAndReset()` launches a separate `resetJob` coroutine that auto-clears Error/Saved states to Idle after 1.5s; `startListening()` cancels any pending `resetJob`
 
 **Hidden Dependencies**:
 - Recording requires `RECORD_AUDIO` permission (gated by F10)
@@ -669,7 +669,7 @@ PreferencesRepository
 
 **UI States**:
 - `showBlockedMessage = true`: StatusLine shows "mic blocked · tap to open settings", button alpha = 0.3
-- `RecordingState.Error(InsufficientPermissions)`: button tap opens app settings instead of recording
+- `RecordingState.Error(InsufficientPermissions)`: button alpha = 0.5 (reduced, signaling it's tappable); button tap opens app settings instead of recording
 
 **Edge Cases & Hidden Dependencies**:
 - `hasRequestedPermission` state tracks whether the system dialog has been shown (used to detect permanent denial)
@@ -734,6 +734,7 @@ stateDiagram-v2
     Error --> Idle : button tap (permission error)
     Error --> Idle : auto-clear after 1.5s
     Deleted --> Idle : auto-clear after 3s
+    Deleted --> Listening : button tap (starts new recording)
 ```
 
 ### Button Behavior by State
@@ -745,7 +746,7 @@ stateDiagram-v2
 | `Uploading`       | No-op                                       |
 | `Processing`      | No-op                                       |
 | `Saved`           | `startListening()` (new recording)          |
-| `Deleted`         | Reset to `Idle`                             |
+| `Deleted`         | `startListening()` (new recording)          |
 | `Error` (non-perm)| `startListening()` (immediate retry)        |
 | `Error` (perm)    | Reset to `Idle`                             |
 
@@ -909,8 +910,9 @@ The primary recording interface. Layout (top to bottom):
 ### ButtonArea (`app/src/main/java/com/wrait/app/ui/main/ButtonArea.kt`)
 
 - Size adapts to screen width: `containerWidthDp × 0.56`, clamped to 160–280 dp
-- Alpha varies by state: full (Idle, Listening, Saved), disabled 0.3 (Processing, Uploading, permission error), reduced 0.5 (network errors)
+- Alpha varies by state: full (Idle, Listening, Saved, network/API errors), disabled 0.3 (Processing, Uploading), reduced 0.5 (permission error)
 - Enabled for all states except Processing and Uploading
+- Label changes by state: "wrait" (Idle/default), "stop" (Listening), "new" (Saved)
 - Shake animation on TooShort/NoMatch errors (5-step, ~310ms)
 - `PulseRing` shown only during Listening state (infinite scale + fade animation)
 
@@ -1118,11 +1120,11 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
    - Receives `viewModelScope` as its coroutine scope
    - Rationale: scope lifetime must match ViewModel, not singleton
 
-2. **`delayAndReset()` cancels its own coroutine**
-   - Inside `saveTranscript()`, `delayAndReset()` calls `listenJob?.cancel()`, which cancels the coroutine it's running in
-   - The `delay(1_500)` after the cancel throws `CancellationException` and the state is never set to Idle by the controller
-   - The actual auto-reset happens via `LaunchedEffect(recordingState)` in `MainScreen.kt`, which calls `onStatusCleared()` → `resetToIdle()` after `ClearDelayMs` (4 seconds)
-   - This means the controller-level reset is a no-op; the UI-level LaunchedEffect is the real timer
+2. **`delayAndReset()` uses a separate `resetJob` coroutine**
+   - `delayAndReset()` is a non-suspend function that launches a fire-and-forget coroutine on `scope`, tracked by `resetJob`
+   - After `AUTO_CLEAR_DELAY_MS` (1.5s), it resets to Idle only if the current state is not active (`Listening`, `Uploading`, `Processing`)
+   - `startListening()` cancels `resetJob` so a new recording isn't interrupted by a pending reset
+   - Both controller-level (1.5s via `delayAndReset`) and UI-level (4s via `LaunchedEffect` → `resetToIdle()`) auto-clear timers exist for `Saved` state; the controller fires first
 
 3. **`onStatusCleared` calls `resetToIdle()`**
    - `onStatusCleared` (used by LaunchedEffect auto-clear timer) calls `resetToIdle()`, which sets state to Idle without starting a new recording
@@ -1152,9 +1154,10 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
    - This blocks screenshots AND hides the app content in the recent apps screen
    - Cannot be toggled at runtime in the current implementation
 
-9. **Button `isEnabled` during Saved state**
-   - The button is fully enabled and tappable during the Saved state
-   - Tapping it starts a new recording immediately
+9. **Button behavior during Saved and Deleted states**
+   - The button is fully enabled and tappable during both Saved and Deleted states
+   - Tapping it starts a new recording immediately (`startListening()`)
+   - During Saved state, the button label shows "new" (not "wrait") to signal that tapping starts a new recording
    - The "tap to read" text on the StatusLine navigates to the entry detail (different action than the button)
 
 10. **`LaunchedEffect(recordingState)` cancellation is load-bearing**
@@ -1253,7 +1256,7 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
 | `isLanguageMismatch()`        | `LanguageUtils.kt`                | Compares detected vs. selected language by base code            |
 | `keepScreenOnCommand()`       | `MainActivity.kt`                 | Pure function for keep-screen-on flag decisions                 |
 | `statusTextFor()`             | `MainScreen.kt`                   | Pure function mapping state to status line text                 |
-| `buttonAlphaFor()`            | `ButtonArea.kt`                   | Pure function mapping state to button opacity                   |
+| `buttonAlphaFor()`            | `ButtonArea.kt`                   | Pure function mapping state to button opacity (full for most states, reduced for permission error, disabled for Processing/Uploading) |
 | `provideDatabasePassword()`   | `DatabaseModule`                  | Keystore → Tink → decrypt/generate DB password                  |
 | `clearEncryptedState()`       | `DatabaseModule`                  | Nuclear option: wipe all encrypted data on Keystore failure     |
 

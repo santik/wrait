@@ -17,10 +17,10 @@ The main button is a single circular element. What it does depends on the curren
 | **Listening** | "stop" | 1.0 (full) | Yes | Pulse ring |
 | **Uploading** | "wrait" | 0.3 (disabled) | No | — |
 | **Processing** | "wrait" | 0.3 (disabled) | No | — |
-| **Saved** | "wrait" | 1.0 (full) | Yes | — |
+| **Saved** | "new" | 1.0 (full) | Yes | — |
 | **Error (TooShort/NoMatch)** | "wrait" | 1.0 (full) | Yes | Shake |
-| **Error (NoInternet/Network/Timeout)** | "wrait" | 0.5 (reduced) | Yes | — |
-| **Error (InsufficientPermissions)** | "wrait" | 0.3 (disabled) | Yes* | — |
+| **Error (NoInternet/Network/Timeout)** | "wrait" | 1.0 (full) | Yes | — |
+| **Error (InsufficientPermissions)** | "wrait" | 0.5 (reduced) | Yes* | — |
 | **Error (ApiFailed, etc.)** | "wrait" | 1.0 (full) | Yes | — |
 | **Deleted** | "wrait" | 1.0 (full) | Yes | — |
 | **Mic blocked (special)** | "wrait" | 0.3 (disabled) | Yes* | — |
@@ -36,7 +36,7 @@ The main button is a single circular element. What it does depends on the curren
 | **Uploading** | **Nothing** (no-op) |
 | **Processing** | **Nothing** (no-op) |
 | **Saved** | Starts a **new** recording immediately (`startListening()`) |
-| **Deleted** | Resets to Idle (no recording starts) |
+| **Deleted** | Starts a **new** recording immediately (`startListening()`) |
 | **Error (non-permission)** | Starts recording immediately (`startListening()`) — instant retry |
 | **Error (permission)** | Resets to Idle (at controller level); at `MainActivity` level, opens app settings |
 
@@ -45,7 +45,7 @@ The main button is a single circular element. What it does depends on the curren
 | State | Auto-clear mechanism | What happens after delay |
 |-------|---------------------|-------------------------|
 | **Saved** | `LaunchedEffect` in `MainScreen.kt` — 4 second delay, then calls `onStatusCleared()` | Calls `viewModel.resetToIdle()`, which sets state to Idle. **No recording starts. (Fixed)** |
-| **Error** | `delayAndReset()` in controller — 1.5s delay, but self-cancels via `listenJob?.cancel()` so the `delay()` never completes | **No-op at controller level.** Error stays visible until button tap. |
+| **Error** | `delayAndReset()` in controller — 1.5s delay via separate `resetJob` coroutine | Resets to Idle after 1.5 seconds. **(Fixed)** |
 | **Deleted** | `onEntriesDeleted()` — 3 second delay, then resets to Idle | Resets to Idle. No recording starts. |
 
 ---
@@ -73,87 +73,133 @@ onStatusCleared = { viewModel.resetToIdle() },
 
 ---
 
-### Issue 2 (Medium): `delayAndReset()` cancels itself — Error state never auto-clears at controller level
+### Issue 2 (Medium): ~~`delayAndReset()` cancels itself — Error state never auto-clears at controller level~~ FIXED
 
 **Severity**: Medium — subtle timing bug with no visible impact *today*, but fragile
 
-**What happens**: `delayAndReset()` is called inside `saveTranscript()` and `emitError()`, both of which run inside the `listenJob` coroutine. `delayAndReset()` first calls `listenJob?.cancel()`, which cancels its own parent coroutine. The subsequent `delay(1_500)` throws `CancellationException` and `_recordingState.value = RecordingState.Idle` on line 239 is **never reached**.
+**Status**: **FIXED** — `delayAndReset()` now launches a separate coroutine on `scope` instead of running inline inside `listenJob`.
 
-**Where it happens**: `app/src/main/java/com/wrait/app/MainRecordingController.kt` lines 236-240
+**What was happening**: `delayAndReset()` was a `suspend fun` called inside the `listenJob` coroutine. It called `listenJob?.cancel()`, which cancelled its own parent coroutine. The subsequent `delay(1_500)` threw `CancellationException` and the state was never set to Idle. Error states stayed on screen forever unless the user tapped the button.
 
-**Why this matters**:
-- For the `Saved` state: the UI-layer `LaunchedEffect` handles the clear (4s), so it "works" — but not for the reason the code suggests
-- For `Error` states: there is **no auto-clear at all**. If the `LaunchedEffect` only fires for `Saved`, errors just stay on screen forever unless the user taps the button. This is currently masked because the button is enabled during most error states.
-- If someone removes the `LaunchedEffect` or changes the UI layer, error states and saved states become permanent
-
-**Suggested fix**: Move `delayAndReset()` to a separate coroutine scope (not inside `listenJob`):
+**Fix applied**: `app/src/main/java/com/wrait/app/MainRecordingController.kt`:
 ```kotlin
+// Before (bug): suspend fun running inside listenJob, cancelling itself
+private suspend fun delayAndReset() {
+    listenJob?.cancel()
+    delay(1_500)
+    _recordingState.value = RecordingState.Idle
+}
+
+// After (fix): fire-and-forget coroutine on scope with state guard
 private fun delayAndReset() {
-    scope.launch {
-        delay(1_500)
-        if (_recordingState.value !is RecordingState.Listening) {
+    resetJob?.cancel()
+    resetJob = scope.launch {
+        delay(AUTO_CLEAR_DELAY_MS)
+        val current = _recordingState.value
+        if (!current.isActive) {
             _recordingState.value = RecordingState.Idle
         }
     }
 }
 ```
 
+Additional changes:
+- Added `resetJob: Job?` field to track and cancel previous reset timers
+- `startListening()` cancels `resetJob` so a new recording isn't interrupted by a pending reset
+- `emitError()` changed from `suspend` to regular function (no longer calls a suspend function)
+- Added `AUTO_CLEAR_DELAY_MS = 1_500L` constant
+
+**Result**: Error states (`NoInternet`, `ApiFailed`, `TooShort`, `NoMatch`) and Saved states now correctly auto-clear to Idle after 1.5 seconds at the controller level.
+
 ---
 
-### Issue 3 (Medium): Error (InsufficientPermissions) — button looks disabled but is clickable
+### Issue 3 (Medium): ~~Error (InsufficientPermissions) — button looks disabled but is clickable~~ FIXED
 
 **Severity**: Medium — confusing visual signal
 
-**What happens**: When the error is `InsufficientPermissions`, `buttonAlphaFor()` returns `0.3` (disabled look). But `isEnabled` in `ButtonArea.kt` only checks for `Processing` and `Uploading` — so the button is **still clickable**. The `MainActivity` handler intercepts this case and opens app settings, which is correct behavior. But the button appears faded/disabled, so the user might not try tapping it.
+**Status**: **FIXED** — `buttonAlphaFor()` now returns `AlphaReduced` (0.5) instead of `AlphaDisabled` (0.3) for `InsufficientPermissions`, matching the visual treatment of other tappable-but-degraded states.
 
-**Where it happens**:
-- `app/src/main/java/com/wrait/app/ui/main/ButtonArea.kt` line 87: `isEnabled` doesn't check for permission error
-- `app/src/main/java/com/wrait/app/ui/main/ButtonArea.kt` lines 142-143: alpha is `0.3`
-- `app/src/main/java/com/wrait/app/MainActivity.kt` lines 180-188: intercepts and opens settings
+**What was happening**: When the error is `InsufficientPermissions`, `buttonAlphaFor()` returned `0.3` (disabled look). But `isEnabled` in `ButtonArea.kt` only checks for `Processing` and `Uploading` — so the button was **still clickable**. The `MainActivity` handler intercepts this case and opens app settings, which is correct behavior. But the button appeared faded/disabled, so the user might not try tapping it.
 
-**Why this is a problem**: The button visually communicates "I can't be used" (same alpha as Processing), but the intended behavior is "tap me to go to settings." The user relies on the status line text ("mic blocked - tap to open settings") but the button itself is misleading.
+**Fix applied**: `app/src/main/java/com/wrait/app/ui/main/ButtonArea.kt`:
+```kotlin
+// Before (bug):
+RecognizerError.InsufficientPermissions -> DesignTokens.Button.AlphaDisabled
 
-**Suggested fix**: Either make the button alpha `0.5` (reduced, not disabled) for the permission error, or make the status line the only tap target and truly disable the button.
+// After (fix):
+RecognizerError.InsufficientPermissions -> DesignTokens.Button.AlphaReduced
+```
+
+**Result**: The button now shows at 0.5 alpha (reduced, not disabled) for permission errors, signaling that it is still tappable and will open settings.
 
 ---
 
-### Issue 4 (Medium): Button shows "wrait" during Saved state — no indication that tapping starts recording
+### Issue 4 (Medium): ~~Button shows "wrait" during Saved state — no indication that tapping starts recording~~ FIXED
 
 **Severity**: Medium — discoverability issue
 
-**What happens**: After a successful recording, the button label changes back from "stop" to "wrait" and remains at full opacity. The status line shows "tap to read." If the user taps the button (not the status line), a new recording starts immediately. There is no visual indication that the button will start recording — it looks exactly like the Idle state.
+**Status**: **FIXED** — `buttonLabelFor()` now returns `"new"` when the state is `Saved`, clearly indicating that tapping starts a new recording.
 
-**Where it happens**:
-- `app/src/main/java/com/wrait/app/ui/main/ButtonArea.kt` line 134-135: `buttonLabelFor()` returns "wrait" for all non-Listening states
-- `app/src/main/java/com/wrait/app/MainRecordingController.kt` line 54: `is RecordingState.Saved -> startListening()`
+**What was happening**: After a successful recording, the button label changed back from "stop" to "wrait" and remained at full opacity. The status line showed "tap to read." If the user tapped the button (not the status line), a new recording started immediately. There was no visual indication that the button would start recording — it looked exactly like the Idle state.
 
-**Why this is a problem**: A user who just finished recording and wants to read their entry might accidentally tap the button (larger touch target) instead of the status line text (smaller). This starts an unwanted recording.
+**Fix applied**: `app/src/main/java/com/wrait/app/ui/main/ButtonArea.kt`:
+```kotlin
+// Before (bug):
+private fun buttonLabelFor(recordingState: RecordingState): String =
+    if (recordingState is RecordingState.Listening) "stop" else "wrait"
+
+// After (fix):
+private fun buttonLabelFor(recordingState: RecordingState): String = when (recordingState) {
+    is RecordingState.Listening -> "stop"
+    is RecordingState.Saved -> "new"
+    else -> "wrait"
+}
+```
+
+**Result**: The button now shows "new" during the Saved state, clearly differentiating it from both Idle ("wrait") and Listening ("stop"). The user can distinguish between "tap to start first recording" and "tap to start another recording."
 
 ---
 
-### Issue 5 (Low): Deleted state — button tap only resets to Idle, doesn't start recording
+### Issue 5 (Low): ~~Deleted state — button tap only resets to Idle, doesn't start recording~~ FIXED
 
 **Severity**: Low — minor inconsistency
 
-**What happens**: In `Deleted` state, the button label is "wrait", alpha is full, and the button is enabled. Tapping it sets state to `Idle` — it does **not** start recording. The user must tap twice: once to dismiss the "entry deleted" message, once to start recording.
+**Status**: **FIXED** — `onMainButtonTapped()` now calls `startListening()` for the `Deleted` state instead of only resetting to `Idle`, making behavior consistent with `Saved` and non-permission `Error` states.
 
-**Where it happens**: `app/src/main/java/com/wrait/app/MainRecordingController.kt` line 55: `is RecordingState.Deleted -> _recordingState.value = RecordingState.Idle`
+**What was happening**: In `Deleted` state, the button label was "wrait", alpha was full, and the button was enabled. Tapping it set state to `Idle` — it did **not** start recording. The user had to tap twice: once to dismiss the "entry deleted" message, once to start recording. In contrast, `Saved` and non-permission `Error` states started recording immediately on tap.
 
-**Why this is (mildly) inconsistent**: In `Saved` and non-permission `Error` states, tapping the button immediately starts recording (single tap). In `Deleted`, it requires two taps. This is a deliberate design choice (not all states should restart recording), but the user has no way to predict which states are "tap once" vs "tap twice."
+**Fix applied**: `app/src/main/java/com/wrait/app/MainRecordingController.kt`:
+```kotlin
+// Before (bug):
+is RecordingState.Deleted -> _recordingState.value = RecordingState.Idle
+
+// After (fix):
+is RecordingState.Deleted -> startListening()
+```
+
+**Result**: Tapping the button during the `Deleted` state now immediately starts a new recording, consistent with `Saved` and non-permission `Error` states. The user no longer needs to tap twice.
 
 ---
 
-### Issue 6 (Low): Network error states — button is enabled but faded, creating ambiguity
+### Issue 6 (Low): ~~Network error states — button is enabled but faded, creating ambiguity~~ FIXED
 
 **Severity**: Low — minor visual ambiguity
 
-**What happens**: For `NoInternet`, `Network`, and `Timeout` errors, the button alpha is `0.5` (reduced). But tapping it calls `startListening()` — an immediate retry. The reduced alpha suggests the button is semi-disabled, yet it's fully functional and will start recording.
+**Status**: **FIXED** — `buttonAlphaFor()` now returns `AlphaFull` (1.0) for `NoInternet`, `Network`, and `Timeout` errors, matching the fact that the button is fully functional and starts an immediate retry.
 
-**Where it happens**:
-- `app/src/main/java/com/wrait/app/ui/main/ButtonArea.kt` lines 144-146: alpha = `AlphaReduced` (0.5)
-- `app/src/main/java/com/wrait/app/MainRecordingController.kt` lines 60-61: `startListening()` for non-permission errors
+**What was happening**: For `NoInternet`, `Network`, and `Timeout` errors, the button alpha was `0.5` (reduced). But tapping it called `startListening()` — an immediate retry. The reduced alpha suggested the button was semi-disabled, yet it was fully functional.
 
-**Why this is a problem**: The visual signal (faded = less interactive) contradicts the actual behavior (fully functional retry). A user might not try tapping because the button looks partially disabled. The status line says "no connection - saved as draft" which doesn't invite tapping either.
+**Fix applied**: `app/src/main/java/com/wrait/app/ui/main/ButtonArea.kt`:
+```kotlin
+// Before (bug):
+RecognizerError.NoInternet,
+RecognizerError.Network,
+RecognizerError.Timeout -> DesignTokens.Button.AlphaReduced
+
+// After (fix): Removed special case — falls through to the default `else -> AlphaFull` branch.
+```
+
+**Result**: Network error states now show the button at full opacity, correctly signaling that the button is fully functional and tapping it will retry the recording.
 
 ---
 
@@ -176,10 +222,10 @@ private fun delayAndReset() {
 | # | Issue | Severity | Root Cause | User Impact |
 |---|-------|----------|-----------|-------------|
 | 1 | ~~Saved auto-starts recording after 4s~~ | ~~High~~ **Fixed** | `onStatusCleared` now calls `resetToIdle()` | Returns to Idle correctly |
-| 2 | `delayAndReset()` cancels itself | Medium | `listenJob?.cancel()` inside its own coroutine | Error states never auto-clear at controller level |
-| 3 | Permission error: looks disabled but clickable | Medium | Alpha 0.3 but `isEnabled = true` | User might not discover the settings shortcut |
-| 4 | No visual cue that button starts recording during Saved | Medium | Button shows "wrait" at full alpha during Saved | Accidental recording instead of reading entry |
-| 5 | Deleted requires two taps to start recording | Low | `Deleted -> Idle` (not `startListening`) | Minor inconsistency |
-| 6 | Network errors: faded but functional | Low | Alpha 0.5 but `startListening()` on tap | Confusing visual signal |
+| 2 | ~~`delayAndReset()` cancels itself~~ | ~~Medium~~ **Fixed** | `delayAndReset()` now launches on `scope` with `resetJob` tracking | Error and Saved states auto-clear to Idle after 1.5s |
+| 3 | ~~Permission error: looks disabled but clickable~~ | ~~Medium~~ **Fixed** | Alpha changed from 0.3 to 0.5 for `InsufficientPermissions` | Button now visually tappable |
+| 4 | ~~No visual cue that button starts recording during Saved~~ | ~~Medium~~ **Fixed** | Button now shows "new" instead of "wrait" during Saved | Clear differentiation from Idle state |
+| 5 | ~~Deleted requires two taps to start recording~~ | ~~Low~~ **Fixed** | `Deleted` now calls `startListening()` | Single tap starts recording |
+| 6 | ~~Network errors: faded but functional~~ | ~~Low~~ **Fixed** | Network error alpha changed from 0.5 to 1.0 | Button correctly signals full functionality |
 | 7 | No cancel during upload/processing | Low | Button disabled, controller no-ops | User stuck waiting |
 
