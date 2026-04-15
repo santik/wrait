@@ -158,6 +158,19 @@ open class SpeechRecognizerManager @Inject constructor(
                     val isOemTimeout = error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
                                     || error == SpeechRecognizer.ERROR_NO_MATCH
 
+                    // If the recognizer errors before onReadyForSpeech was ever
+                    // called, the engine could not initialise. In offline mode
+                    // this almost always means the language model for the
+                    // requested locale is not installed on the device.
+                    if (!timerStarted && preferOffline) {
+                        Log.w(TAG, "Recognizer failed before onReadyForSpeech " +
+                            "(error=$error, lang=$languageCode) — offline model likely missing")
+                        trySend(RecognitionResult.ListeningEnded)
+                        trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
+                        close()
+                        return
+                    }
+
                     if (isOemTimeout
                         && !userStoppedManually
                         && restartCount < RecognitionConfig.MaxRestartAttempts

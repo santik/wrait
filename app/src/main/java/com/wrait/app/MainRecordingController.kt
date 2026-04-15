@@ -270,9 +270,10 @@ class MainRecordingController @Inject constructor(
 }
 
 private fun TranscriptionFailureReason.toRecognizerError(): RecognizerError = when (this) {
-    TranscriptionFailureReason.TooShort       -> RecognizerError.TooShort
-    TranscriptionFailureReason.NothingCaught  -> RecognizerError.NoMatch
-    TranscriptionFailureReason.MicBlocked     -> RecognizerError.InsufficientPermissions
-    TranscriptionFailureReason.NetworkError   -> RecognizerError.NoInternet
-    TranscriptionFailureReason.ApiError       -> RecognizerError.ApiFailed
+    TranscriptionFailureReason.TooShort           -> RecognizerError.TooShort
+    TranscriptionFailureReason.NothingCaught      -> RecognizerError.NoMatch
+    TranscriptionFailureReason.MicBlocked         -> RecognizerError.InsufficientPermissions
+    TranscriptionFailureReason.NetworkError       -> RecognizerError.NoInternet
+    TranscriptionFailureReason.ModelNotAvailable  -> RecognizerError.NotAvailable
+    TranscriptionFailureReason.ApiError           -> RecognizerError.ApiFailed
 }
