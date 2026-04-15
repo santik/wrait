@@ -8,6 +8,12 @@ interface TranscriptionService {
     ): TranscriptionResult
 
     /**
+     * Returns `true` when the device has an offline speech recognition model
+     * installed. Always returns `true` for cloud-backed services.
+     */
+    fun isOfflineModelAvailable(): Boolean = true
+
+    /**
      * Optional: transcribe an existing audio file on disk (used for retrying audio drafts).
      * Default implementation returns ApiError so implementations don't have to support it.
      */

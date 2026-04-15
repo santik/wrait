@@ -27,6 +27,9 @@ class AndroidTranscriptionService @Inject constructor(
         return result ?: TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
     }
 
+    override fun isOfflineModelAvailable(): Boolean =
+        speechRecognizerManager.isOnDeviceRecognitionAvailable()
+
     override fun stopRecording() {
         speechRecognizerManager.stopListening()
     }

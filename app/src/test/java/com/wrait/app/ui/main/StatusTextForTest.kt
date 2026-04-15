@@ -169,6 +169,16 @@ class StatusTextForTest {
     }
 
     @Test
+    fun error_notAvailable_showsOfflineModelNotInstalled() {
+        val text = statusTextFor(
+            recordingState = RecordingState.Error(RecognizerError.NotAvailable),
+            showBlockedMessage = false,
+            hasEverRecorded = true,
+        )
+        assertEquals("offline model not installed", text)
+    }
+
+    @Test
     fun saved_noDetectedLanguage_showsTapToRead() {
         val text = statusTextFor(
             recordingState = RecordingState.Saved(entryId = 1L, detectedLanguage = null),

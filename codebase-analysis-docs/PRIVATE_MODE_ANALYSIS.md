@@ -3,6 +3,14 @@
 > **Date**: April 14, 2026  
 > **Question**: Is `MODE_PRIVATE` delivering on its promise? Should it be kept?
 
+> **Resolution (April 15, 2026)**: **Option B implemented.** Private mode has
+> been rebranded to **Offline mode**. All `MODE_PRIVATE` references renamed to
+> `MODE_OFFLINE`. The settings toggle now reads *"Offline mode — Record without
+> internet. Lower transcription quality."* A pre-flight check in
+> `MainRecordingController.startListening()` verifies on-device speech model
+> availability before recording begins and shows *"offline model not installed"*
+> if the model is missing.
+
 ---
 
 ## What Private Mode Promises
@@ -194,4 +202,3 @@ services). The code is already built; the main change is UI strings and naming.
 ---
 
 *End of analysis.*
-

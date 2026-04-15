@@ -86,14 +86,14 @@ class MainViewModel @Inject constructor(
 
     internal val initJob: Job = viewModelScope.launch {
         preferencesRepository.seedPrivacyModeOnce(
-            default = if (BuildConfig.PRIVACY_MODE == PrivacyMode.MODE_PRIVATE.name) {
-                PrivacyMode.MODE_PRIVATE
+            default = if (BuildConfig.PRIVACY_MODE == PrivacyMode.MODE_OFFLINE.name) {
+                PrivacyMode.MODE_OFFLINE
             } else {
                 PrivacyMode.MODE_BEST
             }
         )
         entryRepository.deleteStaleDrafts()
-        if (preferencesRepository.privacyMode.first() != PrivacyMode.MODE_PRIVATE) {
+        if (preferencesRepository.privacyMode.first() != PrivacyMode.MODE_OFFLINE) {
             retryPendingDrafts()
         }
     }
@@ -140,7 +140,7 @@ class MainViewModel @Inject constructor(
     fun onPrivacyModeToggle(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.savePrivacyMode(
-                if (enabled) PrivacyMode.MODE_PRIVATE else PrivacyMode.MODE_BEST
+                if (enabled) PrivacyMode.MODE_OFFLINE else PrivacyMode.MODE_BEST
             )
         }
     }

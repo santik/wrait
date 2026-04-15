@@ -135,7 +135,7 @@ class MainRecordingControllerTest {
     @Test
     @Ignore
     fun tapFromSaved_startsNewRecording() = runTest(testDispatcher) {
-        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE)
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
         val controller = buildController(prefs = fakePrefs)
@@ -166,7 +166,7 @@ class MainRecordingControllerTest {
     @Test
     @Ignore
     fun resetToIdle_fromSaved_doesNotStartRecording() = runTest(testDispatcher) {
-        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE)
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
         val controller = buildController(prefs = fakePrefs)
@@ -217,7 +217,7 @@ class MainRecordingControllerTest {
     @Test
     @Ignore
     fun savedState_autoClearsToIdle() = runTest(testDispatcher) {
-        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE)
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
         val controller = buildController(prefs = fakePrefs)
@@ -288,8 +288,8 @@ class MainRecordingControllerTest {
     }
 
     @Test
-    fun modePrivate_success_savesDirectly_noDraft_noApiCall() = runTest(testDispatcher) {
-        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
+    fun modeOffline_success_savesDirectly_noDraft_noApiCall() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE)
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("private journal entry words")
         val controller = buildController(prefs = fakePrefs, api = fakeOpenApi)
@@ -298,9 +298,9 @@ class MainRecordingControllerTest {
 
         val entries = entryRepository.getAllEntries().first()
         assertEquals(1, entries.size)
-        assertFalse("MODE_PRIVATE entry should not be a draft", entries.first().isDraft)
-        assertNull("MODE_PRIVATE entry should have no cleanedText", entries.first().cleanedText)
-        assertEquals("OpenAI API must not be called in MODE_PRIVATE", 0, fakeOpenApi.callCount)
+        assertFalse("MODE_OFFLINE entry should not be a draft", entries.first().isDraft)
+        assertNull("MODE_OFFLINE entry should have no cleanedText", entries.first().cleanedText)
+        assertEquals("OpenAI API must not be called in MODE_OFFLINE", 0, fakeOpenApi.callCount)
     }
 
     @Test
@@ -452,8 +452,8 @@ class MainRecordingControllerTest {
     }
 
     @Test
-    fun languageMismatch_modePrivate_entryTaggedWithDetectedLanguage() = runTest(testDispatcher) {
-        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_PRIVATE)
+    fun languageMismatch_modeOffline_entryTaggedWithDetectedLanguage() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE)
         fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
             text = "Bonjour le monde",
             detectedLanguage = "fr",

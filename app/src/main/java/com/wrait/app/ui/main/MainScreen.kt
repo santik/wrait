@@ -282,6 +282,7 @@ internal fun statusTextFor(
             RecognizerError.InsufficientPermissions -> "mic blocked · tap to open settings"
             RecognizerError.NoMatch                 -> "nothing caught · too quiet?"
             RecognizerError.TooShort                -> "too short · keep talking"
+            RecognizerError.NotAvailable            -> "offline model not installed"
             RecognizerError.NoInternet,
             RecognizerError.Network,
             RecognizerError.Timeout                 -> "no connection · saved as draft"

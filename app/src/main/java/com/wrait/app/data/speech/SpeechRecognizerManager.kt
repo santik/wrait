@@ -29,6 +29,21 @@ open class SpeechRecognizerManager @Inject constructor(
     @Volatile private var userStoppedManually = false
 
     /**
+     * Returns `true` when the device supports on-device speech recognition.
+     *
+     * On API 31+ this checks [SpeechRecognizer.isOnDeviceRecognitionAvailable];
+     * on older levels it falls back to [SpeechRecognizer.isRecognitionAvailable]
+     * (which may still require a network connection at runtime).
+     */
+    open fun isOnDeviceRecognitionAvailable(): Boolean {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
+        } else {
+            SpeechRecognizer.isRecognitionAvailable(context)
+        }
+    }
+
+    /**
      * Starts speech recognition and emits [RecognitionResult] events.
      *
      * @param languageCode BCP-47 language code (e.g. "en-US").

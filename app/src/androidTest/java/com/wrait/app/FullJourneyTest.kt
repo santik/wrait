@@ -183,11 +183,11 @@ class FullJourneyTest {
     }
 
     @Test
-    fun modePrivate_skips_cleanup() {
-        // Set MODE_PRIVATE so the recording pipeline skips OpenAI cleanup entirely.
+    fun modeOffline_skips_cleanup() {
+        // Set MODE_OFFLINE so the recording pipeline skips OpenAI cleanup entirely.
         // The activity is already running; updating the DataStore flow is reflected in the
         // recording controller before the button is tapped.
-        runBlocking { preferencesRepository.savePrivacyMode(PrivacyMode.MODE_PRIVATE) }
+        runBlocking { preferencesRepository.savePrivacyMode(PrivacyMode.MODE_OFFLINE) }
 
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("private journal entry words here")
@@ -203,11 +203,11 @@ class FullJourneyTest {
         }
         composeRule.onNodeWithText("tap to read").assertIsDisplayed()
 
-        assertEquals("OpenAI API must not be called in MODE_PRIVATE", 0, fakeApi.callCount)
+        assertEquals("OpenAI API must not be called in MODE_OFFLINE", 0, fakeApi.callCount)
 
         val entries = runBlocking { entryDao.getAllEntries().first() }
         assertEquals(1, entries.size)
-        assertFalse("MODE_PRIVATE entry must not be a draft", entries.first().isDraft)
-        assertNull("MODE_PRIVATE entry must have no cleanedText", entries.first().cleanedText)
+        assertFalse("MODE_OFFLINE entry must not be a draft", entries.first().isDraft)
+        assertNull("MODE_OFFLINE entry must have no cleanedText", entries.first().cleanedText)
     }
 }

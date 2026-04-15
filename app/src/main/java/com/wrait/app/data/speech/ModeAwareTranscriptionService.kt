@@ -12,7 +12,7 @@ class ModeAwareTranscriptionService @Inject constructor(
 ) : TranscriptionService {
 
     private suspend fun backend(): TranscriptionService {
-        return if (preferencesRepository.privacyMode.first() == PrivacyMode.MODE_PRIVATE) {
+        return if (preferencesRepository.privacyMode.first() == PrivacyMode.MODE_OFFLINE) {
             androidService
         } else {
             deepgramService
@@ -29,6 +29,9 @@ class ModeAwareTranscriptionService @Inject constructor(
         languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit,
     ): TranscriptionResult = backend().transcribeAudioDraft(audioPath, languageCode, onStatus)
+
+    override fun isOfflineModelAvailable(): Boolean =
+        androidService.isOfflineModelAvailable()
 
     override fun stopRecording() {
         // Only one service is active at a time, but stop is cheap on the idle one.
