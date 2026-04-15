@@ -28,4 +28,6 @@ class FakeSpeechRecognizerManager(context: Context) : SpeechRecognizerManager(co
     }
 
     override fun stopListening() { /* no-op */ }
+
+    override fun isOnDeviceRecognitionAvailable(): Boolean = true
 }

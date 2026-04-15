@@ -26,7 +26,7 @@ import org.junit.runner.RunWith
  * 2. User speaks → recording in progress
  * 3. User taps button again → stops recording
  * 4. Transcription processes audio
- * 5. Entry is saved (with or without cleanup depending on privacy mode)
+ * 5. Entry is saved (with or without cleanup depending on offline mode)
  * 6. State transitions to Saved
  * 
  * Note: Full end-to-end flow with database persistence is covered by MainViewModelTest
@@ -73,17 +73,17 @@ class PrimaryRecordingFlowTest {
      * Test: Privacy mode can be toggled
      * 
      * User journey:
-     * 1. Toggle privacy mode
+     * 1. Toggle offline mode
      * 2. Verify preference is updated
      */
     @Test
     fun togglePrivacyMode_updatesPreference() = runTest(testDispatcher) {
-        // Act: Toggle to Private mode
-        fakePrefs.savePrivacyMode(PrivacyMode.MODE_PRIVATE)
+        // Act: Toggle to Offline mode
+        fakePrefs.savePrivacyMode(PrivacyMode.MODE_OFFLINE)
         
-        // Assert: Verify Private mode is set
+        // Assert: Verify Offline mode is set
         val mode = fakePrefs.privacyMode.first()
-        assertEquals("Should be in Private mode", PrivacyMode.MODE_PRIVATE, mode)
+        assertEquals("Should be in Offline mode", PrivacyMode.MODE_OFFLINE, mode)
         
         // Act: Toggle back to Best mode
         fakePrefs.savePrivacyMode(PrivacyMode.MODE_BEST)
@@ -113,12 +113,12 @@ class PrimaryRecordingFlowTest {
      * Test: Privacy mode is exposed as Flow
      * 
      * User journey:
-     * 1. Check initial privacy mode
+     * 1. Check initial offline mode
      * 2. Verify it's accessible from preferences
      */
     @Test
     fun privacyMode_isExposedAsFlow() = runTest(testDispatcher) {
-        // Act: Get privacy mode from preferences
+        // Act: Get offline mode from preferences
         val mode = fakePrefs.privacyMode.first()
         
         // Assert: Verify default mode is set
@@ -174,21 +174,21 @@ class PrimaryRecordingFlowTest {
      * Test: Privacy mode seed only works once
      * 
      * User journey:
-     * 1. Seed privacy mode with Private
+     * 1. Seed offline mode with Private
      * 2. Try to seed again with Best
      * 3. Verify mode remains Private (first seed wins)
      */
     @Test
     fun seedPrivacyMode_onlyWorksOnce() = runTest(testDispatcher) {
-        // Act: Seed with Private mode
-        fakePrefs.seedPrivacyModeOnce(PrivacyMode.MODE_PRIVATE)
+        // Act: Seed with Offline mode
+        fakePrefs.seedPrivacyModeOnce(PrivacyMode.MODE_OFFLINE)
         
         // Try to seed again with Best mode (should be ignored)
         fakePrefs.seedPrivacyModeOnce(PrivacyMode.MODE_BEST)
         
         // Assert: Verify mode remains Private (first seed wins)
         val mode = fakePrefs.privacyMode.first()
-        assertEquals("Should remain Private from first seed", PrivacyMode.MODE_PRIVATE, mode)
+        assertEquals("Should remain Offline from first seed", PrivacyMode.MODE_OFFLINE, mode)
     }
 
     /**
@@ -227,12 +227,12 @@ class PrimaryRecordingFlowTest {
      * Test: Privacy mode defaults to MODE_BEST
      * 
      * User journey:
-     * 1. Check initial privacy mode
+     * 1. Check initial offline mode
      * 2. Verify it's MODE_BEST
      */
     @Test
     fun privacyMode_defaultsToBest() = runTest(testDispatcher) {
-        // Act: Get privacy mode from preferences
+        // Act: Get offline mode from preferences
         val mode = fakePrefs.privacyMode.first()
         
         // Assert: Verify default mode is MODE_BEST

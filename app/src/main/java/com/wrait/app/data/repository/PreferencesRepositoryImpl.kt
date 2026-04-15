@@ -47,7 +47,7 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override val privacyMode: Flow<PrivacyMode> = preferences.map { stored ->
         when (stored[PreferencesKeys.PRIVACY_MODE]) {
-            PrivacyMode.MODE_PRIVATE.name -> PrivacyMode.MODE_PRIVATE
+            PrivacyMode.MODE_OFFLINE.name -> PrivacyMode.MODE_OFFLINE
             else -> PrivacyMode.MODE_BEST
         }
     }

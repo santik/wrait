@@ -55,13 +55,13 @@ private fun RecognizerError.toFailureReason(): TranscriptionFailureReason = when
     RecognizerError.TooShort                -> TranscriptionFailureReason.TooShort
     RecognizerError.NoMatch                 -> TranscriptionFailureReason.NothingCaught
     RecognizerError.InsufficientPermissions -> TranscriptionFailureReason.MicBlocked
+    is RecognizerError.NotAvailable        -> TranscriptionFailureReason.ModelNotAvailable
     RecognizerError.Network,
     RecognizerError.Timeout,
     RecognizerError.NoInternet              -> TranscriptionFailureReason.NetworkError
     RecognizerError.Audio,
     RecognizerError.Client,
     RecognizerError.Server,
-    RecognizerError.NotAvailable,
     RecognizerError.ApiFailed,
     is RecognizerError.Unknown              -> TranscriptionFailureReason.ApiError
 }

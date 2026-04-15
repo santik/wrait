@@ -4,9 +4,9 @@ All notable changes to wrait are documented here.
 
 ---
 
-## [1.2-beta] — 2026-04-13
+## [1.2-beta] — 2026-04-15
 
-Major UX improvements: edit entries, share entries, swipe-to-delete, language detection, and responsive layout.
+Major UX improvements: edit entries, share entries, swipe-to-delete, language detection, responsive layout, button behavior fixes, and offline mode.
 
 ### New features
 
@@ -16,16 +16,23 @@ Major UX improvements: edit entries, share entries, swipe-to-delete, language de
 - **Language detection** — When using Deepgram transcription, if you speak in a different language than selected, the app detects it and shows "tap to read · detected <lang>" in the status line. The entry is tagged with the detected language.
 - **Keep screen on while recording** — The display stays awake during active recording states, preventing the screen from turning off mid-recording.
 - **Responsive layout** — UI elements now scale by screen size. The main button uses a continuous ratio (0.56 of screen width) with min/max bounds (160–280 dp) for consistent feel across phones and tablets.
+- **Offline mode** — "Private mode" has been renamed to "Offline mode" with an honest description: "Record without internet. Lower transcription quality." The toggle is in the settings panel (swipe down). The app now checks for offline speech model availability before recording starts and shows "offline model not installed" if the model for the selected language is missing.
 
 ### Improvements
 
 - **Delete from detail screen** — Added a delete button on the entry detail screen with confirmation dialog. After deletion, you're always returned to the entries list.
 - **Keyboard dismissal** — Keyboard and cursor are dismissed before navigating back from the entry detail screen (applies to swipe-down, system back, and back button).
-- **Tap to start new recording** — Tapping the main button while "tap to read" is showing now immediately starts a new recording (previously required two taps).
 - **Swipe down on empty list** — Swipe-down-to-back gesture now works even when the entry list is empty.
 
 ### Fixes
 
+- **"Tap to read" no longer starts a recording** — Tapping the "tap to read" status message now only navigates to the entry without starting a new recording. Previously, tapping the status message would open the entry and simultaneously begin a new recording session.
+- **Button tap on "tap to read" starts a new recording** — Tapping the main button while "tap to read" is visible correctly starts a new recording session.
+- **Saved state no longer auto-starts recording** — Restoring from a Saved state (e.g. after process death) no longer silently starts a new recording without user intent.
+- **Error state auto-clears properly** — The `delayAndReset()` timer no longer cancels itself, so error and saved states now correctly auto-clear to Idle after 3 seconds.
+- **Deleted state button behavior** — Tapping the button while "entry deleted" is showing now starts a new recording (previously only reset to Idle).
+- **Missing offline model detection** — When offline mode is on and the selected language's speech model is not installed, the app now shows "offline model not installed" instead of the misleading "saved as draft · will retry".
+- **Offline mode works without internet** — Recording in offline mode no longer fails immediately when airplane mode is on. The `preferOffline` flag is now correctly passed through the transcription pipeline.
 - **Entry list visual jump** — Fixed visual jump when entering or exiting selection mode (selection mode has been removed entirely, see below).
 - **Audio draft handling** — Audio drafts are now only saved after recoverable Deepgram errors (network, rate limit, server errors). Empty responses (no speech detected) no longer create drafts that will never resolve.
 - **Draft retry UX** — Audio-only draft cards show "pending · will retry" and are non-tappable.
@@ -33,6 +40,7 @@ Major UX improvements: edit entries, share entries, swipe-to-delete, language de
 ### Removed features
 
 - **Batch select and delete** — Removed multi-select and batch delete from the entries list screen. The screen now supports single-tap navigation only. Swipe right to delete individual entries instead.
+- **"Private mode" branding** — Renamed to "Offline mode" throughout the app. The `MODE_PRIVATE` enum value is now `MODE_OFFLINE`.
 
 ### Testing
 

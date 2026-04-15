@@ -101,39 +101,39 @@ class PreferencesRepositoryTest {
     }
 
     @Test
-    fun savePrivacyMode_modePrivate_persists() = runTest(testDispatcher) {
-        repository.savePrivacyMode(PrivacyMode.MODE_PRIVATE)
-        assertEquals(PrivacyMode.MODE_PRIVATE, repository.privacyMode.first())
+    fun savePrivacyMode_modeOffline_persists() = runTest(testDispatcher) {
+        repository.savePrivacyMode(PrivacyMode.MODE_OFFLINE)
+        assertEquals(PrivacyMode.MODE_OFFLINE, repository.privacyMode.first())
     }
 
     @Test
     fun savePrivacyMode_roundTrip_modeBestAfterPrivate() = runTest(testDispatcher) {
-        repository.savePrivacyMode(PrivacyMode.MODE_PRIVATE)
+        repository.savePrivacyMode(PrivacyMode.MODE_OFFLINE)
         repository.savePrivacyMode(PrivacyMode.MODE_BEST)
         assertEquals(PrivacyMode.MODE_BEST, repository.privacyMode.first())
     }
 
     @Test
     fun seedPrivacyModeOnce_setsValue_whenKeyAbsent() = runTest(testDispatcher) {
-        repository.seedPrivacyModeOnce(PrivacyMode.MODE_PRIVATE)
-        assertEquals(PrivacyMode.MODE_PRIVATE, repository.privacyMode.first())
+        repository.seedPrivacyModeOnce(PrivacyMode.MODE_OFFLINE)
+        assertEquals(PrivacyMode.MODE_OFFLINE, repository.privacyMode.first())
     }
 
     @Test
     fun seedPrivacyModeOnce_doesNotOverwrite_existingValue() = runTest(testDispatcher) {
         repository.savePrivacyMode(PrivacyMode.MODE_BEST)
-        repository.seedPrivacyModeOnce(PrivacyMode.MODE_PRIVATE)
+        repository.seedPrivacyModeOnce(PrivacyMode.MODE_OFFLINE)
         // Seeding should not override the already-saved MODE_BEST
         assertEquals(PrivacyMode.MODE_BEST, repository.privacyMode.first())
     }
 
     @Test
     fun seedPrivacyModeOnce_isIdempotent_firstCallWins() = runTest(testDispatcher) {
-        repository.seedPrivacyModeOnce(PrivacyMode.MODE_PRIVATE)
+        repository.seedPrivacyModeOnce(PrivacyMode.MODE_OFFLINE)
         repository.seedPrivacyModeOnce(PrivacyMode.MODE_BEST)
-        repository.seedPrivacyModeOnce(PrivacyMode.MODE_PRIVATE)
+        repository.seedPrivacyModeOnce(PrivacyMode.MODE_OFFLINE)
         // The DataStore-backed impl checks if key is absent, so subsequent calls are no-ops
-        // First seeded value (MODE_PRIVATE) should persist
-        assertEquals(PrivacyMode.MODE_PRIVATE, repository.privacyMode.first())
+        // First seeded value (MODE_OFFLINE) should persist
+        assertEquals(PrivacyMode.MODE_OFFLINE, repository.privacyMode.first())
     }
 }

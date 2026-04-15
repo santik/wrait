@@ -57,7 +57,7 @@
 | 33 | P3 | Architecture | No ProGuard/R8 rules for Ktor serialization models |
 | 34 | P3 | Code Quality | Inconsistent TAG usage — some use string constants, some use inline strings |
 | 35 | P3 | UX | `resolveActivity()` returns null on API 30+ due to package visibility |
-| 36 | P1 | UX | ✅ RESOLVED — Private mode recording fails without internet (airplane mode) |
+| 36 | P1 | UX | ✅ RESOLVED — Offline mode recording fails without internet (airplane mode) |
 
 ---
 
@@ -235,7 +235,7 @@ operation will fail.
 
 **Recommendation**: Check `ConnectivityManager.activeNetwork` before starting a
 recording in MODE_BEST. If offline, either show a warning toast/dialog or
-silently fall back to MODE_PRIVATE for that session.
+silently fall back to MODE_OFFLINE for that session.
 
 ---
 
@@ -371,13 +371,13 @@ the previous one on re-entry, like `resetJob`.
 
 ---
 
-### 36. ✅ RESOLVED — Private mode recording fails without internet (airplane mode)
+### 36. ✅ RESOLVED — Offline mode recording fails without internet (airplane mode)
 
 **Category**: UX  
 **Files**: `SpeechRecognizerManager.kt`, `AndroidTranscriptionService.kt`  
 **Status**: **RESOLVED** (April 14, 2026)
 
-**Issue**: In `MODE_PRIVATE`, the `ModeAwareTranscriptionService` correctly
+**Issue**: In `MODE_OFFLINE`, the `ModeAwareTranscriptionService` correctly
 routes to `AndroidTranscriptionService` (on-device Android speech recognizer)
 and the `MainRecordingController` correctly skips the OpenAI cleanup step.
 However, Android's `SpeechRecognizer.createSpeechRecognizer()` sends audio to
@@ -386,13 +386,13 @@ the device is in airplane mode, the recognizer immediately fails with
 `ERROR_NETWORK` or `ERROR_NETWORK_TIMEOUT`, which maps to
 `RecognizerError.Network` → `TranscriptionFailureReason.NetworkError` →
 `RecognizerError.NoInternet`. The user sees "no connection · saved as draft"
-even though private mode should be fully offline.
+even though offline mode should be fully offline.
 
 **Root cause**: `SpeechRecognizerManager.listen()` always created a
-network-dependent speech recognizer regardless of the privacy mode.
+network-dependent speech recognizer regardless of the offline mode.
 
-**Impact**: Private mode was non-functional without internet. Users who chose
-private mode specifically for offline/privacy reasons were blocked.
+**Impact**: Offline mode was non-functional without internet. Users who chose
+offline mode specifically for offline/privacy reasons were blocked.
 
 **Fix applied**:
 1. Added a `preferOffline: Boolean` parameter to
@@ -448,8 +448,8 @@ sent in plaintext to the MITM attacker. API keys in headers are also exposed.
 **File**: `PreferencesRepositoryImpl.kt`, backup rules
 
 **Issue**: The DataStore preferences file (`wrait_preferences.preferences_pb`)
-contains the privacy mode, selected language, and `hasEverRecorded` flag. While
-these aren't diary content, the privacy mode preference reveals whether the user
+contains the offline mode, selected language, and `hasEverRecorded` flag. While
+these aren't diary content, the offline mode preference reveals whether the user
 uses cloud or on-device transcription — a privacy-relevant signal for a
 privacy-focused app.
 
@@ -695,13 +695,13 @@ contention.
 
 More critically, `transcriptionService.transcribeAudioDraft()` goes through
 `ModeAwareTranscriptionService.backend()` which reads `privacyMode.first()`.
-During retry, the privacy mode is already checked at line 96, but if the user
-toggles privacy mode mid-retry, the backend() call could use a different
+During retry, the offline mode is already checked at line 96, but if the user
+toggles offline mode mid-retry, the backend() call could use a different
 service than expected.
 
 **Impact**: Unlikely race in practice, but a defensive gap.
 
-**Recommendation**: Capture the privacy mode once at the start of the retry
+**Recommendation**: Capture the offline mode once at the start of the retry
 loop and pass it through, rather than re-reading it per-draft.
 
 ---

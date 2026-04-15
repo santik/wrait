@@ -88,30 +88,45 @@ class MainRecordingController @Inject constructor(
     private fun startListening() {
         resetJob?.cancel()
         listenJob?.cancel()
-        listeningStartedAt = System.currentTimeMillis()
-        _recordingState.value = RecordingState.Listening
-        listenJob = scope.launch {
-            val language = languageState.value
-            val result = transcriptionService.transcribe(language) { status ->
-                when (status) {
-                    TranscriptionStatus.RecordingEnded -> _recordingState.value = RecordingState.Processing
-                    TranscriptionStatus.Uploading      -> _recordingState.value = RecordingState.Uploading
-                }
+
+        // Pre-flight: in offline mode, verify that an on-device speech model
+        // is available before the recognizer is created.
+        scope.launch {
+            val isOffline =
+                preferencesRepository.privacyMode.first() == PrivacyMode.MODE_OFFLINE
+            if (isOffline && !transcriptionService.isOfflineModelAvailable()) {
+                emitError(RecognizerError.NotAvailable(languageState.value))
+                return@launch
             }
-            // Ensure Processing before cleanup (no-op for Android which set it via callback)
-            _recordingState.value = RecordingState.Processing
-            when (result) {
-                is TranscriptionResult.Success  -> saveTranscript(result.transcript, result.detectedLanguage)
-                is TranscriptionResult.Failure  -> {
-                    if (result.audioDraftPath != null) {
-                        withContext(ioDispatcher) {
-                            entryRepository.saveAudioDraft(
-                                audioPath = result.audioDraftPath,
-                                language = language,
-                            )
-                        }
+
+            listeningStartedAt = System.currentTimeMillis()
+            _recordingState.value = RecordingState.Listening
+            listenJob = scope.launch {
+                val language = languageState.value
+                val result = transcriptionService.transcribe(language) { status ->
+                    when (status) {
+                        TranscriptionStatus.RecordingEnded ->
+                            _recordingState.value = RecordingState.Processing
+                        TranscriptionStatus.Uploading ->
+                            _recordingState.value = RecordingState.Uploading
                     }
-                    emitError(result.reason.toRecognizerError())
+                }
+                // Ensure Processing before cleanup (no-op for Android which set it via callback)
+                _recordingState.value = RecordingState.Processing
+                when (result) {
+                    is TranscriptionResult.Success ->
+                        saveTranscript(result.transcript, result.detectedLanguage)
+                    is TranscriptionResult.Failure -> {
+                        if (result.audioDraftPath != null) {
+                            withContext(ioDispatcher) {
+                                entryRepository.saveAudioDraft(
+                                    audioPath = result.audioDraftPath,
+                                    language = language,
+                                )
+                            }
+                        }
+                        emitError(result.reason.toRecognizerError(language))
+                    }
                 }
             }
         }
@@ -163,13 +178,13 @@ class MainRecordingController @Inject constructor(
             Log.w(TAG, "Transcript exceeds max length (${text.length} chars), truncating")
         }
 
-        // MODE_PRIVATE: save final entry immediately, skip cleanup
+        // MODE_OFFLINE: save final entry immediately, skip cleanup
         val mode = preferencesRepository.privacyMode.first()
-        if (mode == PrivacyMode.MODE_PRIVATE) {
+        if (mode == PrivacyMode.MODE_OFFLINE) {
             val entryId = withContext(ioDispatcher) {
                 entryRepository.saveEntry(text, language)
             }
-            Log.d(TAG, "MODE_PRIVATE: entry saved, id=$entryId")
+            Log.d(TAG, "MODE_OFFLINE: entry saved, id=$entryId")
             withContext(ioDispatcher) {
                 try {
                     preferencesRepository.setHasEverRecorded(true)
@@ -254,10 +269,13 @@ class MainRecordingController @Inject constructor(
     }
 }
 
-private fun TranscriptionFailureReason.toRecognizerError(): RecognizerError = when (this) {
-    TranscriptionFailureReason.TooShort       -> RecognizerError.TooShort
-    TranscriptionFailureReason.NothingCaught  -> RecognizerError.NoMatch
-    TranscriptionFailureReason.MicBlocked     -> RecognizerError.InsufficientPermissions
-    TranscriptionFailureReason.NetworkError   -> RecognizerError.NoInternet
-    TranscriptionFailureReason.ApiError       -> RecognizerError.ApiFailed
+private fun TranscriptionFailureReason.toRecognizerError(
+    language: String = "",
+): RecognizerError = when (this) {
+    TranscriptionFailureReason.TooShort           -> RecognizerError.TooShort
+    TranscriptionFailureReason.NothingCaught      -> RecognizerError.NoMatch
+    TranscriptionFailureReason.MicBlocked         -> RecognizerError.InsufficientPermissions
+    TranscriptionFailureReason.NetworkError       -> RecognizerError.NoInternet
+    TranscriptionFailureReason.ModelNotAvailable  -> RecognizerError.NotAvailable(language)
+    TranscriptionFailureReason.ApiError           -> RecognizerError.ApiFailed
 }

@@ -120,17 +120,17 @@ fun SettingsPanel(
                     ) {
                         Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
                             Text(
-                                text = "Private mode",
+                                text = "Offline mode",
                                 style = MaterialTheme.typography.bodyLarge,
                             )
                             Text(
-                                text = "Transcription stays on-device, nothing is sent to the cloud.",
+                                text = "Record without internet. Lower transcription quality.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         Switch(
-                            checked = privacyMode == PrivacyMode.MODE_PRIVATE,
+                            checked = privacyMode == PrivacyMode.MODE_OFFLINE,
                             onCheckedChange = onModeToggle,
                         )
                     }

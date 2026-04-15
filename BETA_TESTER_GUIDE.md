@@ -65,14 +65,16 @@ Tap the language name above the button (e.g. "Nederlands" or "English"). Pick th
 
 If you speak in a different language than selected, the app will detect it and show "tap to read · detected <lang>" after saving. The entry will be tagged with the detected language.
 
-### Privacy mode
+### Offline mode
 
-Swipe down from the top of the main screen to open the settings panel. You'll see a **Private mode** toggle:
+Swipe down from the top of the main screen to open the settings panel. You'll see an **Offline mode** toggle:
 
 - **Off (Best mode)** — Audio is sent to Deepgram for transcription. The transcript is sent to OpenAI for cleanup. Best accuracy, requires internet.
-- **On (Private mode)** — Everything stays on your phone. Android's on-device speech recognition is used. No internet needed. No cleanup step.
+- **On (Offline mode)** — Everything stays on your phone. Android's on-device speech recognition is used. No internet needed. No cleanup step. Lower transcription quality.
 
 The change takes effect on the next recording — no restart needed. The panel closes when you swipe up or tap outside it.
+
+> **Note:** Offline mode requires an offline speech model for the selected language to be installed on your device. If it's not installed, you'll see "offline model not installed" when you try to record. You can download offline speech models in your device settings: Settings → System → Languages → Speech → Offline speech recognition.
 
 ---
 
@@ -80,7 +82,7 @@ The change takes effect on the next recording — no restart needed. The panel c
 
 **In Best mode (default):** Your audio is sent to [Deepgram](https://deepgram.com) for transcription, and the raw transcript is sent to OpenAI to clean it up. Nothing is ever sent to us — we have no servers.
 
-**In Private mode:** Nothing leaves your phone. Transcription runs on-device. There is no cleanup step.
+**In Offline mode:** Nothing leaves your phone. Transcription runs on-device. There is no cleanup step.
 
 In both modes, your entries are saved encrypted on your phone only. Audio is discarded immediately after transcription and is never stored on your device.
 
@@ -116,8 +118,10 @@ Here are some things worth testing — especially in the first week:
 - Swipe right on an entry to delete it — confirm the dialog and check it's gone
 - Open an entry and try editing the text — check that it saves automatically
 - Open an entry and try sharing it — check that the share sheet opens with the correct text
-- Swipe down from the top to open the settings panel — toggle Private mode on and record an entry; check whether the cleanup step is skipped
+- Swipe down from the top to open the settings panel — toggle Offline mode on and record an entry; check whether the cleanup step is skipped
 - Toggle back to Best mode and record again — check that cleanup runs
+- Try Offline mode with airplane mode on — recording should work if the language model is downloaded
+- Try Offline mode with a language whose speech model is not downloaded — the app should show "offline model not installed"
 - Tap the main button while "tap to read" is showing — check that it immediately starts a new recording
 
 ---
@@ -130,7 +134,7 @@ This is an early beta. A few things are not finished yet:
 - No PIN or biometric lock
 - The design is not final — some screens are placeholder layouts
 - Animations may feel unpolished
-- In Private mode, transcription accuracy depends on your device's built-in speech recognition
+- In Offline mode, transcription accuracy depends on your device's built-in speech recognition and whether the offline model for your language is installed
 
 These are all on the list for the next version.
 

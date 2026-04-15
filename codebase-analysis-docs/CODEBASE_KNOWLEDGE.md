@@ -41,7 +41,7 @@
 |-------------|-----------------------------------------------------------------------------|
 | Simplicity  | Single-button UI; core loop takes ~30 seconds                                |
 | Privacy     | All entries encrypted on-device with SQLCipher + Tink AEAD + Android Keystore |
-| Flexibility | Two runtime-switchable privacy modes (cloud vs on-device transcription)       |
+| Flexibility | Two runtime-switchable offline modes (cloud vs on-device transcription)       |
 | Security    | Screenshots blocked (`FLAG_SECURE`), backup disabled, no accounts            |
 
 ### Target Users
@@ -65,7 +65,7 @@ Friends-and-family closed beta. Privacy-conscious users who want fast, voice-fir
 
 ### How Features Relate (High Level)
 
-Recording (F1) is the central feature — everything else depends on it. F1 produces entries that flow into viewing (F2), editing (F3), deletion (F4), sharing (F5), and statistics (F9). Language (F6) and privacy mode (F7) configure F1's behavior. Draft retry (F8) is a resilience mechanism for F1 failures. Permission handling (F10) gates F1 entirely. See §6 for a detailed Mermaid diagram.
+Recording (F1) is the central feature — everything else depends on it. F1 produces entries that flow into viewing (F2), editing (F3), deletion (F4), sharing (F5), and statistics (F9). Language (F6) and offline mode (F7) configure F1's behavior. Draft retry (F8) is a resilience mechanism for F1 failures. Permission handling (F10) gates F1 entirely. See §6 for a detailed Mermaid diagram.
 
 ### Tech Stack Summary
 
@@ -181,7 +181,7 @@ sequenceDiagram
     TS-->>MRC: TranscriptionResult.Success(text)
     MRC->>MRC: saveTranscript(text)
 
-    alt MODE_PRIVATE
+    alt MODE_OFFLINE
         MRC->>ER: saveEntry(text, lang)
         ER->>DB: insert(EntryEntity, isDraft=false)
         MRC-->>MS: State = Saved(entryId)
@@ -279,7 +279,7 @@ app/src/main/java/com/wrait/app/
 │   ├── model/
 │   │   ├── Entry.kt                    # Domain model
 │   │   ├── EntryStats.kt              # entryCount + activeDays
-│   │   ├── PrivacyMode.kt             # MODE_BEST | MODE_PRIVATE enum
+│   │   ├── PrivacyMode.kt             # MODE_BEST | MODE_OFFLINE enum
 │   │   └── SupportedLanguages.kt      # Set of BCP-47 codes
 │   ├── repository/
 │   │   ├── EntryRepository.kt          # Interface
@@ -298,7 +298,7 @@ app/src/main/java/com/wrait/app/
     │   ├── EntryDetailScreen.kt        # Full entry view/edit/share/delete
     │   └── EntryDetailViewModel.kt     # Detail VM with debounced edits
     ├── settings/
-    │   └── SettingsPanel.kt            # Privacy mode toggle overlay
+    │   └── SettingsPanel.kt            # Offline mode toggle overlay
     └── theme/
         ├── Color.kt                    # Light/dark palette
         ├── Theme.kt                    # WrAItTheme composable
@@ -402,7 +402,7 @@ Mirrors `EntryEntity` exactly. Mapped via extension functions in `app/src/main/j
                │  (isDraft=0)  │  Ready for user to read
                └──────────────┘
 
-MODE_PRIVATE: Audio → Final Entry (isDraft=0) directly, no draft stage.
+MODE_OFFLINE: Audio → Final Entry (isDraft=0) directly, no draft stage.
 ```
 
 ### Stale Draft Cleanup
@@ -435,7 +435,7 @@ All DI is configured via Hilt modules in `app/src/main/java/com/wrait/app/di/`.
 TranscriptionService
   └─ ModeAwareTranscriptionService (reads PrivacyMode at call time)
        ├─ DeepgramTranscriptionService   (MODE_BEST)
-       └─ AndroidTranscriptionService    (MODE_PRIVATE, preferOffline=true)
+       └─ AndroidTranscriptionService    (MODE_OFFLINE, preferOffline=true)
             └─ SpeechRecognizerManager   (on-device recognizer when offline)
 
 OpenAiApiService
@@ -459,7 +459,7 @@ OpenAiApiService
 2. **State machine**: `RecordingState.Idle → Listening → Processing → Saved`
 3. **Recording**:
    - **MODE_BEST**: `DeepgramTranscriptionService.record()` uses `MediaRecorder` → AAC/M4A → uploaded via Ktor to `api.deepgram.com/v1/listen?model=nova-3`
-   - **MODE_PRIVATE**: `AndroidTranscriptionService` wraps `SpeechRecognizerManager.listen(preferOffline = true)` which creates a `callbackFlow` over Android's `SpeechRecognizer` using **on-device recognition** (no internet required). On API 31+ it uses `createOnDeviceSpeechRecognizer()`; on older APIs it sets `EXTRA_PREFER_OFFLINE`.
+   - **MODE_OFFLINE**: `AndroidTranscriptionService` wraps `SpeechRecognizerManager.listen(preferOffline = true)` which creates a `callbackFlow` over Android's `SpeechRecognizer` using **on-device recognition** (no internet required). On API 31+ it uses `createOnDeviceSpeechRecognizer()`; on older APIs it sets `EXTRA_PREFER_OFFLINE`.
 4. **Duration**: Min 5 seconds (`MIN_RECORDING_MS` in controller), max 2 minutes (`RecognitionConfig.HardCapMs`)
 5. **Cleanup (MODE_BEST only)**: `OpenAiApiServiceImpl.cleanupTranscript()` sends raw text to GPT-4o-mini with a cleanup prompt
 6. **Draft-first save**: In MODE_BEST, entry is saved as a draft *before* the cleanup API call
@@ -599,7 +599,7 @@ OpenAiApiService
 | Mode         | Transcription            | Cleanup             | Network |
 |-------------|--------------------------|---------------------|---------|
 | `MODE_BEST` | Deepgram Nova-3 (cloud)  | GPT-4o-mini (cloud) | Yes     |
-| `MODE_PRIVATE`| Android SpeechRecognizer | None                 | No      |
+| `MODE_OFFLINE`| Android SpeechRecognizer | None                 | No      |
 
 **Technical Flow**:
 1. Swipe down on MainScreen → `SettingsPanel` overlay
@@ -793,7 +793,7 @@ OpenAI gpt-4o-mini cleanup
 Update entry (isDraft=false, cleanedText set)
 ```
 
-### MODE_PRIVATE Pipeline (On-Device)
+### MODE_OFFLINE Pipeline (On-Device)
 
 ```
 User speaks
@@ -873,7 +873,7 @@ SQLCipher Database ("wrait_db")
 |-------------------|----------------|----------------|----------------|
 | Audio (raw)       | MODE_BEST       | Deepgram API   | Stateless, discarded immediately |
 | Raw transcript    | MODE_BEST       | OpenAI API     | Stateless, no history |
-| Nothing           | MODE_PRIVATE    | —              | —              |
+| Nothing           | MODE_OFFLINE    | —              | —              |
 
 ### What Never Leaves
 
@@ -895,7 +895,7 @@ The primary recording interface. Layout (top to bottom):
 4. `StatusLine` — animated text showing current state / "tap to read" / "tap to write"
 5. `StatsLine` — entry count and active days
 6. Spacer (flex)
-7. (Overlay) `SettingsPanel` — privacy mode toggle
+7. (Overlay) `SettingsPanel` — offline mode toggle
 
 **Gestures**:
 - Swipe up → navigate to entry list
@@ -1086,7 +1086,7 @@ Tests use `@TestInstallIn` to replace production Hilt modules with test-safe alt
 ```properties
 OPENAI_API_KEY=sk-...
 DEEPGRAM_API_KEY=...
-PRIVACY_MODE=MODE_BEST    # or MODE_PRIVATE
+PRIVACY_MODE=MODE_BEST    # or MODE_OFFLINE
 KEYSTORE_PATH=...         # release signing (optional)
 KEYSTORE_PASSWORD=...
 KEY_ALIAS=...
@@ -1178,7 +1178,7 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
     - The cleanup prompt (CLEANUP_PROMPT) is a string constant in `OpenAiApiServiceImpl`
     - It explicitly instructs the model to never translate — important for multilingual entries
 
-15. **MODE_PRIVATE uses on-device recognition — requires offline language model**
+15. **MODE_OFFLINE uses on-device recognition — requires offline language model**
     - `AndroidTranscriptionService` passes `preferOffline = true` to `SpeechRecognizerManager.listen()`
     - On API 31+, this uses `SpeechRecognizer.createOnDeviceSpeechRecognizer()` for fully offline recognition
     - On older APIs, `EXTRA_PREFER_OFFLINE` intent flag is set (best-effort, may still fail without network on some devices)
@@ -1195,8 +1195,8 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
 | **Audio Draft**        | Draft with `audioPath != null` and empty `rawTranscript` — audio not yet transcribed |
 | **Text Draft**         | Draft with `rawTranscript` set but no `cleanedText` — awaiting AI cleanup       |
 | **Final Entry**        | Entry with `isDraft=false` — fully processed and ready to read                  |
-| **MODE_BEST**          | Privacy mode using cloud services (Deepgram + OpenAI) for highest quality       |
-| **MODE_PRIVATE**       | Privacy mode using only on-device processing (Android SpeechRecognizer)          |
+| **MODE_BEST**          | Offline mode using cloud services (Deepgram + OpenAI) for highest quality       |
+| **MODE_OFFLINE**       | Offline mode using only on-device processing (Android SpeechRecognizer)          |
 | **Cleanup**            | The GPT-4o-mini post-processing step that removes filler words and fixes punctuation |
 | **Stale Draft**        | Draft older than 7 days, automatically deleted on app startup                    |
 | **RecordingState**     | Sealed class representing the current state of the recording pipeline            |
@@ -1234,7 +1234,7 @@ These are injected into `BuildConfig` fields: `OPENAI_API_KEY`, `DEEPGRAM_API_KE
 
 | Class                           | File                                        | Responsibility                          |
 |---------------------------------|--------------------------------------------|-----------------------------------------|
-| `ModeAwareTranscriptionService` | `data/speech/ModeAwareTranscriptionService.kt` | Routes to correct backend by privacy mode |
+| `ModeAwareTranscriptionService` | `data/speech/ModeAwareTranscriptionService.kt` | Routes to correct backend by offline mode |
 | `DeepgramTranscriptionService`  | `data/speech/DeepgramTranscriptionService.kt`  | MediaRecorder → Deepgram Nova-3 API     |
 | `AndroidTranscriptionService`   | `data/speech/AndroidTranscriptionService.kt`   | Wraps SpeechRecognizerManager           |
 | `WhisperTranscriptionService`   | `data/speech/WhisperTranscriptionService.kt`   | MediaRecorder → OpenAI Whisper API (unused) |

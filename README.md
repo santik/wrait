@@ -40,7 +40,7 @@ The core loop takes about thirty seconds.
 
 ### What leaves your device
 
-This depends on your selected **privacy mode** (see below). In the default **Best** mode:
+This depends on your selected **mode** (see below). In the default **Best** mode:
 
 1. **Voice audio** is sent to [Deepgram](https://deepgram.com) (Nova-3) for transcription. This is a stateless API call — the audio is discarded immediately after transcription and never written to disk on the device.
 
@@ -48,18 +48,20 @@ This depends on your selected **privacy mode** (see below). In the default **Bes
 
 The cleaned entry text never leaves your device.
 
-In **Private** mode, nothing leaves your device at all — transcription runs on-device via Android SpeechRecognizer.
+In **Offline** mode, nothing leaves your device at all — transcription runs on-device via Android SpeechRecognizer.
 
-### Privacy mode
+### Offline mode
 
 wrait has two modes, switchable at runtime from the settings panel (swipe down from the top of the main screen):
 
 | Mode | Transcription | Cleanup | Network required |
 |------|--------------|---------|-----------------|
 | **Best** | Deepgram Nova-3 (cloud) | OpenAI gpt-4o-mini (cloud) | Yes |
-| **Private** | Android SpeechRecognizer (on-device) | None | No |
+| **Offline** | Android SpeechRecognizer (on-device) | None | No |
 
 The selected mode takes effect on the next recording. No restart needed.
+
+Offline mode requires an offline speech model for the selected language to be installed on the device. If the model is missing, the app shows "offline model not installed" when you try to record.
 
 ### What is never sent anywhere
 
@@ -100,7 +102,7 @@ Screenshots and the recent apps thumbnail are blocked via `FLAG_SECURE`.
    DEEPGRAM_API_KEY=...
    PRIVACY_MODE=MODE_BEST
    ```
-   Set `PRIVACY_MODE=MODE_PRIVATE` to default to on-device-only mode. Omit `DEEPGRAM_API_KEY` if building in `MODE_PRIVATE` only.
+   Set `PRIVACY_MODE=MODE_OFFLINE` to default to on-device-only mode. Omit `DEEPGRAM_API_KEY` if building in `MODE_OFFLINE` only.
 
 3. Open in Android Studio and sync Gradle.
 
@@ -141,10 +143,10 @@ com.wrait.app/
 
 ### Transcription backends
 
-Privacy mode is a runtime user setting (swipe down → settings panel) backed by DataStore. The default is set at build time via `PRIVACY_MODE` in `local.properties`:
+Offline mode is a runtime user setting (swipe down → settings panel) backed by DataStore. The default is set at build time via `PRIVACY_MODE` in `local.properties`:
 
 - **`MODE_BEST`** — Deepgram Nova-3 STT (network) + OpenAI gpt-4o-mini cleanup (network). Draft-first pipeline: entry is written to DB before any API call.
-- **`MODE_PRIVATE`** — Android `SpeechRecognizer` (on-device). No cleanup, no network calls. Entry saved immediately as final.
+- **`MODE_OFFLINE`** — Android `SpeechRecognizer` (on-device). No cleanup, no network calls. Entry saved immediately as final. Requires offline speech model for the selected language.
 
 `ModeAwareTranscriptionService` reads the current DataStore value at call time, so switching modes takes effect on the next recording without restarting the app.
 

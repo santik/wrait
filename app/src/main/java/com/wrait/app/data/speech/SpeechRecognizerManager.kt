@@ -29,6 +29,21 @@ open class SpeechRecognizerManager @Inject constructor(
     @Volatile private var userStoppedManually = false
 
     /**
+     * Returns `true` when the device supports on-device speech recognition.
+     *
+     * On API 31+ this checks [SpeechRecognizer.isOnDeviceRecognitionAvailable];
+     * on older levels it falls back to [SpeechRecognizer.isRecognitionAvailable]
+     * (which may still require a network connection at runtime).
+     */
+    open fun isOnDeviceRecognitionAvailable(): Boolean {
+        return if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
+        } else {
+            SpeechRecognizer.isRecognitionAvailable(context)
+        }
+    }
+
+    /**
      * Starts speech recognition and emits [RecognitionResult] events.
      *
      * @param languageCode BCP-47 language code (e.g. "en-US").
@@ -43,12 +58,12 @@ open class SpeechRecognizerManager @Inject constructor(
     ): Flow<RecognitionResult> = callbackFlow {
         if (preferOffline && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             if (!SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
-                trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
+                trySend(RecognitionResult.Error(RecognizerError.NotAvailable(languageCode)))
                 close()
                 return@callbackFlow
             }
         } else if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
+            trySend(RecognitionResult.Error(RecognizerError.NotAvailable(languageCode)))
             close()
             return@callbackFlow
         }
@@ -142,6 +157,19 @@ open class SpeechRecognizerManager @Inject constructor(
                     val elapsed = System.currentTimeMillis() - sessionStartTime
                     val isOemTimeout = error == SpeechRecognizer.ERROR_SPEECH_TIMEOUT
                                     || error == SpeechRecognizer.ERROR_NO_MATCH
+
+                    // If the recognizer errors before onReadyForSpeech was ever
+                    // called, the engine could not initialise. In offline mode
+                    // this almost always means the language model for the
+                    // requested locale is not installed on the device.
+                    if (!timerStarted && preferOffline) {
+                        Log.w(TAG, "Recognizer failed before onReadyForSpeech " +
+                            "(error=$error, lang=$languageCode) — offline model likely missing")
+                        trySend(RecognitionResult.ListeningEnded)
+                        trySend(RecognitionResult.Error(RecognizerError.NotAvailable(languageCode)))
+                        close()
+                        return
+                    }
 
                     if (isOemTimeout
                         && !userStoppedManually
@@ -289,7 +317,8 @@ sealed class RecognizerError {
     data object Client : RecognizerError()
     data object Server : RecognizerError()
     data object Timeout : RecognizerError()
-    data object NotAvailable : RecognizerError()
+    /** On-device speech model not available for the requested language. */
+    data class NotAvailable(val language: String = "") : RecognizerError()
     data object InsufficientPermissions : RecognizerError()
     /** OpenAI cleanup call failed due to missing / slow network. Entry saved as draft. */
     data object NoInternet : RecognizerError()
