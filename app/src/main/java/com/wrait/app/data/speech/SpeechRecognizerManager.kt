@@ -58,12 +58,12 @@ open class SpeechRecognizerManager @Inject constructor(
     ): Flow<RecognitionResult> = callbackFlow {
         if (preferOffline && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
             if (!SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
-                trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
+                trySend(RecognitionResult.Error(RecognizerError.NotAvailable(languageCode)))
                 close()
                 return@callbackFlow
             }
         } else if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
+            trySend(RecognitionResult.Error(RecognizerError.NotAvailable(languageCode)))
             close()
             return@callbackFlow
         }
@@ -166,7 +166,7 @@ open class SpeechRecognizerManager @Inject constructor(
                         Log.w(TAG, "Recognizer failed before onReadyForSpeech " +
                             "(error=$error, lang=$languageCode) — offline model likely missing")
                         trySend(RecognitionResult.ListeningEnded)
-                        trySend(RecognitionResult.Error(RecognizerError.NotAvailable))
+                        trySend(RecognitionResult.Error(RecognizerError.NotAvailable(languageCode)))
                         close()
                         return
                     }
@@ -317,7 +317,8 @@ sealed class RecognizerError {
     data object Client : RecognizerError()
     data object Server : RecognizerError()
     data object Timeout : RecognizerError()
-    data object NotAvailable : RecognizerError()
+    /** On-device speech model not available for the requested language. */
+    data class NotAvailable(val language: String = "") : RecognizerError()
     data object InsufficientPermissions : RecognizerError()
     /** OpenAI cleanup call failed due to missing / slow network. Entry saved as draft. */
     data object NoInternet : RecognizerError()

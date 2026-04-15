@@ -169,9 +169,23 @@ class StatusTextForTest {
     }
 
     @Test
-    fun error_notAvailable_showsOfflineModelNotInstalled() {
+    fun error_notAvailable_showsOfflineModelNotInstalled_withLanguage() {
         val text = statusTextFor(
-            recordingState = RecordingState.Error(RecognizerError.NotAvailable),
+            recordingState = RecordingState.Error(
+                RecognizerError.NotAvailable("es-ES")
+            ),
+            showBlockedMessage = false,
+            hasEverRecorded = true,
+        )
+        assertEquals("no offline model for Español", text)
+    }
+
+    @Test
+    fun error_notAvailable_showsGenericMessage_whenLanguageEmpty() {
+        val text = statusTextFor(
+            recordingState = RecordingState.Error(
+                RecognizerError.NotAvailable()
+            ),
             showBlockedMessage = false,
             hasEverRecorded = true,
         )

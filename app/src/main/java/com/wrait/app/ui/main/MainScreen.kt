@@ -282,7 +282,16 @@ internal fun statusTextFor(
             RecognizerError.InsufficientPermissions -> "mic blocked · tap to open settings"
             RecognizerError.NoMatch                 -> "nothing caught · too quiet?"
             RecognizerError.TooShort                -> "too short · keep talking"
-            RecognizerError.NotAvailable            -> "offline model not installed"
+            is RecognizerError.NotAvailable         -> {
+                val name = LANGUAGES
+                    .firstOrNull { it.code == recordingState.error.language }
+                    ?.displayName
+                    ?: Locale.forLanguageTag(recordingState.error.language)
+                        .displayLanguage
+                        .replaceFirstChar { it.uppercaseChar() }
+                if (name.isNotBlank()) "no offline model for $name"
+                else "offline model not installed"
+            }
             RecognizerError.NoInternet,
             RecognizerError.Network,
             RecognizerError.Timeout                 -> "no connection · saved as draft"

@@ -95,7 +95,7 @@ class MainRecordingController @Inject constructor(
             val isOffline =
                 preferencesRepository.privacyMode.first() == PrivacyMode.MODE_OFFLINE
             if (isOffline && !transcriptionService.isOfflineModelAvailable()) {
-                emitError(RecognizerError.NotAvailable)
+                emitError(RecognizerError.NotAvailable(languageState.value))
                 return@launch
             }
 
@@ -125,7 +125,7 @@ class MainRecordingController @Inject constructor(
                                 )
                             }
                         }
-                        emitError(result.reason.toRecognizerError())
+                        emitError(result.reason.toRecognizerError(language))
                     }
                 }
             }
@@ -269,11 +269,13 @@ class MainRecordingController @Inject constructor(
     }
 }
 
-private fun TranscriptionFailureReason.toRecognizerError(): RecognizerError = when (this) {
+private fun TranscriptionFailureReason.toRecognizerError(
+    language: String = "",
+): RecognizerError = when (this) {
     TranscriptionFailureReason.TooShort           -> RecognizerError.TooShort
     TranscriptionFailureReason.NothingCaught      -> RecognizerError.NoMatch
     TranscriptionFailureReason.MicBlocked         -> RecognizerError.InsufficientPermissions
     TranscriptionFailureReason.NetworkError       -> RecognizerError.NoInternet
-    TranscriptionFailureReason.ModelNotAvailable  -> RecognizerError.NotAvailable
+    TranscriptionFailureReason.ModelNotAvailable  -> RecognizerError.NotAvailable(language)
     TranscriptionFailureReason.ApiError           -> RecognizerError.ApiFailed
 }
