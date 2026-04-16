@@ -5,12 +5,12 @@ import android.util.Base64
 import androidx.core.content.edit
 import androidx.room.Room
 import com.google.crypto.tink.Aead
-import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.google.crypto.tink.RegistryConfiguration
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.WraitDatabase
+import com.wrait.app.data.WraitStorageConfig
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,10 +24,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
-    private const val DB_NAME = "wrait_db"
-    private const val PREFS_NAME = "wrait_prefs"
-    private const val KEY_ALIAS = "wraite_db_key"
-    private const val DB_PASSWORD_KEY = "db_password"
+    private const val DB_NAME = WraitStorageConfig.DB_NAME
+    private const val PREFS_NAME = WraitStorageConfig.PREFS_NAME
+    private const val KEY_ALIAS = WraitStorageConfig.KEY_ALIAS
+    private const val DB_PASSWORD_KEY = WraitStorageConfig.DB_PASSWORD_KEY
+    private const val DB_KEYSET_NAME = WraitStorageConfig.DB_KEYSET_NAME
 
     @Provides
     @Singleton
@@ -51,10 +52,8 @@ object DatabaseModule {
     }
 
     private fun loadOrCreatePassword(context: Context): ByteArray {
-        AeadConfig.register()
-
         val keysetHandle = AndroidKeysetManager.Builder()
-            .withSharedPref(context, "tink_keyset", PREFS_NAME)
+            .withSharedPref(context, DB_KEYSET_NAME, PREFS_NAME)
             .withKeyTemplate(KeyTemplates.get("AES256_GCM"))
             .withMasterKeyUri("android-keystore://$KEY_ALIAS")
             .build()
@@ -82,10 +81,12 @@ object DatabaseModule {
     }
 
     private fun clearEncryptedState(context: Context) {
-        // Remove the Tink keyset and the encrypted DB password — both are unreadable without the key
+        // Remove all Tink keysets and encrypted values — unreadable without the Keystore key
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
-            remove("tink_keyset")
+            remove(DB_KEYSET_NAME)
             remove(DB_PASSWORD_KEY)
+            remove(WraitStorageConfig.KEYSET_NAME)
+            remove(WraitStorageConfig.KEY_DEVICE_ID)
         }
         // Delete the database; it cannot be opened without the original password
         listOf(DB_NAME, "$DB_NAME-shm", "$DB_NAME-wal").forEach { name ->

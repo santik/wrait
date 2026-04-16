@@ -8,10 +8,13 @@ import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.device.DeviceIdProvider
 import com.wrait.app.data.repository.EntryRepositoryImpl
+import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.repository.EntryRepository
 
+import com.wrait.app.test.fake.FakeDeviceRegistrationService
 import com.wrait.app.test.fake.FakeOpenAiApiService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptionService
@@ -66,11 +69,22 @@ class MainViewModelTest {
         db.close()
     }
 
-    private fun createViewModel(): MainViewModel = MainViewModel(
-        preferencesRepository = FakePreferencesRepository(),
+    private fun createViewModel(
+        fakePrefs: FakePreferencesRepository = FakePreferencesRepository(),
+        fakeRegistration: FakeDeviceRegistrationService = FakeDeviceRegistrationService(),
+    ): MainViewModel = MainViewModel(
+        preferencesRepository = fakePrefs,
         entryRepository = entryRepository,
         transcriptionService = fakeTranscription,
         openAiApiService = fakeApi,
+        registerDeviceUseCase = RegisterDeviceUseCase(
+            preferencesRepository = fakePrefs,
+            deviceIdProvider = DeviceIdProvider(
+                InstrumentationRegistry.getInstrumentation().targetContext
+            ),
+            registrationService = fakeRegistration,
+            ioDispatcher = testDispatcher,
+        ),
         ioDispatcher = testDispatcher
     ).also { createdVms.add(it) }
 

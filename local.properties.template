@@ -1,0 +1,26 @@
+# Copy this file to local.properties and fill in the values.
+# local.properties is gitignored and never committed.
+
+## Android SDK (set automatically by Android Studio)
+#sdk.dir=/Users/<you>/Library/Android/sdk
+
+## OpenAI — used for entry cleanup in MODE_BEST
+OPENAI_API_KEY=
+
+## Deepgram — used for transcription in MODE_BEST
+DEEPGRAM_API_KEY=
+
+## Privacy mode at first launch (MODE_BEST | MODE_OFFLINE)
+## Omit to default to MODE_BEST.
+#PRIVACY_MODE=MODE_BEST
+
+## Wrait backend — device registration endpoint
+## Omit BACKEND_URL to use the default production URL.
+#BACKEND_URL=https://wrait-backend.vercel.app
+PROXY_SECRET=
+
+## Release signing (optional — debug builds work without these)
+#KEYSTORE_PATH=/path/to/release.jks
+#KEYSTORE_PASSWORD=
+#KEY_ALIAS=
+#KEY_PASSWORD=

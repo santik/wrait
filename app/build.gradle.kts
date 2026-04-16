@@ -16,6 +16,8 @@ if (localPropertiesFile.exists()) {
 val openAiApiKey: String = localProperties.getProperty("OPENAI_API_KEY", "")
 val deepgramApiKey: String = localProperties.getProperty("DEEPGRAM_API_KEY", "")
 val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST")
+val backendUrl: String = localProperties.getProperty("BACKEND_URL", "https://wrait-backend.vercel.app")
+val proxySecret: String = localProperties.getProperty("PROXY_SECRET", "")
 val keystorePath: String? = localProperties.getProperty("KEYSTORE_PATH")
 val releaseKeystorePassword: String? = localProperties.getProperty("KEYSTORE_PASSWORD")
 val releaseKeyAlias: String? = localProperties.getProperty("KEY_ALIAS")
@@ -41,6 +43,8 @@ android {
         buildConfigField("String", "OPENAI_API_KEY", "\"$openAiApiKey\"")
         buildConfigField("String", "DEEPGRAM_API_KEY", "\"$deepgramApiKey\"")
         buildConfigField("String", "PRIVACY_MODE", "\"$privacyMode\"")
+        buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
+        buildConfigField("String", "PROXY_SECRET", "\"$proxySecret\"")
     }
 
     signingConfigs {
@@ -69,6 +73,11 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+    testOptions {
+        unitTests {
+            isReturnDefaultValues = true
         }
     }
     compileOptions {
@@ -140,6 +149,7 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.ktor.client.mock)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
