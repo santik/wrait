@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wrait.app.data.api.OpenAiApiService
+import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.domain.model.Entry
@@ -38,6 +39,7 @@ class MainViewModel @Inject constructor(
     private val entryRepository: EntryRepository,
     private val transcriptionService: TranscriptionService,
     private val openAiApiService: OpenAiApiService,
+    private val registerDeviceUseCase: RegisterDeviceUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
 
@@ -85,6 +87,11 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EntryStats.Empty)
 
     internal val initJob: Job = viewModelScope.launch {
+        try {
+            registerDeviceUseCase()
+        } catch (e: Exception) {
+            Log.w(TAG, "Device registration skipped: ${e.javaClass.simpleName}: ${e.message}")
+        }
         preferencesRepository.seedPrivacyModeOnce(
             default = if (BuildConfig.PRIVACY_MODE == PrivacyMode.MODE_OFFLINE.name) {
                 PrivacyMode.MODE_OFFLINE

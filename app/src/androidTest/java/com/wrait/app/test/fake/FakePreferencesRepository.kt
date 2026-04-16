@@ -9,6 +9,7 @@ class FakePreferencesRepository(
     initialLanguage: String = "en-US",
     initialPrivacyMode: PrivacyMode = PrivacyMode.MODE_BEST,
     initialHasEverRecorded: Boolean = false,
+    initialDeviceRegistered: Boolean = false,
 ) : PreferencesRepository {
 
     private val _selectedLanguage = MutableStateFlow(initialLanguage)
@@ -19,6 +20,9 @@ class FakePreferencesRepository(
 
     private val _privacyMode = MutableStateFlow(initialPrivacyMode)
     override val privacyMode: Flow<PrivacyMode> = _privacyMode
+
+    private val _deviceRegistered = MutableStateFlow(initialDeviceRegistered)
+    override val deviceRegistered: Flow<Boolean> = _deviceRegistered
 
     // Tracks whether an explicit savePrivacyMode (or first seedPrivacyModeOnce) call has been made.
     // Mirrors production semantics: seedPrivacyModeOnce is a no-op if the DataStore key is already present.
@@ -43,5 +47,9 @@ class FakePreferencesRepository(
             _modeExplicitlySet = true
             _privacyMode.value = default
         }
+    }
+
+    override suspend fun setDeviceRegistered(value: Boolean) {
+        _deviceRegistered.value = value
     }
 }
