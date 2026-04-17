@@ -36,6 +36,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.wrait.app.domain.model.PrivacyMode
+import com.wrait.app.domain.model.TranscriptionBackend
 import kotlinx.coroutines.delay
 
 private const val SLIDE_DURATION_MS = 300
@@ -48,6 +49,8 @@ private const val DISMISS_DRAG_THRESHOLD = 40f // px — upward drag to dismiss
 fun SettingsPanel(
     privacyMode: PrivacyMode,
     onModeToggle: (Boolean) -> Unit,
+    transcriptionBackend: TranscriptionBackend,
+    onTranscriptionBackendToggle: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -132,6 +135,32 @@ fun SettingsPanel(
                         Switch(
                             checked = privacyMode == PrivacyMode.MODE_OFFLINE,
                             onCheckedChange = onModeToggle,
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .semantics(mergeDescendants = true) {},
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                            Text(
+                                text = "Use backend",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                text = "Route audio through server. Keeps API key off device.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = transcriptionBackend == TranscriptionBackend.PROXY,
+                            onCheckedChange = onTranscriptionBackendToggle,
                         )
                     }
 

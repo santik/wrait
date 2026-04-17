@@ -5,6 +5,8 @@ import android.media.MediaRecorder
 import android.util.Log
 import com.wrait.app.BuildConfig
 import com.wrait.app.data.api.WraitBackendClient
+import com.wrait.app.domain.model.TranscriptionBackend
+import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
@@ -19,6 +21,7 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
@@ -32,6 +35,7 @@ import javax.inject.Singleton
 class DeepgramTranscriptionService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val wraitBackendClient: WraitBackendClient,
+    private val preferencesRepository: PreferencesRepository,
 ) : TranscriptionService {
 
     private val client = HttpClient(Android) {
@@ -47,7 +51,8 @@ class DeepgramTranscriptionService @Inject constructor(
         languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit,
     ): TranscriptionResult {
-        if (BuildConfig.TRANSCRIPTION_BACKEND == "DIRECT" && BuildConfig.DEEPGRAM_API_KEY.isBlank()) {
+        val backend = preferencesRepository.transcriptionBackend.first()
+        if (backend == TranscriptionBackend.DIRECT && BuildConfig.DEEPGRAM_API_KEY.isBlank()) {
             Log.e(TAG, "Deepgram API key is not configured")
             return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
         }
@@ -154,8 +159,9 @@ class DeepgramTranscriptionService @Inject constructor(
         repeat(MAX_UPLOAD_RETRIES) { attempt ->
             try {
                 val bytes = withContext(Dispatchers.IO) { file.readBytes() }
-                Log.d(TAG, "Uploading ${bytes.size} bytes (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES, backend=${BuildConfig.TRANSCRIPTION_BACKEND})")
-                val response: HttpResponse = callTranscribeEndpoint(bytes, language)
+                val backend = preferencesRepository.transcriptionBackend.first()
+                Log.d(TAG, "Uploading ${bytes.size} bytes (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES, backend=$backend)")
+                val response: HttpResponse = callTranscribeEndpoint(bytes, language, backend)
                 return parseResponse(response)
             } catch (e: IOException) {
                 Log.w(TAG, "Network error (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
@@ -170,8 +176,12 @@ class DeepgramTranscriptionService @Inject constructor(
         return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
     }
 
-    private suspend fun callTranscribeEndpoint(bytes: ByteArray, language: String): HttpResponse {
-        return if (BuildConfig.TRANSCRIPTION_BACKEND == "PROXY") {
+    private suspend fun callTranscribeEndpoint(
+        bytes: ByteArray,
+        language: String,
+        backend: TranscriptionBackend,
+    ): HttpResponse {
+        return if (backend == TranscriptionBackend.PROXY) {
             wraitBackendClient.transcribe(bytes, language)
         } else {
             client.post("https://api.deepgram.com/v1/listen?model=nova-3&punctuate=true&smart_format=true&language=$language&detect_language=true") {
