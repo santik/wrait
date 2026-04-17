@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.wrait.app.data.WraitStorageConfig
+import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.SUPPORTED_LANGUAGE_CODES
 import com.wrait.app.domain.model.TranscriptionBackend
@@ -27,6 +28,7 @@ class PreferencesRepositoryImpl @Inject constructor(
         val HAS_EVER_RECORDED = booleanPreferencesKey("has_ever_recorded")
         val PRIVACY_MODE = stringPreferencesKey("privacy_mode")
         val TRANSCRIPTION_BACKEND = stringPreferencesKey("transcription_backend")
+        val CLEANUP_BACKEND = stringPreferencesKey("cleanup_backend")
         val DEVICE_REGISTERED = booleanPreferencesKey(WraitStorageConfig.DEVICE_REGISTERED)
     }
 
@@ -63,6 +65,12 @@ class PreferencesRepositoryImpl @Inject constructor(
         }
     }
 
+    override val cleanupBackend: Flow<CleanupBackend> = preferences.map { stored ->
+        stored[PreferencesKeys.CLEANUP_BACKEND]
+            ?.let { runCatching { CleanupBackend.valueOf(it) }.getOrNull() }
+            ?: CleanupBackend.ANDROID
+    }
+
     override val deviceRegistered: Flow<Boolean> = preferences.map { stored ->
         stored[PreferencesKeys.DEVICE_REGISTERED] ?: false
     }
@@ -96,6 +104,12 @@ class PreferencesRepositoryImpl @Inject constructor(
     override suspend fun saveTranscriptionBackend(backend: TranscriptionBackend) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.TRANSCRIPTION_BACKEND] = backend.name
+        }
+    }
+
+    override suspend fun saveCleanupBackend(backend: CleanupBackend) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.CLEANUP_BACKEND] = backend.name
         }
     }
 

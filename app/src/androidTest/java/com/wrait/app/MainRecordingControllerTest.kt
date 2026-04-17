@@ -6,6 +6,9 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.api.WraitBackendClient
+import com.wrait.app.data.device.DeviceIdProvider
+import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionFailureReason
@@ -47,6 +50,8 @@ class MainRecordingControllerTest {
     private lateinit var fakeOpenApi: FakeOpenAiApiService
     private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakePrefs: FakePreferencesRepository
+    private lateinit var wraitBackendClient: WraitBackendClient
+    private lateinit var deviceIdProvider: DeviceIdProvider
     private val languageState = MutableStateFlow("en-US")
 
     @Before
@@ -61,6 +66,8 @@ class MainRecordingControllerTest {
         fakeOpenApi = FakeOpenAiApiService()
         fakeTranscription = FakeTranscriptionService()
         fakePrefs = FakePreferencesRepository()
+        deviceIdProvider = DeviceIdProvider(context)
+        wraitBackendClient = WraitBackendClient(deviceIdProvider)
     }
 
     @After
@@ -81,7 +88,13 @@ class MainRecordingControllerTest {
         entryRepository = entryRepository,
         preferencesRepository = prefs,
         transcriptionService = transcription,
-        openAiApiService = api,
+        cleanupTranscriptUseCase = CleanupTranscriptUseCase(
+            preferencesRepository = prefs,
+            openAiApiService = api,
+            wraitBackendClient = wraitBackendClient,
+            deviceIdProvider = deviceIdProvider,
+            ioDispatcher = testDispatcher,
+        ),
         ioDispatcher = testDispatcher,
         scope = scope,
     )

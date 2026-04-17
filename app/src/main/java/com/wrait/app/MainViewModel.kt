@@ -3,10 +3,12 @@ package com.wrait.app
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.wrait.app.data.api.OpenAiApiService
+import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.data.speech.TranscriptionService
+import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
@@ -39,7 +41,7 @@ class MainViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val entryRepository: EntryRepository,
     private val transcriptionService: TranscriptionService,
-    private val openAiApiService: OpenAiApiService,
+    private val cleanupTranscriptUseCase: CleanupTranscriptUseCase,
     private val registerDeviceUseCase: RegisterDeviceUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel() {
@@ -61,6 +63,9 @@ class MainViewModel @Inject constructor(
     val transcriptionBackend: StateFlow<TranscriptionBackend> = preferencesRepository.transcriptionBackend
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TranscriptionBackend.PROXY)
 
+    val cleanupBackend: StateFlow<CleanupBackend> = preferencesRepository.cleanupBackend
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CleanupBackend.ANDROID)
+
     private val _showSettingsPanel = MutableStateFlow(false)
     val showSettingsPanel: StateFlow<Boolean> = _showSettingsPanel.asStateFlow()
 
@@ -69,7 +74,7 @@ class MainViewModel @Inject constructor(
         entryRepository = entryRepository,
         preferencesRepository = preferencesRepository,
         transcriptionService = transcriptionService,
-        openAiApiService = openAiApiService,
+        cleanupTranscriptUseCase = cleanupTranscriptUseCase,
         ioDispatcher = ioDispatcher,
         scope = viewModelScope,
     )
@@ -160,6 +165,14 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun onCleanupBackendToggle(useBackend: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.saveCleanupBackend(
+                if (useBackend) CleanupBackend.BACKEND else CleanupBackend.ANDROID
+            )
+        }
+    }
+
     // endregion
 
     // region — stats computation
@@ -210,13 +223,13 @@ class MainViewModel @Inject constructor(
     }
 
     private suspend fun retryTextDraft(entry: Entry) {
-        when (val result = openAiApiService.cleanupTranscript(entry.rawTranscript)) {
-            is com.wrait.app.data.api.CleanupResult.Success -> {
+        when (val result = cleanupTranscriptUseCase(entry.rawTranscript, entry.language)) {
+            is CleanupResult.Success -> {
                 val cleaned = result.cleanedText
                 val wordCount = cleaned.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
                 entryRepository.updateWithCleanedText(entry.id, cleaned, wordCount)
             }
-            is com.wrait.app.data.api.CleanupResult.Failure -> Unit
+            is CleanupResult.Failure -> Unit
         }
     }
 
@@ -242,8 +255,8 @@ class MainViewModel @Inject constructor(
                     entryRepository.updateEntryLanguage(entry.id, effectiveLanguage)
                 }
 
-                when (val cleanup = openAiApiService.cleanupTranscript(rawTranscript)) {
-                    is com.wrait.app.data.api.CleanupResult.Success -> {
+                when (val cleanup = cleanupTranscriptUseCase(rawTranscript, effectiveLanguage)) {
+                    is CleanupResult.Success -> {
                         val cleaned = cleanup.cleanedText
                         val cleanedWordCount = cleaned.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
                         entryRepository.finalizeDraftWithCleanedText(
@@ -253,7 +266,7 @@ class MainViewModel @Inject constructor(
                             wordCount = cleanedWordCount,
                         )
                     }
-                    is com.wrait.app.data.api.CleanupResult.Failure -> {
+                    is CleanupResult.Failure -> {
                         // Still valuable: convert audio-only draft into a text draft.
                         entryRepository.updateDraftTranscript(entry.id, rawTranscript, rawWordCount)
                     }

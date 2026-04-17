@@ -8,12 +8,13 @@ import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.api.WraitBackendClient
 import com.wrait.app.data.device.DeviceIdProvider
+import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
-import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.domain.repository.EntryRepository
-
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
 import com.wrait.app.test.fake.FakeOpenAiApiService
 import com.wrait.app.test.fake.FakePreferencesRepository
@@ -72,21 +73,31 @@ class MainViewModelTest {
     private fun createViewModel(
         fakePrefs: FakePreferencesRepository = FakePreferencesRepository(),
         fakeRegistration: FakeDeviceRegistrationService = FakeDeviceRegistrationService(),
-    ): MainViewModel = MainViewModel(
-        preferencesRepository = fakePrefs,
-        entryRepository = entryRepository,
-        transcriptionService = fakeTranscription,
-        openAiApiService = fakeApi,
-        registerDeviceUseCase = RegisterDeviceUseCase(
+    ): MainViewModel {
+        val deviceIdProvider = DeviceIdProvider(
+            InstrumentationRegistry.getInstrumentation().targetContext
+        )
+        val wraitBackendClient = WraitBackendClient(deviceIdProvider)
+        return MainViewModel(
             preferencesRepository = fakePrefs,
-            deviceIdProvider = DeviceIdProvider(
-                InstrumentationRegistry.getInstrumentation().targetContext
+            entryRepository = entryRepository,
+            transcriptionService = fakeTranscription,
+            cleanupTranscriptUseCase = CleanupTranscriptUseCase(
+                preferencesRepository = fakePrefs,
+                openAiApiService = fakeApi,
+                wraitBackendClient = wraitBackendClient,
+                deviceIdProvider = deviceIdProvider,
+                ioDispatcher = testDispatcher,
             ),
-            registrationService = fakeRegistration,
-            ioDispatcher = testDispatcher,
-        ),
-        ioDispatcher = testDispatcher
-    ).also { createdVms.add(it) }
+            registerDeviceUseCase = RegisterDeviceUseCase(
+                preferencesRepository = fakePrefs,
+                deviceIdProvider = deviceIdProvider,
+                registrationService = fakeRegistration,
+                ioDispatcher = testDispatcher,
+            ),
+            ioDispatcher = testDispatcher
+        ).also { createdVms.add(it) }
+    }
 
     // 1 — Happy path
     @Test

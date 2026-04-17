@@ -1,5 +1,6 @@
 package com.wrait.app.test.fake
 
+import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.TranscriptionBackend
 import com.wrait.app.domain.repository.PreferencesRepository
@@ -12,6 +13,7 @@ class FakePreferencesRepository(
     initialHasEverRecorded: Boolean = false,
     initialDeviceRegistered: Boolean = false,
     initialTranscriptionBackend: TranscriptionBackend = TranscriptionBackend.PROXY,
+    initialCleanupBackend: CleanupBackend = CleanupBackend.ANDROID,
 ) : PreferencesRepository {
 
     private val _selectedLanguage = MutableStateFlow(initialLanguage)
@@ -25,6 +27,9 @@ class FakePreferencesRepository(
 
     private val _transcriptionBackend = MutableStateFlow(initialTranscriptionBackend)
     override val transcriptionBackend: Flow<TranscriptionBackend> = _transcriptionBackend
+
+    private val _cleanupBackend = MutableStateFlow(initialCleanupBackend)
+    override val cleanupBackend: Flow<CleanupBackend> = _cleanupBackend
 
     private val _deviceRegistered = MutableStateFlow(initialDeviceRegistered)
     override val deviceRegistered: Flow<Boolean> = _deviceRegistered
@@ -56,6 +61,10 @@ class FakePreferencesRepository(
 
     override suspend fun saveTranscriptionBackend(backend: TranscriptionBackend) {
         _transcriptionBackend.value = backend
+    }
+
+    override suspend fun saveCleanupBackend(backend: CleanupBackend) {
+        _cleanupBackend.value = backend
     }
 
     override suspend fun setDeviceRegistered(value: Boolean) {

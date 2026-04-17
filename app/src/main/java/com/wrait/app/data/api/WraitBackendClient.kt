@@ -6,6 +6,7 @@ import com.wrait.app.data.device.DeviceIdProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.android.Android
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.header
@@ -13,10 +14,18 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
+import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -95,6 +104,55 @@ class WraitBackendClient private constructor(
 
     // endregion
 
+    // region — /api/cleanup
+
+    suspend fun cleanupTranscript(
+        transcript: String,
+        language: String,
+        deviceId: String,
+    ): CleanupResult {
+        return try {
+            val response: HttpResponse = client.post("${BuildConfig.BACKEND_URL}/api/cleanup") {
+                addCommonHeaders(deviceId)
+                header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                setBody(
+                    buildJsonObject {
+                        put("transcript", transcript)
+                        put("language", language)
+                    }.toString()
+                )
+            }
+
+            if (!response.status.isSuccess()) {
+                Log.w(TAG, "Cleanup failed: HTTP ${response.status.value}")
+                return CleanupResult.Failure("http ${response.status.value}")
+            }
+
+            val body = response.bodyAsText()
+            val cleanedText = runCatching {
+                jsonParser.parseToJsonElement(body)
+                    .jsonObject["cleanedText"]
+                    ?.jsonPrimitive
+                    ?.contentOrNull
+            }.getOrNull()
+
+            if (cleanedText.isNullOrBlank()) {
+                Log.w(TAG, "Cleanup succeeded but cleanedText was missing/blank")
+                CleanupResult.Failure("invalid response")
+            } else {
+                CleanupResult.Success(cleanedText)
+            }
+        } catch (e: HttpRequestTimeoutException) {
+            Log.w(TAG, "Cleanup request timed out")
+            CleanupResult.Failure("timeout")
+        } catch (e: Exception) {
+            Log.w(TAG, "Cleanup request failed: ${e.javaClass.simpleName}: ${e.message}")
+            CleanupResult.Failure("network error")
+        }
+    }
+
+    // endregion
+
     private fun HttpRequestBuilder.addCommonHeaders(deviceId: String) {
         header("X-Device-Id", deviceId)
         header("X-Proxy-Secret", BuildConfig.PROXY_SECRET)
@@ -104,5 +162,6 @@ class WraitBackendClient private constructor(
         const val TAG = "WraitBackendClient"
         const val REQUEST_TIMEOUT_MS = 60_000L
         const val CONNECT_TIMEOUT_MS = 10_000L
+        val jsonParser = Json { ignoreUnknownKeys = true }
     }
 }
