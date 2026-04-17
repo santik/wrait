@@ -1,6 +1,7 @@
 package com.wrait.app.test.fake
 
 import com.wrait.app.domain.model.PrivacyMode
+import com.wrait.app.domain.model.TranscriptionBackend
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +11,7 @@ class FakePreferencesRepository(
     initialPrivacyMode: PrivacyMode = PrivacyMode.MODE_BEST,
     initialHasEverRecorded: Boolean = false,
     initialDeviceRegistered: Boolean = false,
+    initialTranscriptionBackend: TranscriptionBackend = TranscriptionBackend.PROXY,
 ) : PreferencesRepository {
 
     private val _selectedLanguage = MutableStateFlow(initialLanguage)
@@ -20,6 +22,9 @@ class FakePreferencesRepository(
 
     private val _privacyMode = MutableStateFlow(initialPrivacyMode)
     override val privacyMode: Flow<PrivacyMode> = _privacyMode
+
+    private val _transcriptionBackend = MutableStateFlow(initialTranscriptionBackend)
+    override val transcriptionBackend: Flow<TranscriptionBackend> = _transcriptionBackend
 
     private val _deviceRegistered = MutableStateFlow(initialDeviceRegistered)
     override val deviceRegistered: Flow<Boolean> = _deviceRegistered
@@ -47,6 +52,10 @@ class FakePreferencesRepository(
             _modeExplicitlySet = true
             _privacyMode.value = default
         }
+    }
+
+    override suspend fun saveTranscriptionBackend(backend: TranscriptionBackend) {
+        _transcriptionBackend.value = backend
     }
 
     override suspend fun setDeviceRegistered(value: Boolean) {

@@ -4,13 +4,16 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.provider.Settings
 import android.util.Base64
+import android.util.Log
 import androidx.core.content.edit
 import com.google.crypto.tink.Aead
 import com.google.crypto.tink.KeyTemplates
 import com.google.crypto.tink.RegistryConfiguration
+import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import com.wrait.app.data.WraitStorageConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.security.GeneralSecurityException
 import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -19,6 +22,14 @@ import javax.inject.Singleton
 class DeviceIdProvider @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
+    init {
+        try {
+            AeadConfig.register()
+        } catch (e: GeneralSecurityException) {
+            Log.e(TAG, "Tink AEAD registration failed — device ID may not work", e)
+        }
+    }
+
     /**
      * Returns the stored device ID if one has already been persisted (decrypted from
      * SharedPreferences), otherwise derives it fresh, encrypts it with AES256-GCM, stores it,
@@ -77,5 +88,9 @@ class DeviceIdProvider @Inject constructor(
     private fun sha256Hex(input: String): String {
         val bytes = MessageDigest.getInstance("SHA-256").digest(input.toByteArray(Charsets.UTF_8))
         return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private companion object {
+        const val TAG = "DeviceIdProvider"
     }
 }

@@ -10,6 +10,7 @@ import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
+import com.wrait.app.domain.model.TranscriptionBackend
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -56,6 +57,9 @@ class MainViewModel @Inject constructor(
 
     val privacyMode: StateFlow<PrivacyMode> = preferencesRepository.privacyMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PrivacyMode.MODE_BEST)
+
+    val transcriptionBackend: StateFlow<TranscriptionBackend> = preferencesRepository.transcriptionBackend
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TranscriptionBackend.PROXY)
 
     private val _showSettingsPanel = MutableStateFlow(false)
     val showSettingsPanel: StateFlow<Boolean> = _showSettingsPanel.asStateFlow()
@@ -131,10 +135,6 @@ class MainViewModel @Inject constructor(
         recordingController.onPermissionRevoked()
     }
 
-    fun onEntriesDeleted(count: Int) {
-        recordingController.onEntriesDeleted(count)
-    }
-
     fun onSwipeDown() {
         if (recordingState.value.isActive) return
         _showSettingsPanel.value = true
@@ -148,6 +148,14 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.savePrivacyMode(
                 if (enabled) PrivacyMode.MODE_OFFLINE else PrivacyMode.MODE_BEST
+            )
+        }
+    }
+
+    fun onTranscriptionBackendToggle(useBackend: Boolean) {
+        viewModelScope.launch {
+            preferencesRepository.saveTranscriptionBackend(
+                if (useBackend) TranscriptionBackend.PROXY else TranscriptionBackend.DIRECT
             )
         }
     }

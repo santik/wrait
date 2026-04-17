@@ -29,4 +29,4 @@ fi
 # The release app (com.wrait.app) is a separate package and is never touched.
 adb -s 4A181FDJH0030G uninstall com.wrait.app.debug 2>/dev/null || true
 
-adb -s 4A181FDJH0030G install /Users/alexander/AndroidStudioProjects/wrait/app/build/outputs/apk/release/app-release.apk
+adb -s 4A181FDJH0030G install app/build/outputs/apk/release/app-release.apk

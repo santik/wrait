@@ -28,6 +28,7 @@ import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
+import com.wrait.app.domain.model.TranscriptionBackend
 import com.wrait.app.ui.theme.DesignTokens
 import com.wrait.app.ui.settings.SettingsPanel
 import kotlinx.coroutines.delay
@@ -43,11 +44,13 @@ fun MainScreen(
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
+    transcriptionBackend: TranscriptionBackend,
     onButtonTap: () -> Unit,
     onLanguageTap: () -> Unit,
     onSwipeUp: () -> Unit,
     onSwipeDown: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
+    onTranscriptionBackendToggle: (Boolean) -> Unit,
     onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
     onTapToRead: (entryId: Long) -> Unit,
@@ -143,6 +146,8 @@ fun MainScreen(
             SettingsPanel(
                 privacyMode = privacyMode,
                 onModeToggle = onPrivacyModeToggle,
+                transcriptionBackend = transcriptionBackend,
+                onTranscriptionBackendToggle = onTranscriptionBackendToggle,
                 onDismiss = onSettingsPanelDismiss,
             )
         }

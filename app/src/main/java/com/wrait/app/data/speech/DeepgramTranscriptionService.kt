@@ -4,20 +4,24 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.util.Log
 import com.wrait.app.BuildConfig
+import com.wrait.app.data.api.WraitBackendClient
+import com.wrait.app.domain.model.TranscriptionBackend
+import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
-import io.ktor.serialization.kotlinx.json.json
+import io.ktor.http.isSuccess
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
@@ -30,12 +34,11 @@ import javax.inject.Singleton
 @Singleton
 class DeepgramTranscriptionService @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val wraitBackendClient: WraitBackendClient,
+    private val preferencesRepository: PreferencesRepository,
 ) : TranscriptionService {
 
     private val client = HttpClient(Android) {
-        install(ContentNegotiation) {
-            json(Json { ignoreUnknownKeys = true })
-        }
         install(HttpTimeout) {
             connectTimeoutMillis = 10_000
             requestTimeoutMillis = 300_000 // 5 min ceiling — 2-min cap bounds file size
@@ -48,7 +51,8 @@ class DeepgramTranscriptionService @Inject constructor(
         languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit,
     ): TranscriptionResult {
-        if (BuildConfig.DEEPGRAM_API_KEY.isBlank()) {
+        val backend = preferencesRepository.transcriptionBackend.first()
+        if (backend == TranscriptionBackend.DIRECT && BuildConfig.DEEPGRAM_API_KEY.isBlank()) {
             Log.e(TAG, "Deepgram API key is not configured")
             return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
         }
@@ -151,53 +155,65 @@ class DeepgramTranscriptionService @Inject constructor(
 
     private suspend fun upload(file: File, languageCode: String): TranscriptionResult {
         val language = languageCode.substringBefore("-")
-        val url =
-            "https://api.deepgram.com/v1/listen?model=nova-3&punctuate=true&smart_format=true&language=$language&detect_language=true"
 
         repeat(MAX_UPLOAD_RETRIES) { attempt ->
             try {
                 val bytes = withContext(Dispatchers.IO) { file.readBytes() }
-                Log.d(TAG, "Uploading ${bytes.size} bytes to Deepgram (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES)")
-                val response = client.post(url) {
-                    header(HttpHeaders.Authorization, "Token ${BuildConfig.DEEPGRAM_API_KEY}")
-                    header(HttpHeaders.ContentType, "audio/mp4")
-                    setBody(bytes)
-                }
-                return if (response.status.value == 200) {
-                    val body = response.body<DeepgramResponse>()
-                    if (body.results.channels.isEmpty()) {
-                        Log.w(TAG, "Deepgram response has no channels")
-                        TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
-                    } else {
-                        val channel = body.results.channels[0]
-                        val transcript = channel.alternatives
-                            .firstOrNull()
-                            ?.transcript
-                            .orEmpty()
-                        if (transcript.isBlank()) {
-                            Log.w(TAG, "Deepgram response contained empty transcript")
-                            TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
-                        } else {
-                            val detected = channel.detected_language?.takeIf { it.isNotBlank() }
-                            Log.d(TAG, "Transcription received: ${transcript.length} chars, detected=$detected")
-                            TranscriptionResult.Success(transcript, detectedLanguage = detected)
-                        }
-                    }
-                } else {
-                    Log.w(TAG, "Deepgram API error: ${response.status}")
-                    TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
-                }
+                val backend = preferencesRepository.transcriptionBackend.first()
+                Log.d(TAG, "Uploading ${bytes.size} bytes (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES, backend=$backend)")
+                val response: HttpResponse = callTranscribeEndpoint(bytes, language, backend)
+                return parseResponse(response)
             } catch (e: IOException) {
-                Log.w(TAG, "Deepgram network error (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
+                Log.w(TAG, "Network error (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
                 if (attempt < MAX_UPLOAD_RETRIES - 1) {
                     delay(RETRY_BASE_DELAY_MS shl attempt) // 1 s, 2 s, 4 s
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Deepgram upload failed: ${e.javaClass.simpleName}: ${e.message}")
+                Log.w(TAG, "Upload failed: ${e.javaClass.simpleName}: ${e.message}")
                 return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
             }
         }
         return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
+    }
+
+    private suspend fun callTranscribeEndpoint(
+        bytes: ByteArray,
+        language: String,
+        backend: TranscriptionBackend,
+    ): HttpResponse {
+        return if (backend == TranscriptionBackend.PROXY) {
+            wraitBackendClient.transcribe(bytes, language)
+        } else {
+            client.post("https://api.deepgram.com/v1/listen?model=nova-3&punctuate=true&smart_format=true&language=$language&detect_language=true") {
+                header(HttpHeaders.Authorization, "Token ${BuildConfig.DEEPGRAM_API_KEY}")
+                header(HttpHeaders.ContentType, "audio/mp4")
+                setBody(bytes)
+            }
+        }
+    }
+
+    private suspend fun parseResponse(response: HttpResponse): TranscriptionResult {
+        return if (response.status.isSuccess()) {
+            val body = jsonParser.decodeFromString<DeepgramResponse>(response.bodyAsText())
+            if (body.results.channels.isEmpty()) {
+                Log.w(TAG, "Deepgram response has no channels")
+                TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
+            } else {
+                val channel = body.results.channels[0]
+                val transcript = channel.alternatives.firstOrNull()?.transcript.orEmpty()
+                if (transcript.isBlank()) {
+                    Log.w(TAG, "Deepgram response contained empty transcript")
+                    TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
+                } else {
+                    val detected = channel.detected_language?.takeIf { it.isNotBlank() }
+                    Log.d(TAG, "Transcription received: ${transcript.length} chars, detected=$detected")
+                    TranscriptionResult.Success(transcript, detectedLanguage = detected)
+                }
+            }
+        } else {
+            Log.w(TAG, "Transcription API error: ${response.status}")
+            TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+        }
     }
 
     private fun persistDraftAudio(tempFile: File): String? {
@@ -223,6 +239,7 @@ class DeepgramTranscriptionService @Inject constructor(
         private const val MAX_FILE_SIZE_BYTES = 10 * 1_024 * 1_024L  // 10 MB
         private const val MAX_UPLOAD_RETRIES = 3
         private const val RETRY_BASE_DELAY_MS = 1_000L
+        private val jsonParser = Json { ignoreUnknownKeys = true }
     }
 }
 
@@ -240,4 +257,3 @@ private data class DeepgramChannel(
 
 @Serializable
 private data class DeepgramAlternative(val transcript: String)
-
