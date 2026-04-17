@@ -91,8 +91,60 @@ class WraitBackendClientTest {
         client.register(deviceId)
 
         assertNotNull(capturedHeaders)
-        assertEquals(deviceId, capturedHeaders!!["X-Device-Id"])
+        val headers = requireNotNull(capturedHeaders)
+        assertEquals(deviceId, headers["X-Device-Id"])
         // PROXY_SECRET is "" in test builds (no local.properties in CI)
-        assertNotNull(capturedHeaders!!["X-Proxy-Secret"])
+        assertNotNull(headers["X-Proxy-Secret"])
+    }
+
+    @Test
+    fun cleanupTranscript_200_returnsCleanedText() = runTest {
+        val engine = MockEngine {
+            respond(
+                content = """{"cleanedText":"hello world"}""",
+                status = HttpStatusCode.OK,
+                headers = headersOf(),
+            )
+        }
+        val client = WraitBackendClient(engine)
+
+        val result = client.cleanupTranscript(
+            transcript = "um hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertTrue(result is CleanupResult.Success)
+        assertEquals("hello world", (result as CleanupResult.Success).cleanedText)
+    }
+
+    @Test
+    fun cleanupTranscript_non2xx_returnsFailure() = runTest {
+        val engine = MockEngine { respond("", HttpStatusCode.InternalServerError, headersOf()) }
+        val client = WraitBackendClient(engine)
+
+        val result = client.cleanupTranscript(
+            transcript = "hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertTrue(result is CleanupResult.Failure)
+        assertEquals("http 500", (result as CleanupResult.Failure).reason)
+    }
+
+    @Test
+    fun cleanupTranscript_networkException_returnsFailure() = runTest {
+        val engine = MockEngine { throw IOException("no route to host") }
+        val client = WraitBackendClient(engine)
+
+        val result = client.cleanupTranscript(
+            transcript = "hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertTrue(result is CleanupResult.Failure)
+        assertEquals("network error", (result as CleanupResult.Failure).reason)
     }
 }

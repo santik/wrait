@@ -2,7 +2,6 @@ package com.wrait.app
 
 import android.util.Log
 import com.wrait.app.data.api.CleanupResult
-import com.wrait.app.data.api.OpenAiApiService
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.data.speech.TranscriptionResult
@@ -10,6 +9,7 @@ import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.data.speech.TranscriptionStatus
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.PrivacyMode
+import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -30,7 +30,7 @@ class MainRecordingController @Inject constructor(
     private val entryRepository: EntryRepository,
     private val preferencesRepository: PreferencesRepository,
     private val transcriptionService: TranscriptionService,
-    private val openAiApiService: OpenAiApiService,
+    private val cleanupTranscriptUseCase: CleanupTranscriptUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope,
 ) {
@@ -154,7 +154,7 @@ class MainRecordingController @Inject constructor(
      * Full pipeline:
      * 1. Validate input — blank or overlong text is rejected before touching the DB.
      * 2. Save raw transcript as draft (on IO) — user's words are safe before any network call.
-     * 3. Call OpenAI cleanup.
+     * 3. Call cleanup (OpenAI direct or backend proxy, based on preference).
      * 4a. Success → update entry with cleaned text → Saved(entryId).
      * 4b. Failure → leave draft in DB → Error(NoInternet | ApiFailed).
      *
@@ -216,7 +216,7 @@ class MainRecordingController @Inject constructor(
         }
 
         // Step 3 — cleanup
-        when (val result = openAiApiService.cleanupTranscript(text)) {
+        when (val result = cleanupTranscriptUseCase(text, language)) {
             is CleanupResult.Success -> {
                 val wordCount = result.cleanedText.trim()
                     .split(Regex("\\s+")).count { it.isNotEmpty() }

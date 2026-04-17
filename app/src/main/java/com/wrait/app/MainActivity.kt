@@ -34,6 +34,7 @@ import androidx.navigation.navArgument
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.TranscriptionBackend
 import com.wrait.app.ui.entries.EntryDetailScreen
@@ -68,6 +69,7 @@ class MainActivity : ComponentActivity() {
                 val showSettingsPanel by viewModel.showSettingsPanel.collectAsStateWithLifecycle()
                 val privacyMode by viewModel.privacyMode.collectAsStateWithLifecycle()
                 val transcriptionBackend by viewModel.transcriptionBackend.collectAsStateWithLifecycle()
+                val cleanupBackend by viewModel.cleanupBackend.collectAsStateWithLifecycle()
 
                 LaunchedEffect(recordingState.isActive) {
                     val keepScreenOnFlagSet = activity.window.attributes.flags and
@@ -169,9 +171,11 @@ class MainActivity : ComponentActivity() {
                     showSettingsPanel = showSettingsPanel,
                     privacyMode = privacyMode,
                     transcriptionBackend = transcriptionBackend,
+                    cleanupBackend = cleanupBackend,
                     onSwipeDown = viewModel::onSwipeDown,
                     onPrivacyModeToggle = viewModel::onPrivacyModeToggle,
                     onTranscriptionBackendToggle = viewModel::onTranscriptionBackendToggle,
+                    onCleanupBackendToggle = viewModel::onCleanupBackendToggle,
                     onSettingsPanelDismiss = viewModel::onSettingsPanelDismiss,
                     onStatusCleared = { viewModel.resetToIdle() },
                     onStatusLineTap = onStatusLineTap,
@@ -251,9 +255,11 @@ private fun AppNavHost(
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
     transcriptionBackend: TranscriptionBackend,
+    cleanupBackend: CleanupBackend,
     onSwipeDown: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
     onTranscriptionBackendToggle: (Boolean) -> Unit,
+    onCleanupBackendToggle: (Boolean) -> Unit,
     onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
     onStatusLineTap: () -> Unit,
@@ -283,12 +289,14 @@ private fun AppNavHost(
                 showSettingsPanel = showSettingsPanel,
                 privacyMode = privacyMode,
                 transcriptionBackend = transcriptionBackend,
+                cleanupBackend = cleanupBackend,
                 onButtonTap = onMainButtonTapped,
                 onLanguageTap = { showLanguagePicker = true },
                 onSwipeUp = onStatsLineTap,
                 onSwipeDown = onSwipeDown,
                 onPrivacyModeToggle = onPrivacyModeToggle,
                 onTranscriptionBackendToggle = onTranscriptionBackendToggle,
+                onCleanupBackendToggle = onCleanupBackendToggle,
                 onSettingsPanelDismiss = onSettingsPanelDismiss,
                 onStatusCleared = onStatusCleared,
                 onTapToRead = onTapToRead,
