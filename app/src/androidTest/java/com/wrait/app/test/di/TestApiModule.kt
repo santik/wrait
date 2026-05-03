@@ -1,11 +1,11 @@
 package com.wrait.app.test.di
 
 import com.wrait.app.data.api.DeviceRegistrationService
-import com.wrait.app.data.api.OpenAiApiService
+import com.wrait.app.data.api.TranscriptCleanupService
 import com.wrait.app.di.ApiModule
 import com.wrait.app.di.RegistrationModule
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
-import com.wrait.app.test.fake.FakeOpenAiApiService
+import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.components.SingletonComponent
@@ -21,7 +21,7 @@ object TestApiModule {
 
     @Provides
     @Singleton
-    fun provideOpenAiApiService(): OpenAiApiService = FakeOpenAiApiService()
+    fun provideTranscriptCleanupService(): TranscriptCleanupService = FakeTranscriptCleanupService()
 
     @Provides
     @Singleton

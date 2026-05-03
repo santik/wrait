@@ -342,7 +342,6 @@ internal fun entryDetailDevDraftText(
     val cleaned = entry.cleanedText?.trim().orEmpty()
     val raw = entry.rawTranscript.trim()
     if (cleaned.isBlank() || raw.isBlank()) return null
-    if (cleaned == raw) return null
 
     val rawPreview = raw.lines().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
     if (rawPreview.isBlank()) return null

@@ -98,7 +98,6 @@ Screenshots and the recent apps thumbnail are blocked via `FLAG_SECURE`.
 2. Create `local.properties` in the project root (this file is never committed):
    ```properties
    sdk.dir=/path/to/your/Android/sdk
-   OPENAI_API_KEY=sk-...
    PRIVACY_MODE=MODE_BEST
    BACKEND_URL=https://wrait-backend.vercel.app
    PROXY_SECRET=...

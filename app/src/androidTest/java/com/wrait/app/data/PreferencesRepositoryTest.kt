@@ -8,7 +8,6 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.repository.PreferencesRepositoryImpl
-import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.SUPPORTED_LANGUAGE_CODES
 import com.wrait.app.domain.repository.PreferencesRepository
@@ -156,22 +155,4 @@ class PreferencesRepositoryTest {
         assertFalse(rawPreferences.contains(legacyKey))
     }
 
-    @Test
-    fun cleanupBackend_defaultsToAndroid_onFreshStore() = runTest(testDispatcher) {
-        val backend = repository.cleanupBackend.first()
-        assertEquals(CleanupBackend.ANDROID, backend)
-    }
-
-    @Test
-    fun saveCleanupBackend_backend_persists() = runTest(testDispatcher) {
-        repository.saveCleanupBackend(CleanupBackend.BACKEND)
-        assertEquals(CleanupBackend.BACKEND, repository.cleanupBackend.first())
-    }
-
-    @Test
-    fun saveCleanupBackend_roundTrip_androidAfterBackend() = runTest(testDispatcher) {
-        repository.saveCleanupBackend(CleanupBackend.BACKEND)
-        repository.saveCleanupBackend(CleanupBackend.ANDROID)
-        assertEquals(CleanupBackend.ANDROID, repository.cleanupBackend.first())
-    }
 }

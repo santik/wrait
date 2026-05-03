@@ -8,7 +8,6 @@ import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
-import com.wrait.app.data.api.WraitBackendClient
 import com.wrait.app.data.device.DeviceIdProvider
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
@@ -16,7 +15,7 @@ import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
-import com.wrait.app.test.fake.FakeOpenAiApiService
+import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
@@ -43,7 +42,7 @@ class MainViewModelTest {
     private lateinit var db: WraitDatabase
     private lateinit var entryDao: EntryDao
     private lateinit var entryRepository: EntryRepository
-    private lateinit var fakeApi: FakeOpenAiApiService
+    private lateinit var fakeApi: FakeTranscriptCleanupService
     private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakeTime: FakeTimeProvider
     private val createdVms = mutableListOf<MainViewModel>()
@@ -58,7 +57,7 @@ class MainViewModelTest {
         entryDao = db.entryDao()
         fakeTime = FakeTimeProvider()
         entryRepository = EntryRepositoryImpl(entryDao, fakeTime)
-        fakeApi = FakeOpenAiApiService()
+        fakeApi = FakeTranscriptCleanupService()
         fakeTranscription = FakeTranscriptionService()
     }
 
@@ -77,17 +76,12 @@ class MainViewModelTest {
         val deviceIdProvider = DeviceIdProvider(
             InstrumentationRegistry.getInstrumentation().targetContext
         )
-        val wraitBackendClient = WraitBackendClient(deviceIdProvider)
         return MainViewModel(
             preferencesRepository = fakePrefs,
             entryRepository = entryRepository,
             transcriptionService = fakeTranscription,
             cleanupTranscriptUseCase = CleanupTranscriptUseCase(
-                preferencesRepository = fakePrefs,
-                openAiApiService = fakeApi,
-                wraitBackendClient = wraitBackendClient,
-                deviceIdProvider = deviceIdProvider,
-                ioDispatcher = testDispatcher,
+                transcriptCleanupService = fakeApi,
             ),
             registerDeviceUseCase = RegisterDeviceUseCase(
                 preferencesRepository = fakePrefs,

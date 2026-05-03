@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
-import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.ui.theme.DesignTokens
@@ -44,13 +43,11 @@ fun MainScreen(
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
-    cleanupBackend: CleanupBackend,
     onButtonTap: () -> Unit,
     onLanguageTap: () -> Unit,
     onSwipeUp: () -> Unit,
     onSwipeDown: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
-    onCleanupBackendToggle: (Boolean) -> Unit,
     onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
     onTapToRead: (entryId: Long) -> Unit,
@@ -146,8 +143,6 @@ fun MainScreen(
             SettingsPanel(
                 privacyMode = privacyMode,
                 onModeToggle = onPrivacyModeToggle,
-                cleanupBackend = cleanupBackend,
-                onCleanupBackendToggle = onCleanupBackendToggle,
                 onDismiss = onSettingsPanelDismiss,
             )
         }

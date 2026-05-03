@@ -1,9 +1,9 @@
 package com.wrait.app.test.fake
 
 import com.wrait.app.data.api.CleanupResult
-import com.wrait.app.data.api.OpenAiApiService
+import com.wrait.app.data.api.TranscriptCleanupService
 
-class FakeOpenAiApiService : OpenAiApiService {
+class FakeTranscriptCleanupService : TranscriptCleanupService {
     var result: CleanupResult = CleanupResult.Success("cleaned text")
     var callCount: Int = 0
 
@@ -12,7 +12,7 @@ class FakeOpenAiApiService : OpenAiApiService {
         callCount = 0
     }
 
-    override suspend fun cleanupTranscript(rawText: String): CleanupResult {
+    override suspend fun cleanupTranscript(rawText: String, language: String): CleanupResult {
         callCount++
         return result
     }
