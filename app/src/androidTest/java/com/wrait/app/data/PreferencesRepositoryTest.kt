@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.repository.PreferencesRepositoryImpl
+import com.wrait.app.domain.model.LanguagePreferences
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.SUPPORTED_LANGUAGE_CODES
 import com.wrait.app.domain.repository.PreferencesRepository
@@ -64,10 +65,33 @@ class PreferencesRepositoryTest {
     }
 
     @Test
+    fun languagePreferences_defaultsToPrimaryWithinSelectedLanguages() = runTest(testDispatcher) {
+        val languagePreferences = repository.languagePreferences.first()
+        assertTrue(languagePreferences.primaryLanguage in SUPPORTED_LANGUAGE_CODES)
+        assertTrue(languagePreferences.selectedLanguages.isNotEmpty())
+        assertTrue(languagePreferences.primaryLanguage in languagePreferences.selectedLanguages)
+    }
+
+    @Test
     fun setLanguage_persistsAcrossRead() = runTest(testDispatcher) {
         repository.setLanguage("de-DE")
         val language = repository.selectedLanguage.first()
         assertEquals("de-DE", language)
+    }
+
+    @Test
+    fun saveLanguagePreferences_persistsSelectedLanguagesAndPrimary() = runTest(testDispatcher) {
+        repository.saveLanguagePreferences(
+            LanguagePreferences(
+                selectedLanguages = listOf("en-US", "fr-FR", "de-DE"),
+                primaryLanguage = "fr-FR",
+            )
+        )
+
+        val languagePreferences = repository.languagePreferences.first()
+        assertEquals(listOf("en-US", "fr-FR", "de-DE"), languagePreferences.selectedLanguages)
+        assertEquals("fr-FR", languagePreferences.primaryLanguage)
+        assertEquals("fr-FR", repository.selectedLanguage.first())
     }
 
     @Test
@@ -78,6 +102,33 @@ class PreferencesRepositoryTest {
             repository.setLanguage(code)
             assertEquals("Language '$code' should persist", code, repository.selectedLanguage.first())
         }
+    }
+
+    @Test
+    fun legacySelectedLanguage_migratesToLanguagePreferencesOnRead() = runTest(testDispatcher) {
+        val legacyKey = stringPreferencesKey("selected_language")
+        dataStore.edit { preferences ->
+            preferences[legacyKey] = "fr-FR"
+        }
+
+        val languagePreferences = repository.languagePreferences.first()
+        assertEquals(listOf("fr-FR"), languagePreferences.selectedLanguages)
+        assertEquals("fr-FR", languagePreferences.primaryLanguage)
+    }
+
+    @Test
+    fun invalidStoredLanguagePreferences_fallBackToSupportedDefaults() = runTest(testDispatcher) {
+        val selectedLanguagesKey = stringPreferencesKey("selected_languages")
+        val primaryLanguageKey = stringPreferencesKey("primary_language")
+        dataStore.edit { preferences ->
+            preferences[selectedLanguagesKey] = "xx-YY,zz-ZZ"
+            preferences[primaryLanguageKey] = "xx-YY"
+        }
+
+        val languagePreferences = repository.languagePreferences.first()
+        assertTrue(languagePreferences.selectedLanguages.isNotEmpty())
+        assertTrue(languagePreferences.primaryLanguage in SUPPORTED_LANGUAGE_CODES)
+        assertTrue(languagePreferences.primaryLanguage in languagePreferences.selectedLanguages)
     }
 
     @Test

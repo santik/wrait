@@ -7,14 +7,15 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.wrait.app.data.WraitStorageConfig
+import com.wrait.app.domain.model.LanguagePreferences
 import com.wrait.app.domain.model.PrivacyMode
-import com.wrait.app.domain.model.SUPPORTED_LANGUAGE_CODES
+import com.wrait.app.domain.model.defaultSupportedLanguageCode
+import com.wrait.app.domain.model.normalizeLanguagePreferences
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import java.io.IOException
-import java.util.Locale
 import javax.inject.Inject
 
 class PreferencesRepositoryImpl @Inject constructor(
@@ -22,6 +23,8 @@ class PreferencesRepositoryImpl @Inject constructor(
 ) : PreferencesRepository {
 
     private object PreferencesKeys {
+        val PRIMARY_LANGUAGE = stringPreferencesKey("primary_language")
+        val SELECTED_LANGUAGES = stringPreferencesKey("selected_languages")
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
         val HAS_EVER_RECORDED = booleanPreferencesKey("has_ever_recorded")
         val PRIVACY_MODE = stringPreferencesKey("privacy_mode")
@@ -38,11 +41,22 @@ class PreferencesRepositoryImpl @Inject constructor(
             }
         }
 
-    override val selectedLanguage: Flow<String> = preferences.map { stored ->
-        val code = stored[PreferencesKeys.SELECTED_LANGUAGE]
-            ?: Locale.getDefault().toLanguageTag()
-        if (code in SUPPORTED_LANGUAGE_CODES) code else "en-US"
+    override val languagePreferences: Flow<LanguagePreferences> = preferences.map { stored ->
+        val selectedLanguages = stored[PreferencesKeys.SELECTED_LANGUAGES]
+            ?.split(',')
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        val legacyLanguage = stored[PreferencesKeys.SELECTED_LANGUAGE]
+            ?: defaultSupportedLanguageCode()
+
+        normalizeLanguagePreferences(
+            selectedLanguages = if (selectedLanguages.isEmpty()) listOf(legacyLanguage) else selectedLanguages,
+            primaryLanguage = stored[PreferencesKeys.PRIMARY_LANGUAGE] ?: legacyLanguage,
+        )
     }
+
+    override val selectedLanguage: Flow<String> = languagePreferences.map { it.primaryLanguage }
 
     override val hasEverRecorded: Flow<Boolean> = preferences.map { stored ->
         stored[PreferencesKeys.HAS_EVER_RECORDED] ?: false
@@ -59,10 +73,27 @@ class PreferencesRepositoryImpl @Inject constructor(
         stored[PreferencesKeys.DEVICE_REGISTERED] ?: false
     }
 
-    override suspend fun setLanguage(language: String) {
+    override suspend fun saveLanguagePreferences(preferences: LanguagePreferences) {
+        val normalized = normalizeLanguagePreferences(
+            selectedLanguages = preferences.selectedLanguages,
+            primaryLanguage = preferences.primaryLanguage,
+        )
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.SELECTED_LANGUAGE] = language
+            preferences[PreferencesKeys.PRIMARY_LANGUAGE] = normalized.primaryLanguage
+            preferences[PreferencesKeys.SELECTED_LANGUAGES] =
+                normalized.selectedLanguages.joinToString(",")
+            // Keep the legacy key aligned during the transition.
+            preferences[PreferencesKeys.SELECTED_LANGUAGE] = normalized.primaryLanguage
         }
+    }
+
+    override suspend fun setLanguage(language: String) {
+        saveLanguagePreferences(
+            normalizeLanguagePreferences(
+                selectedLanguages = listOf(language),
+                primaryLanguage = language,
+            )
+        )
     }
 
     override suspend fun setHasEverRecorded(value: Boolean) {

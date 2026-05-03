@@ -52,8 +52,6 @@ class MainRecordingControllerTest {
     private lateinit var fakePrefs: FakePreferencesRepository
     private lateinit var wraitBackendClient: WraitBackendClient
     private lateinit var deviceIdProvider: DeviceIdProvider
-    private val languageState = MutableStateFlow("en-US")
-
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -81,10 +79,10 @@ class MainRecordingControllerTest {
         prefs: FakePreferencesRepository = fakePrefs,
         api: FakeTranscriptCleanupService = fakeOpenApi,
         transcription: FakeTranscriptionService = fakeTranscription,
-        language: StateFlow<String> = languageState,
+        language: StateFlow<String> = MutableStateFlow(prefs.currentLanguagePreferences().primaryLanguage),
         scope: CoroutineScope = testScope,
     ): MainRecordingController = MainRecordingController(
-        languageState = language,
+        primaryLanguageState = language,
         entryRepository = entryRepository,
         preferencesRepository = prefs,
         transcriptionService = transcription,

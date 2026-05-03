@@ -293,4 +293,53 @@ class MainViewModelTest {
         assertEquals(3, stats.entryCount)
         assertEquals(2, stats.activeDays)
     }
+
+    @Test
+    fun toggleLanguage_addsSecondLanguageWithoutChangingPrimary() = runTest(testDispatcher) {
+        val fakePrefs = FakePreferencesRepository(initialLanguage = "en-US")
+        val vm = createViewModel(fakePrefs = fakePrefs)
+        vm.initJob.join()
+
+        vm.toggleLanguage("fr-FR")
+        advanceUntilIdle()
+
+        val languagePreferences = vm.languagePreferences.first {
+            it.selectedLanguages == listOf("en-US", "fr-FR")
+        }
+        assertEquals(listOf("en-US", "fr-FR"), languagePreferences.selectedLanguages)
+        assertEquals("en-US", languagePreferences.primaryLanguage)
+    }
+
+    @Test
+    fun setPrimaryLanguage_selectsAndPromotesLanguage() = runTest(testDispatcher) {
+        val fakePrefs = FakePreferencesRepository(
+            initialLanguage = "en-US",
+            initialSelectedLanguages = listOf("en-US", "de-DE"),
+        )
+        val vm = createViewModel(fakePrefs = fakePrefs)
+        vm.initJob.join()
+
+        vm.setPrimaryLanguage("fr-FR")
+        advanceUntilIdle()
+
+        val languagePreferences = vm.languagePreferences.first {
+            it.primaryLanguage == "fr-FR" && "fr-FR" in it.selectedLanguages
+        }
+        assertEquals("fr-FR", languagePreferences.primaryLanguage)
+        assertTrue(languagePreferences.selectedLanguages.containsAll(listOf("en-US", "de-DE", "fr-FR")))
+    }
+
+    @Test
+    fun toggleLanguage_doesNotRemoveLastSelectedLanguage() = runTest(testDispatcher) {
+        val fakePrefs = FakePreferencesRepository(initialLanguage = "en-US")
+        val vm = createViewModel(fakePrefs = fakePrefs)
+        vm.initJob.join()
+
+        vm.toggleLanguage("en-US")
+        advanceUntilIdle()
+
+        val languagePreferences = vm.languagePreferences.first()
+        assertEquals(listOf("en-US"), languagePreferences.selectedLanguages)
+        assertEquals("en-US", languagePreferences.primaryLanguage)
+    }
 }
