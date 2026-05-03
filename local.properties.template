@@ -7,14 +7,12 @@
 ## OpenAI — used for entry cleanup in MODE_BEST
 OPENAI_API_KEY=
 
-## Deepgram — used for transcription in MODE_BEST
-DEEPGRAM_API_KEY=
-
 ## Privacy mode at first launch (MODE_BEST | MODE_OFFLINE)
 ## Omit to default to MODE_BEST.
 #PRIVACY_MODE=MODE_BEST
 
-## Wrait backend — device registration endpoint
+## Wrait backend — speech-to-text proxy, cleanup proxy, and device registration
+## PROXY_SECRET is required for cloud transcription / cleanup to work.
 ## Omit BACKEND_URL to use the default production URL.
 #BACKEND_URL=https://wrait-backend.vercel.app
 PROXY_SECRET=

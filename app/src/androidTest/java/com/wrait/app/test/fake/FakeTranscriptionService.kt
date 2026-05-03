@@ -59,6 +59,8 @@ private fun RecognizerError.toFailureReason(): TranscriptionFailureReason = when
     RecognizerError.Network,
     RecognizerError.Timeout,
     RecognizerError.NoInternet              -> TranscriptionFailureReason.NetworkError
+    RecognizerError.BackendUnavailable      -> TranscriptionFailureReason.BackendUnavailable
+    RecognizerError.ProxyAuthFailed         -> TranscriptionFailureReason.ProxyAuthFailed
     RecognizerError.Audio,
     RecognizerError.Client,
     RecognizerError.Server,

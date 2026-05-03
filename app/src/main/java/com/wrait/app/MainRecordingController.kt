@@ -277,5 +277,7 @@ private fun TranscriptionFailureReason.toRecognizerError(
     TranscriptionFailureReason.MicBlocked         -> RecognizerError.InsufficientPermissions
     TranscriptionFailureReason.NetworkError       -> RecognizerError.NoInternet
     TranscriptionFailureReason.ModelNotAvailable  -> RecognizerError.NotAvailable(language)
+    TranscriptionFailureReason.BackendUnavailable -> RecognizerError.BackendUnavailable
+    TranscriptionFailureReason.ProxyAuthFailed    -> RecognizerError.ProxyAuthFailed
     TranscriptionFailureReason.ApiError           -> RecognizerError.ApiFailed
 }

@@ -14,16 +14,10 @@ if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
 val openAiApiKey: String = localProperties.getProperty("OPENAI_API_KEY", "")
-val deepgramApiKey: String = localProperties.getProperty("DEEPGRAM_API_KEY", "")
-val deepgramListenUrl: String = localProperties.getProperty("DEEPGRAM_LISTEN_URL", "https://api.deepgram.com/v1/listen")
 val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST")
 val backendUrl: String = localProperties.getProperty("BACKEND_URL", "https://wrait-backend.vercel.app")
 val proxySecret: String = localProperties.getProperty("PROXY_SECRET", "")
-val transcriptionBackend: String = localProperties.getProperty("TRANSCRIPTION_BACKEND", "PROXY")
 val devRaw: String = localProperties.getProperty("DEV", "false").trim().lowercase()
-require(transcriptionBackend == "PROXY" || transcriptionBackend == "DIRECT") {
-    "TRANSCRIPTION_BACKEND in local.properties must be PROXY or DIRECT, got: \"$transcriptionBackend\""
-}
 require(devRaw == "true" || devRaw == "false") {
     "DEV in local.properties must be true or false, got: \"$devRaw\""
 }
@@ -50,12 +44,9 @@ android {
         testInstrumentationRunner = "com.wrait.app.test.HiltTestRunner"
 
         buildConfigField("String", "OPENAI_API_KEY", "\"$openAiApiKey\"")
-        buildConfigField("String", "DEEPGRAM_API_KEY", "\"$deepgramApiKey\"")
-        buildConfigField("String", "DEEPGRAM_LISTEN_URL", "\"$deepgramListenUrl\"")
         buildConfigField("String", "PRIVACY_MODE", "\"$privacyMode\"")
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
         buildConfigField("String", "PROXY_SECRET", "\"$proxySecret\"")
-        buildConfigField("String", "TRANSCRIPTION_BACKEND", "\"$transcriptionBackend\"")
         buildConfigField("boolean", "DEV", devRaw)
     }
 

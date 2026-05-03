@@ -10,7 +10,6 @@ import com.wrait.app.data.WraitStorageConfig
 import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.SUPPORTED_LANGUAGE_CODES
-import com.wrait.app.domain.model.TranscriptionBackend
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -27,9 +26,9 @@ class PreferencesRepositoryImpl @Inject constructor(
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
         val HAS_EVER_RECORDED = booleanPreferencesKey("has_ever_recorded")
         val PRIVACY_MODE = stringPreferencesKey("privacy_mode")
-        val TRANSCRIPTION_BACKEND = stringPreferencesKey("transcription_backend")
         val CLEANUP_BACKEND = stringPreferencesKey("cleanup_backend")
         val DEVICE_REGISTERED = booleanPreferencesKey(WraitStorageConfig.DEVICE_REGISTERED)
+        val LEGACY_TRANSCRIPTION_BACKEND = stringPreferencesKey("transcription_backend")
     }
 
     private val preferences: Flow<Preferences> = dataStore.data
@@ -55,13 +54,6 @@ class PreferencesRepositoryImpl @Inject constructor(
         when (stored[PreferencesKeys.PRIVACY_MODE]) {
             PrivacyMode.MODE_OFFLINE.name -> PrivacyMode.MODE_OFFLINE
             else -> PrivacyMode.MODE_BEST
-        }
-    }
-
-    override val transcriptionBackend: Flow<TranscriptionBackend> = preferences.map { stored ->
-        when (stored[PreferencesKeys.TRANSCRIPTION_BACKEND]) {
-            TranscriptionBackend.DIRECT.name -> TranscriptionBackend.DIRECT
-            else -> TranscriptionBackend.PROXY
         }
     }
 
@@ -95,15 +87,10 @@ class PreferencesRepositoryImpl @Inject constructor(
 
     override suspend fun seedPrivacyModeOnce(default: PrivacyMode) {
         dataStore.edit { preferences ->
+            preferences.remove(PreferencesKeys.LEGACY_TRANSCRIPTION_BACKEND)
             if (!preferences.contains(PreferencesKeys.PRIVACY_MODE)) {
                 preferences[PreferencesKeys.PRIVACY_MODE] = default.name
             }
-        }
-    }
-
-    override suspend fun saveTranscriptionBackend(backend: TranscriptionBackend) {
-        dataStore.edit { preferences ->
-            preferences[PreferencesKeys.TRANSCRIPTION_BACKEND] = backend.name
         }
     }
 

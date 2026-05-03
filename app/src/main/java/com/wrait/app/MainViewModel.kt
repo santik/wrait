@@ -12,7 +12,6 @@ import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
-import com.wrait.app.domain.model.TranscriptionBackend
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,8 +32,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
-import javax.inject.Inject
 import java.io.File
+import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -59,9 +58,6 @@ class MainViewModel @Inject constructor(
 
     val privacyMode: StateFlow<PrivacyMode> = preferencesRepository.privacyMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PrivacyMode.MODE_BEST)
-
-    val transcriptionBackend: StateFlow<TranscriptionBackend> = preferencesRepository.transcriptionBackend
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TranscriptionBackend.PROXY)
 
     val cleanupBackend: StateFlow<CleanupBackend> = preferencesRepository.cleanupBackend
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CleanupBackend.ANDROID)
@@ -153,14 +149,6 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.savePrivacyMode(
                 if (enabled) PrivacyMode.MODE_OFFLINE else PrivacyMode.MODE_BEST
-            )
-        }
-    }
-
-    fun onTranscriptionBackendToggle(useBackend: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.saveTranscriptionBackend(
-                if (useBackend) TranscriptionBackend.PROXY else TranscriptionBackend.DIRECT
             )
         }
     }

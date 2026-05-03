@@ -1,6 +1,10 @@
 package com.wrait.app.data
 
+import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.repository.PreferencesRepositoryImpl
@@ -27,13 +31,14 @@ class PreferencesRepositoryTest {
     private val testScope = TestScope(testDispatcher)
 
     private lateinit var prefsFile: File
+    private lateinit var dataStore: DataStore<Preferences>
     private lateinit var repository: PreferencesRepository
 
     @Before
     fun setUp() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         prefsFile = File(context.filesDir, "test_prefs_${System.nanoTime()}.preferences_pb")
-        val dataStore = PreferenceDataStoreFactory.create(
+        dataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
             produceFile = { prefsFile }
         )
@@ -136,6 +141,19 @@ class PreferencesRepositoryTest {
         // The DataStore-backed impl checks if key is absent, so subsequent calls are no-ops
         // First seeded value (MODE_OFFLINE) should persist
         assertEquals(PrivacyMode.MODE_OFFLINE, repository.privacyMode.first())
+    }
+
+    @Test
+    fun seedPrivacyModeOnce_removesLegacyTranscriptionBackendKey() = runTest(testDispatcher) {
+        val legacyKey = stringPreferencesKey("transcription_backend")
+        dataStore.edit { preferences ->
+            preferences[legacyKey] = "DIRECT"
+        }
+
+        repository.seedPrivacyModeOnce(PrivacyMode.MODE_BEST)
+
+        val rawPreferences = dataStore.data.first()
+        assertFalse(rawPreferences.contains(legacyKey))
     }
 
     @Test

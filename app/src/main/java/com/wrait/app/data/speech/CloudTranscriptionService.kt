@@ -3,27 +3,16 @@ package com.wrait.app.data.speech
 import android.content.Context
 import android.media.MediaRecorder
 import android.util.Log
-import com.wrait.app.BuildConfig
-import com.wrait.app.data.api.DeepgramRequestParams
 import com.wrait.app.data.api.WraitBackendClient
-import com.wrait.app.domain.model.TranscriptionBackend
-import com.wrait.app.domain.repository.PreferencesRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.android.Android
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.request.header
-import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
@@ -33,19 +22,18 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Cloud speech-to-text service for Best mode.
+ *
+ * Audio is recorded locally, then sent to the backend proxy at `/api/transcribe`.
+ * The proxy is expected to return a Deepgram-compatible response body so the app can
+ * preserve its existing transcript and detected-language parsing behavior.
+ */
 @Singleton
-class DeepgramTranscriptionService @Inject constructor(
+class CloudTranscriptionService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val wraitBackendClient: WraitBackendClient,
-    private val preferencesRepository: PreferencesRepository,
 ) : TranscriptionService {
-
-    private val client = HttpClient(Android) {
-        install(HttpTimeout) {
-            connectTimeoutMillis = 10_000
-            requestTimeoutMillis = 300_000 // 5 min ceiling — 2-min cap bounds file size
-        }
-    }
 
     @Volatile private var stopSignal = CompletableDeferred<Unit>()
 
@@ -53,11 +41,6 @@ class DeepgramTranscriptionService @Inject constructor(
         languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit,
     ): TranscriptionResult {
-        val backend = preferencesRepository.transcriptionBackend.first()
-        if (backend == TranscriptionBackend.DIRECT && BuildConfig.DEEPGRAM_API_KEY.isBlank()) {
-            Log.e(TAG, "Deepgram API key is not configured")
-            return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
-        }
         stopSignal = CompletableDeferred()
         val tempFile = File(context.cacheDir, "wrait_recording_${System.currentTimeMillis()}.m4a")
         var keepFileAsDraft = false
@@ -76,8 +59,7 @@ class DeepgramTranscriptionService @Inject constructor(
             when (val result = upload(tempFile, languageCode)) {
                 is TranscriptionResult.Success -> result
                 is TranscriptionResult.Failure -> {
-                    keepFileAsDraft = result.reason == TranscriptionFailureReason.NetworkError ||
-                        result.reason == TranscriptionFailureReason.ApiError
+                    keepFileAsDraft = shouldPersistAudioDraft(result.reason)
                     if (keepFileAsDraft) {
                         draftPath = persistDraftAudio(tempFile)
                         keepFileAsDraft = draftPath != null
@@ -159,17 +141,23 @@ class DeepgramTranscriptionService @Inject constructor(
         repeat(MAX_UPLOAD_RETRIES) { attempt ->
             try {
                 val bytes = withContext(Dispatchers.IO) { file.readBytes() }
-                val backend = preferencesRepository.transcriptionBackend.first()
-                Log.d(TAG, "Uploading ${bytes.size} bytes (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES, backend=$backend)")
-                val response: HttpResponse = callTranscribeEndpoint(bytes, selectedLanguageCode, backend)
+                Log.d(TAG, "Uploading ${bytes.size} bytes via backend proxy (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES)")
+                val response: HttpResponse = callTranscribeEndpoint(bytes, selectedLanguageCode)
                 return parseResponse(response)
+            } catch (e: HttpRequestTimeoutException) {
+                Log.w(TAG, "Backend proxy timed out (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
+                if (attempt < MAX_UPLOAD_RETRIES - 1) {
+                    delay(RETRY_BASE_DELAY_MS shl attempt)
+                } else {
+                    return TranscriptionResult.Failure(TranscriptionFailureReason.BackendUnavailable)
+                }
             } catch (e: IOException) {
                 Log.w(TAG, "Network error (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
                 if (attempt < MAX_UPLOAD_RETRIES - 1) {
                     delay(RETRY_BASE_DELAY_MS shl attempt) // 1 s, 2 s, 4 s
                 }
             } catch (e: Exception) {
-                Log.w(TAG, "Upload failed: ${e.javaClass.simpleName}: ${e.message}")
+                Log.w(TAG, "Backend proxy request failed: ${e.javaClass.simpleName}: ${e.message}")
                 return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
             }
         }
@@ -179,21 +167,8 @@ class DeepgramTranscriptionService @Inject constructor(
     private suspend fun callTranscribeEndpoint(
         bytes: ByteArray,
         selectedLanguageCode: String,
-        backend: TranscriptionBackend,
     ): HttpResponse {
-        return if (backend == TranscriptionBackend.PROXY) {
-            wraitBackendClient.transcribe(bytes, selectedLanguageCode)
-        } else {
-            client.post(BuildConfig.DEEPGRAM_LISTEN_URL) {
-                header(HttpHeaders.Authorization, "Token ${BuildConfig.DEEPGRAM_API_KEY}")
-                header(HttpHeaders.ContentType, "audio/mp4")
-                // Auto-detect strategy: keep selected language for UX, not as API constraint.
-                DeepgramRequestParams.asPairs().forEach { (name, value) ->
-                    parameter(name, value)
-                }
-                setBody(bytes)
-            }
-        }
+        return wraitBackendClient.transcribe(bytes, selectedLanguageCode)
     }
 
     private suspend fun parseResponse(response: HttpResponse): TranscriptionResult {
@@ -215,8 +190,26 @@ class DeepgramTranscriptionService @Inject constructor(
                 }
             }
         } else {
-            Log.w(TAG, "Transcription API error: ${response.status}")
-            TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+            val reason = transcriptionFailureReasonForStatus(response.status)
+            when (reason) {
+                TranscriptionFailureReason.ProxyAuthFailed ->
+                    Log.w(TAG, "Backend proxy auth/config error: HTTP ${response.status.value}")
+                TranscriptionFailureReason.BackendUnavailable ->
+                    Log.w(TAG, "Backend proxy unavailable: HTTP ${response.status.value}")
+                else ->
+                    Log.w(TAG, "Backend proxy returned error: HTTP ${response.status.value}")
+            }
+            TranscriptionResult.Failure(reason)
+        }
+    }
+
+    private fun shouldPersistAudioDraft(reason: TranscriptionFailureReason): Boolean {
+        return when (reason) {
+            TranscriptionFailureReason.NetworkError,
+            TranscriptionFailureReason.ApiError,
+            TranscriptionFailureReason.BackendUnavailable,
+            TranscriptionFailureReason.ProxyAuthFailed -> true
+            else -> false
         }
     }
 
@@ -237,13 +230,24 @@ class DeepgramTranscriptionService @Inject constructor(
     }
 
     private companion object {
-        private const val TAG = "DeepgramTranscriptionService"
+        private const val TAG = "CloudTranscriptionService"
         private const val HARD_CAP_MS = 2 * 60 * 1_000L
         private const val MIN_FILE_SIZE_BYTES = 1_024L
         private const val MAX_FILE_SIZE_BYTES = 10 * 1_024 * 1_024L  // 10 MB
         private const val MAX_UPLOAD_RETRIES = 3
         private const val RETRY_BASE_DELAY_MS = 1_000L
         private val jsonParser = Json { ignoreUnknownKeys = true }
+    }
+}
+
+internal fun transcriptionFailureReasonForStatus(status: HttpStatusCode): TranscriptionFailureReason {
+    return when {
+        status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden ->
+            TranscriptionFailureReason.ProxyAuthFailed
+        status.value >= 500 ->
+            TranscriptionFailureReason.BackendUnavailable
+        else ->
+            TranscriptionFailureReason.ApiError
     }
 }
 

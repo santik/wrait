@@ -38,7 +38,7 @@
 9. Transcription service processes the audio
 10. If successful:
     - In **Best mode**: Raw transcript sent to OpenAI for cleanup (filler word removal, punctuation fixing)
-    - In **Private mode**: Raw transcript saved directly without cleanup
+    - In **Offline mode**: Raw transcript saved directly without cleanup
 11. App enters "Saved" state, displaying "tap to read"
 12. After 3 seconds, app returns to idle state showing "tap to write"
 
@@ -164,8 +164,8 @@
 8. Next recording uses new mode
 
 **Mode Differences**:
-- **Best mode**: Deepgram Nova-3 (cloud) + OpenAI gpt-4o-mini (cloud). Requires network. Higher quality transcription and cleanup.
-- **Private mode**: Android SpeechRecognizer (on-device). No network. No cleanup. Lower quality but completely offline.
+- **Best mode**: Backend proxy for speech-to-text (Deepgram behind `/api/transcribe`) + OpenAI gpt-4o-mini cleanup. Requires network. Higher quality transcription and cleanup.
+- **Offline mode**: Android SpeechRecognizer (on-device). No network. No cleanup. Lower quality but completely offline.
 
 ---
 
@@ -257,7 +257,7 @@ The app manages recording through a sealed class state machine:
 
 ### Data That Leaves Device (Best Mode Only)
 
-1. **Voice audio**: Sent to Deepgram Nova-3 API for transcription
+1. **Voice audio**: Sent to the backend proxy `/api/transcribe`, which forwards it to Deepgram Nova-3 for transcription
    - Stateless API call
    - Audio discarded immediately after transcription
    - Never written to disk on device
@@ -324,12 +324,13 @@ The app manages recording through a sealed class state machine:
 - `EntryDao`: Room database access
 - `WraitDatabase`: Encrypted SQLite database
 - `OpenAiApiService`: Text cleanup API client
+- `WraitBackendClient`: Backend proxy client for registration, speech-to-text, and optional cleanup
 - `TranscriptionService`: Abstraction for transcription backends
 
 ### Transcription Backends
 
 **Best Mode**:
-- `DeepgramTranscriptionService`: Cloud STT via Deepgram Nova-3
+- `CloudTranscriptionService`: Cloud STT via backend proxy (`/api/transcribe`, Deepgram behind the proxy)
 - `WhisperTranscriptionService`: Alternative cloud STT via OpenAI Whisper
 - `OpenAiApiService`: Text cleanup via gpt-4o-mini
 
@@ -355,7 +356,7 @@ The app manages recording through a sealed class state machine:
 
 **PrivacyMode**:
 - `MODE_BEST`: Cloud transcription + cleanup
-- `MODE_PRIVATE`: On-device transcription only
+- `MODE_OFFLINE`: On-device transcription only
 
 ---
 
@@ -377,6 +378,14 @@ The app manages recording through a sealed class state machine:
 
 **NoInternet**: Network unavailable (Best mode only)
 - Action: Save as draft, retry on next app launch
+- UI: Error message, draft kept
+
+**BackendUnavailable**: Backend proxy timed out or returned a 5xx response
+- Action: Save as draft, retry on next app launch
+- UI: Error message, draft kept
+
+**ProxyAuthFailed**: Backend proxy rejected the request due to proxy auth/config
+- Action: Save as draft, retry after backend configuration is fixed
 - UI: Error message, draft kept
 
 **ApiFailed**: API call failed (Best mode only)
@@ -404,7 +413,7 @@ The app manages recording through a sealed class state machine:
 - **No search**: Cannot search entries (planned for later)
 - **2-minute cap**: Recording limited to 2 minutes by design
 - **Android only**: No iOS version planned
-- **API keys in binary**: Keys compiled into APK (acceptable for closed beta)
+- **Secrets in binary/config**: The OpenAI key plus backend configuration values are compiled into the APK (acceptable for closed beta)
 
 ---
 
@@ -413,8 +422,9 @@ The app manages recording through a sealed class state machine:
 ### Build-Time Configuration (local.properties)
 
 - `OPENAI_API_KEY`: OpenAI API key for cleanup
-- `DEEPGRAM_API_KEY`: Deepgram API key for transcription
-- `PRIVACY_MODE`: Default privacy mode (MODE_BEST or MODE_PRIVATE)
+- `BACKEND_URL`: Base URL for backend proxy endpoints
+- `PROXY_SECRET`: Shared secret required for backend proxy calls in cloud mode
+- `PRIVACY_MODE`: Default privacy mode (MODE_BEST or MODE_OFFLINE)
 
 ### Runtime Configuration
 
@@ -448,7 +458,7 @@ The app manages recording through a sealed class state machine:
 ## Localization
 
 - Supported languages: Multiple (see SupportedLanguages.kt)
-- Language detection: Automatic in Best mode (Deepgram)
+- Language detection: Automatic in Best mode (backend proxy returns Deepgram-style detection data)
 - Language mismatch handling: Entry re-tagged with detected language
 - Date/time formatting: Locale-aware
 
@@ -529,7 +539,7 @@ The app manages recording through a sealed class state machine:
 **Private Mode (Offline Capable)**:
 - Recording: Works offline (on-device transcription)
 - Draft saving: Works offline
-- Cleanup: N/A (no cleanup in Private mode)
+- Cleanup: N/A (no cleanup in Offline mode)
 - Retry: N/A (no network dependency)
 
 

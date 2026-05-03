@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 class ModeAwareTranscriptionService @Inject constructor(
-    private val deepgramService: DeepgramTranscriptionService,
+    private val cloudTranscriptionService: CloudTranscriptionService,
     private val androidService: AndroidTranscriptionService,
     private val preferencesRepository: PreferencesRepository,
 ) : TranscriptionService {
@@ -15,7 +15,7 @@ class ModeAwareTranscriptionService @Inject constructor(
         return if (preferencesRepository.privacyMode.first() == PrivacyMode.MODE_OFFLINE) {
             androidService
         } else {
-            deepgramService
+            cloudTranscriptionService
         }
     }
 
@@ -35,8 +35,7 @@ class ModeAwareTranscriptionService @Inject constructor(
 
     override fun stopRecording() {
         // Only one service is active at a time, but stop is cheap on the idle one.
-        deepgramService.stopRecording()
+        cloudTranscriptionService.stopRecording()
         androidService.stopRecording()
     }
 }
-
