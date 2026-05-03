@@ -19,8 +19,12 @@ val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST
 val backendUrl: String = localProperties.getProperty("BACKEND_URL", "https://wrait-backend.vercel.app")
 val proxySecret: String = localProperties.getProperty("PROXY_SECRET", "")
 val transcriptionBackend: String = localProperties.getProperty("TRANSCRIPTION_BACKEND", "PROXY")
+val devRaw: String = localProperties.getProperty("DEV", "false").trim().lowercase()
 require(transcriptionBackend == "PROXY" || transcriptionBackend == "DIRECT") {
     "TRANSCRIPTION_BACKEND in local.properties must be PROXY or DIRECT, got: \"$transcriptionBackend\""
+}
+require(devRaw == "true" || devRaw == "false") {
+    "DEV in local.properties must be true or false, got: \"$devRaw\""
 }
 val keystorePath: String? = localProperties.getProperty("KEYSTORE_PATH")
 val releaseKeystorePassword: String? = localProperties.getProperty("KEYSTORE_PASSWORD")
@@ -50,6 +54,7 @@ android {
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
         buildConfigField("String", "PROXY_SECRET", "\"$proxySecret\"")
         buildConfigField("String", "TRANSCRIPTION_BACKEND", "\"$transcriptionBackend\"")
+        buildConfigField("boolean", "DEV", devRaw)
     }
 
     signingConfigs {

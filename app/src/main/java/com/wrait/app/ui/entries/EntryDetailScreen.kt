@@ -68,6 +68,7 @@ fun EntryDetailScreen(
     showDeleteDialog:  Boolean,
     editedText:        String?,
     onTextChanged:     (String) -> Unit,
+    showDevDraft:      Boolean = false,
     onBack:            () -> Unit,
     onDeleteTapped:    () -> Unit,
     onDeleteCancelled: () -> Unit,
@@ -220,6 +221,7 @@ fun EntryDetailScreen(
                     formattedDate = formattedDate,
                     editedText = editedText,
                     onTextChanged = onTextChanged,
+                    showDevDraft = showDevDraft,
                 )
                 // entry == null → initial load (null lasts at most one frame); render nothing
             }
@@ -253,8 +255,10 @@ private fun EntryDetailContent(
     formattedDate: String,
     editedText: String?,
     onTextChanged: (String) -> Unit,
+    showDevDraft: Boolean,
 ) {
     val draftNotice   = stringResource(R.string.entry_detail_draft_notice)
+    val devDraftText = entryDetailDevDraftText(entry, showDevDraft)
 
     Column(
         modifier = Modifier.padding(horizontal = DesignTokens.Spacing.lg)
@@ -306,6 +310,15 @@ private fun EntryDetailContent(
             }
         }
 
+        if (devDraftText != null) {
+            Spacer(modifier = Modifier.height(DesignTokens.Spacing.sm))
+            Text(
+                text = devDraftText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.tertiary
+            )
+        }
+
         Spacer(modifier = Modifier.height(DesignTokens.Spacing.xxl))
     }
 }
@@ -319,6 +332,22 @@ internal fun Entry.shareableTextForShare(): String? {
 
 internal fun buildShareMessage(formattedDate: String, body: String): String =
     "$formattedDate\n\n$body"
+
+internal fun entryDetailDevDraftText(
+    entry: Entry,
+    showDevDraft: Boolean,
+): String? {
+    if (!showDevDraft) return null
+    if (entry.isDraft) return null
+    val cleaned = entry.cleanedText?.trim().orEmpty()
+    val raw = entry.rawTranscript.trim()
+    if (cleaned.isBlank() || raw.isBlank()) return null
+    if (cleaned == raw) return null
+
+    val rawPreview = raw.lines().firstOrNull { it.isNotBlank() }?.trim().orEmpty()
+    if (rawPreview.isBlank()) return null
+    return "draft: $rawPreview"
+}
 
 @Composable
 private fun ErrorState(message: String) {

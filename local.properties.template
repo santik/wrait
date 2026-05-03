@@ -19,6 +19,10 @@ DEEPGRAM_API_KEY=
 #BACKEND_URL=https://wrait-backend.vercel.app
 PROXY_SECRET=
 
+## Dev mode (true | false)
+## When true, entry cards show draft text under cleaned text for debugging.
+#DEV=false
+
 ## Release signing (optional — debug builds work without these)
 #KEYSTORE_PATH=/path/to/release.jks
 #KEYSTORE_PASSWORD=
