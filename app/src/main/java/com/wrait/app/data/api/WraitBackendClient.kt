@@ -33,6 +33,7 @@ import javax.inject.Singleton
 class WraitBackendClient private constructor(
     private val client: HttpClient,
     private val deviceIdProvider: DeviceIdProvider?,
+    private val overrideDeviceId: String? = null,
 ) : DeviceRegistrationService {
 
     @Inject constructor(deviceIdProvider: DeviceIdProvider) : this(
@@ -43,10 +44,11 @@ class WraitBackendClient private constructor(
             }
         },
         deviceIdProvider,
+        null,
     )
 
-    // Secondary constructor for unit tests — injects a MockEngine; device ID is unused in tests.
-    internal constructor(engine: HttpClientEngine) : this(
+    // Test constructor — injects a MockEngine and an optional fixed device ID.
+    internal constructor(engine: HttpClientEngine, overrideDeviceId: String? = null) : this(
         HttpClient(engine) {
             install(HttpTimeout) {
                 requestTimeoutMillis = REQUEST_TIMEOUT_MS
@@ -54,6 +56,7 @@ class WraitBackendClient private constructor(
             }
         },
         null,
+        overrideDeviceId,
     )
 
     // region — /api/register
@@ -80,20 +83,19 @@ class WraitBackendClient private constructor(
 
     // region — /api/transcribe
 
-    suspend fun transcribe(audioBytes: ByteArray, language: String): HttpResponse {
+    suspend fun transcribe(audioBytes: ByteArray, selectedLanguageCode: String): HttpResponse {
         val deviceId = withContext(Dispatchers.IO) {
-            deviceIdProvider?.getOrStore() ?: error("DeviceIdProvider not available")
+            overrideDeviceId ?: deviceIdProvider?.getOrStore() ?: error("DeviceIdProvider not available")
         }
-        Log.d(TAG, "Transcribing ${audioBytes.size} bytes, language=$language")
+        Log.d(TAG, "Transcribing ${audioBytes.size} bytes (user language=$selectedLanguageCode, Deepgram auto-detect enabled)")
         return try {
             client.post("${BuildConfig.BACKEND_URL}/api/transcribe") {
                 addCommonHeaders(deviceId)
                 header(HttpHeaders.ContentType, "audio/mp4")
-                parameter("model", "nova-3")
-                parameter("punctuate", "true")
-                parameter("smart_format", "true")
-                parameter("language", language)
-                parameter("detect_language", "true")
+                // Auto-detect strategy: do not pass a hard language constraint to Deepgram.
+                DeepgramRequestParams.asPairs().forEach { (name, value) ->
+                    parameter(name, value)
+                }
                 setBody(audioBytes)
             }
         } catch (e: Exception) {

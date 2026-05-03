@@ -1,7 +1,14 @@
 package com.wrait.app.data.speech
 
 interface TranscriptionService {
-    /** Suspends until transcription is complete. */
+    /**
+     * Suspends until transcription is complete.
+     *
+     * [languageCode] is always provided by callers as the user's selected language.
+     * Implementations may either:
+     * 1) send it as a hard constraint (e.g. Whisper/Android), or
+     * 2) use backend auto-detection and treat [languageCode] as contextual metadata only.
+     */
     suspend fun transcribe(
         languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit = {}
@@ -16,6 +23,8 @@ interface TranscriptionService {
     /**
      * Optional: transcribe an existing audio file on disk (used for retrying audio drafts).
      * Default implementation returns ApiError so implementations don't have to support it.
+     *
+     * [languageCode] follows the same contract as [transcribe].
      */
     suspend fun transcribeAudioDraft(
         audioPath: String,
