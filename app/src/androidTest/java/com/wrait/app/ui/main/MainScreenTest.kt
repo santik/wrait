@@ -4,7 +4,10 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipeDown
 import androidx.test.rule.GrantPermissionRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wrait.app.MainActivity
@@ -12,6 +15,7 @@ import com.wrait.app.data.EntryDao
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.api.TranscriptCleanupService
 import com.wrait.app.data.speech.TranscriptionService
+import com.wrait.app.domain.repository.PreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakeTranscriptionService
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -39,6 +43,7 @@ class MainScreenTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Inject lateinit var entryDao: EntryDao
+    @Inject lateinit var preferencesRepository: PreferencesRepository
     @Inject lateinit var transcriptCleanupService: TranscriptCleanupService
     @Inject lateinit var transcriptionService: TranscriptionService
 
@@ -51,6 +56,8 @@ class MainScreenTest {
         fakeApi.reset()
         fakeTranscription.reset()
         runBlocking {
+            preferencesRepository.setHasEverRecorded(false)
+            preferencesRepository.setLanguage("en-US")
             val ids = entryDao.getAllEntries().first().map { it.id }
             if (ids.isNotEmpty()) entryDao.deleteEntries(ids)
         }
@@ -133,5 +140,20 @@ class MainScreenTest {
             }.getOrDefault(false)
         }
         composeRule.onNodeWithContentDescription("Navigate back to recording screen").assertIsDisplayed()
+    }
+
+    @Test
+    fun swipeDown_opensSettingsWithLanguagesRow() {
+        composeRule.onRoot().performTouchInput { swipeDown() }
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("Languages").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("Languages").assertIsDisplayed()
+        composeRule.onNodeWithText("English primary").assertIsDisplayed()
     }
 }

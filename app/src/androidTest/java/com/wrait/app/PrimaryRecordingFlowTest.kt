@@ -1,6 +1,7 @@
 package com.wrait.app
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.wrait.app.domain.model.LanguagePreferences
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.test.fake.FakePreferencesRepository
 import kotlinx.coroutines.Dispatchers
@@ -168,6 +169,31 @@ class PrimaryRecordingFlowTest {
         // Assert: Verify final language is German
         val finalLanguage = fakePrefs.selectedLanguage.first()
         assertEquals("Final language should be German", "de-DE", finalLanguage)
+    }
+
+    @Test
+    fun languagePreferences_canStoreMultipleLanguages() = runTest(testDispatcher) {
+        fakePrefs.saveLanguagePreferences(
+            LanguagePreferences(
+                selectedLanguages = listOf("en-US", "fr-FR", "de-DE"),
+                primaryLanguage = "fr-FR",
+            )
+        )
+
+        val languagePreferences = fakePrefs.languagePreferences.first()
+        assertEquals(listOf("en-US", "fr-FR", "de-DE"), languagePreferences.selectedLanguages)
+        assertEquals("fr-FR", languagePreferences.primaryLanguage)
+    }
+
+    @Test
+    fun setPrimaryLanguage_addsItToSelectedLanguages() = runTest(testDispatcher) {
+        fakePrefs.setSelectedLanguages(listOf("en-US", "de-DE"), primaryLanguage = "en-US")
+
+        fakePrefs.setPrimaryLanguage("fr-FR")
+
+        val languagePreferences = fakePrefs.languagePreferences.first()
+        assertEquals("fr-FR", languagePreferences.primaryLanguage)
+        assertTrue("Primary language should also be selected", "fr-FR" in languagePreferences.selectedLanguages)
     }
 
     /**

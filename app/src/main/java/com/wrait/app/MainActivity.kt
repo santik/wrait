@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -34,12 +35,13 @@ import androidx.navigation.navArgument
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.domain.model.LanguagePreferences
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.ui.entries.EntryDetailScreen
 import com.wrait.app.ui.entries.EntryDetailViewModel
 import com.wrait.app.ui.entries.EntryListScreen
 import com.wrait.app.ui.entries.EntryListViewModel
-import com.wrait.app.ui.main.LanguagePickerSheet
+import com.wrait.app.ui.main.LanguageSettingsSheet
 import com.wrait.app.ui.main.MainScreen
 import com.wrait.app.ui.theme.WrAItTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -62,10 +64,13 @@ class MainActivity : ComponentActivity() {
                 val recordingState by viewModel.recordingState.collectAsState()
                 val shakeErrorKey by viewModel.shakeErrorKey.collectAsStateWithLifecycle()
                 val stats by viewModel.entryStats.collectAsStateWithLifecycle()
-                val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+                val languagePreferences by viewModel.languagePreferences.collectAsStateWithLifecycle()
                 val hasEverRecorded by viewModel.hasEverRecorded.collectAsStateWithLifecycle()
                 val showSettingsPanel by viewModel.showSettingsPanel.collectAsStateWithLifecycle()
                 val privacyMode by viewModel.privacyMode.collectAsStateWithLifecycle()
+                val languageSummary = remember(languagePreferences) {
+                    languageSummaryFor(languagePreferences)
+                }
 
                 LaunchedEffect(recordingState.isActive) {
                     val keepScreenOnFlagSet = activity.window.attributes.flags and
@@ -146,6 +151,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                LaunchedEffect(context) {
+                    viewModel.userMessage.collect { message ->
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+
                 val onStatusLineTap: () -> Unit = {
                     val intent = Intent(
                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
@@ -162,7 +173,8 @@ class MainActivity : ComponentActivity() {
                     showBlockedMessage = showBlockedMessage,
                     shakeErrorKey = shakeErrorKey,
                     stats = stats,
-                    selectedLanguage = selectedLanguage,
+                    languagePreferences = languagePreferences,
+                    languageSummary = languageSummary,
                     hasEverRecorded = hasEverRecorded,
                     showSettingsPanel = showSettingsPanel,
                     privacyMode = privacyMode,
@@ -175,7 +187,8 @@ class MainActivity : ComponentActivity() {
                         viewModel.resetToIdle()
                         navController.navigate("entry/$id") { launchSingleTop = true }
                     },
-                    onSaveLanguage = { code -> viewModel.saveLanguage(code) },
+                    onToggleLanguage = viewModel::toggleLanguage,
+                    onSetPrimaryLanguage = viewModel::setPrimaryLanguage,
                     onMainButtonTapped = {
                         if (recordingState is RecordingState.Error &&
                             (recordingState as RecordingState.Error).error == RecognizerError.InsufficientPermissions
@@ -242,7 +255,8 @@ private fun AppNavHost(
     showBlockedMessage: Boolean,
     shakeErrorKey: Int,
     stats: com.wrait.app.domain.model.EntryStats,
-    selectedLanguage: String,
+    languagePreferences: LanguagePreferences,
+    languageSummary: String,
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
@@ -253,7 +267,8 @@ private fun AppNavHost(
     onStatusLineTap: () -> Unit,
     onTapToRead: (Long) -> Unit,
     onMainButtonTapped: () -> Unit,
-    onSaveLanguage: (String) -> Unit,
+    onToggleLanguage: (String) -> Unit,
+    onSetPrimaryLanguage: (String) -> Unit,
     modifier: Modifier = Modifier,
     onStatsLineTap: () -> Unit = {
         navController.navigate("entries") { launchSingleTop = true }
@@ -265,19 +280,19 @@ private fun AppNavHost(
         modifier = modifier.fillMaxSize()
     ) {
         composable("main") {
-            var showLanguagePicker by remember { mutableStateOf(false) }
+            var showLanguageSettings by remember { mutableStateOf(false) }
 
             MainScreen(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
                 shakeErrorKey = shakeErrorKey,
                 stats = stats,
-                selectedLanguage = selectedLanguage,
+                languageSummary = languageSummary,
                 hasEverRecorded = hasEverRecorded,
                 showSettingsPanel = showSettingsPanel,
                 privacyMode = privacyMode,
                 onButtonTap = onMainButtonTapped,
-                onLanguageTap = { showLanguagePicker = true },
+                onLanguagesTap = { showLanguageSettings = true },
                 onSwipeUp = onStatsLineTap,
                 onSwipeDown = onSwipeDown,
                 onPrivacyModeToggle = onPrivacyModeToggle,
@@ -289,11 +304,12 @@ private fun AppNavHost(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            if (showLanguagePicker) {
-                LanguagePickerSheet(
-                    selectedLanguage   = selectedLanguage,
-                    onLanguageSelected = { code -> onSaveLanguage(code) },
-                    onDismiss          = { showLanguagePicker = false },
+            if (showLanguageSettings) {
+                LanguageSettingsSheet(
+                    languagePreferences = languagePreferences,
+                    onLanguageToggled = onToggleLanguage,
+                    onPrimaryLanguageSelected = onSetPrimaryLanguage,
+                    onDismiss = { showLanguageSettings = false },
                 )
             }
         }

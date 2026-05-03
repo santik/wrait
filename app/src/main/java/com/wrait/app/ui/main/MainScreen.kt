@@ -28,10 +28,10 @@ import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
+import com.wrait.app.domain.model.displayNameForLanguage
 import com.wrait.app.ui.theme.DesignTokens
 import com.wrait.app.ui.settings.SettingsPanel
 import kotlinx.coroutines.delay
-import java.util.Locale
 
 @Composable
 fun MainScreen(
@@ -39,12 +39,12 @@ fun MainScreen(
     showBlockedMessage: Boolean,
     shakeErrorKey: Int,
     stats: EntryStats,
-    selectedLanguage: String,
+    languageSummary: String,
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
     onButtonTap: () -> Unit,
-    onLanguageTap: () -> Unit,
+    onLanguagesTap: () -> Unit,
     onSwipeUp: () -> Unit,
     onSwipeDown: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
@@ -96,9 +96,6 @@ fun MainScreen(
         ) {
             // Upper flex spacer
             Spacer(Modifier.weight(1f))
-            // Language label
-            LanguageLabel(language = selectedLanguage, onTap = onLanguageTap)
-            Spacer(Modifier.height(DesignTokens.LanguageLabel.GapBelowDp))
             // Button
             ButtonArea(
                 recordingState = recordingState,
@@ -141,36 +138,13 @@ fun MainScreen(
 
         if (showSettingsPanel) {
             SettingsPanel(
+                languageSummary = languageSummary,
+                onLanguagesTap = onLanguagesTap,
                 privacyMode = privacyMode,
                 onModeToggle = onPrivacyModeToggle,
                 onDismiss = onSettingsPanelDismiss,
             )
         }
-    }
-}
-
-@Composable
-private fun LanguageLabel(
-    language: String,
-    onTap: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val displayName = remember(language) {
-        LANGUAGES.firstOrNull { it.code == language }?.displayName
-            ?: Locale.forLanguageTag(language).displayLanguage
-                .replaceFirstChar { it.uppercaseChar() }
-    }
-    Box(
-        modifier = modifier
-            .minimumInteractiveComponentSize()
-            .clickable(onClick = onTap),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text  = "$displayName \u203a",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.tertiary,
-        )
     }
 }
 
@@ -270,10 +244,7 @@ internal fun statusTextFor(
         is RecordingState.Uploading  -> "uploading\u2026"
         is RecordingState.Processing -> "cleaning up\u2026"
         is RecordingState.Saved      -> if (recordingState.detectedLanguage != null) {
-                                            val name = LANGUAGES
-                                                .firstOrNull { it.code.substringBefore("-").lowercase() == recordingState.detectedLanguage.lowercase() }
-                                                ?.displayName
-                                                ?: Locale.forLanguageTag(recordingState.detectedLanguage).displayLanguage
+                                            val name = displayNameForLanguage(recordingState.detectedLanguage)
                                             "tap to read · detected $name"
                                         } else "tap to read"
         is RecordingState.Deleted    -> if (recordingState.count == 1) "entry deleted"
@@ -283,12 +254,7 @@ internal fun statusTextFor(
             RecognizerError.NoMatch                 -> "nothing caught · too quiet?"
             RecognizerError.TooShort                -> "too short · keep talking"
             is RecognizerError.NotAvailable         -> {
-                val name = LANGUAGES
-                    .firstOrNull { it.code == recordingState.error.language }
-                    ?.displayName
-                    ?: Locale.forLanguageTag(recordingState.error.language)
-                        .displayLanguage
-                        .replaceFirstChar { it.uppercaseChar() }
+                val name = displayNameForLanguage(recordingState.error.language)
                 if (name.isNotBlank()) "no offline model for $name"
                 else "offline model not installed"
             }

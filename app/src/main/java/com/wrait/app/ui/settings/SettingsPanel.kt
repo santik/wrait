@@ -46,6 +46,8 @@ private const val DISMISS_DRAG_THRESHOLD = 40f // px — upward drag to dismiss
 
 @Composable
 fun SettingsPanel(
+    languageSummary: String,
+    onLanguagesTap: () -> Unit,
     privacyMode: PrivacyMode,
     onModeToggle: (Boolean) -> Unit,
     onDismiss: () -> Unit,
@@ -111,6 +113,37 @@ fun SettingsPanel(
                     .statusBarsPadding()
                     .padding(horizontal = 24.dp, vertical = 20.dp)
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                onDismiss()
+                                onLanguagesTap()
+                            }
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
+                            Text(
+                                text = "Languages",
+                                style = MaterialTheme.typography.bodyLarge,
+                            )
+                            Text(
+                                text = languageSummary,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Text(
+                            text = "\u203a",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

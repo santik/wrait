@@ -26,7 +26,7 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class MainRecordingController @Inject constructor(
-    private val languageState: StateFlow<String>,
+    private val primaryLanguageState: StateFlow<String>,
     private val entryRepository: EntryRepository,
     private val preferencesRepository: PreferencesRepository,
     private val transcriptionService: TranscriptionService,
@@ -95,14 +95,14 @@ class MainRecordingController @Inject constructor(
             val isOffline =
                 preferencesRepository.privacyMode.first() == PrivacyMode.MODE_OFFLINE
             if (isOffline && !transcriptionService.isOfflineModelAvailable()) {
-                emitError(RecognizerError.NotAvailable(languageState.value))
+                emitError(RecognizerError.NotAvailable(primaryLanguageState.value))
                 return@launch
             }
 
             listeningStartedAt = System.currentTimeMillis()
             _recordingState.value = RecordingState.Listening
             listenJob = scope.launch {
-                val language = languageState.value
+                val language = primaryLanguageState.value
                 val result = transcriptionService.transcribe(language) { status ->
                     when (status) {
                         TranscriptionStatus.RecordingEnded ->
@@ -162,7 +162,7 @@ class MainRecordingController @Inject constructor(
      * The entry is tagged with the detected language; the selector preference is unchanged.
      */
     private suspend fun saveTranscript(text: String, detectedLanguage: String? = null) {
-        val selectedLanguage = languageState.value
+        val selectedLanguage = primaryLanguageState.value
         val mismatch = isLanguageMismatch(detectedLanguage, selectedLanguage)
         // Use detected language only when there is a genuine mismatch; otherwise keep the user's selection.
         val language = if (mismatch) detectedLanguage!! else selectedLanguage
