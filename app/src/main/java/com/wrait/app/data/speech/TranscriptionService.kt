@@ -57,5 +57,12 @@ sealed class TranscriptionResult {
 }
 
 enum class TranscriptionFailureReason {
-    TooShort, NothingCaught, MicBlocked, NetworkError, ApiError, ModelNotAvailable
+    TooShort,
+    NothingCaught,
+    MicBlocked,
+    NetworkError,
+    ApiError,
+    ModelNotAvailable,
+    BackendUnavailable,
+    ProxyAuthFailed,
 }

@@ -322,6 +322,10 @@ sealed class RecognizerError {
     data object InsufficientPermissions : RecognizerError()
     /** OpenAI cleanup call failed due to missing / slow network. Entry saved as draft. */
     data object NoInternet : RecognizerError()
+    /** Cloud transcription backend did not respond or returned a 5xx response. */
+    data object BackendUnavailable : RecognizerError()
+    /** Cloud transcription backend rejected the request due to proxy auth/config. */
+    data object ProxyAuthFailed : RecognizerError()
     /** OpenAI cleanup call returned a non-network failure. Entry saved as draft. */
     data object ApiFailed : RecognizerError()
     data class Unknown(val code: Int) : RecognizerError()
