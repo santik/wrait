@@ -1,7 +1,7 @@
 package com.wrait.app.data.api
 
-interface OpenAiApiService {
-    suspend fun cleanupTranscript(rawText: String): CleanupResult
+interface TranscriptCleanupService {
+    suspend fun cleanupTranscript(rawText: String, language: String): CleanupResult
 }
 
 sealed class CleanupResult {

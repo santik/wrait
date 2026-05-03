@@ -8,7 +8,6 @@ import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.data.speech.TranscriptionService
-import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
@@ -58,9 +57,6 @@ class MainViewModel @Inject constructor(
 
     val privacyMode: StateFlow<PrivacyMode> = preferencesRepository.privacyMode
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PrivacyMode.MODE_BEST)
-
-    val cleanupBackend: StateFlow<CleanupBackend> = preferencesRepository.cleanupBackend
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CleanupBackend.ANDROID)
 
     private val _showSettingsPanel = MutableStateFlow(false)
     val showSettingsPanel: StateFlow<Boolean> = _showSettingsPanel.asStateFlow()
@@ -149,14 +145,6 @@ class MainViewModel @Inject constructor(
         viewModelScope.launch {
             preferencesRepository.savePrivacyMode(
                 if (enabled) PrivacyMode.MODE_OFFLINE else PrivacyMode.MODE_BEST
-            )
-        }
-    }
-
-    fun onCleanupBackendToggle(useBackend: Boolean) {
-        viewModelScope.launch {
-            preferencesRepository.saveCleanupBackend(
-                if (useBackend) CleanupBackend.BACKEND else CleanupBackend.ANDROID
             )
         }
     }

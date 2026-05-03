@@ -4,9 +4,6 @@
 ## Android SDK (set automatically by Android Studio)
 #sdk.dir=/Users/<you>/Library/Android/sdk
 
-## OpenAI — used for entry cleanup in MODE_BEST
-OPENAI_API_KEY=
-
 ## Privacy mode at first launch (MODE_BEST | MODE_OFFLINE)
 ## Omit to default to MODE_BEST.
 #PRIVACY_MODE=MODE_BEST

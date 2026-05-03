@@ -34,7 +34,6 @@ import androidx.navigation.navArgument
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.wrait.app.data.speech.RecognizerError
-import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.ui.entries.EntryDetailScreen
 import com.wrait.app.ui.entries.EntryDetailViewModel
@@ -67,7 +66,6 @@ class MainActivity : ComponentActivity() {
                 val hasEverRecorded by viewModel.hasEverRecorded.collectAsStateWithLifecycle()
                 val showSettingsPanel by viewModel.showSettingsPanel.collectAsStateWithLifecycle()
                 val privacyMode by viewModel.privacyMode.collectAsStateWithLifecycle()
-                val cleanupBackend by viewModel.cleanupBackend.collectAsStateWithLifecycle()
 
                 LaunchedEffect(recordingState.isActive) {
                     val keepScreenOnFlagSet = activity.window.attributes.flags and
@@ -168,10 +166,8 @@ class MainActivity : ComponentActivity() {
                     hasEverRecorded = hasEverRecorded,
                     showSettingsPanel = showSettingsPanel,
                     privacyMode = privacyMode,
-                    cleanupBackend = cleanupBackend,
                     onSwipeDown = viewModel::onSwipeDown,
                     onPrivacyModeToggle = viewModel::onPrivacyModeToggle,
-                    onCleanupBackendToggle = viewModel::onCleanupBackendToggle,
                     onSettingsPanelDismiss = viewModel::onSettingsPanelDismiss,
                     onStatusCleared = { viewModel.resetToIdle() },
                     onStatusLineTap = onStatusLineTap,
@@ -250,10 +246,8 @@ private fun AppNavHost(
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
-    cleanupBackend: CleanupBackend,
     onSwipeDown: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
-    onCleanupBackendToggle: (Boolean) -> Unit,
     onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
     onStatusLineTap: () -> Unit,
@@ -282,13 +276,11 @@ private fun AppNavHost(
                 hasEverRecorded = hasEverRecorded,
                 showSettingsPanel = showSettingsPanel,
                 privacyMode = privacyMode,
-                cleanupBackend = cleanupBackend,
                 onButtonTap = onMainButtonTapped,
                 onLanguageTap = { showLanguagePicker = true },
                 onSwipeUp = onStatsLineTap,
                 onSwipeDown = onSwipeDown,
                 onPrivacyModeToggle = onPrivacyModeToggle,
-                onCleanupBackendToggle = onCleanupBackendToggle,
                 onSettingsPanelDismiss = onSettingsPanelDismiss,
                 onStatusCleared = onStatusCleared,
                 onTapToRead = onTapToRead,

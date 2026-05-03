@@ -41,14 +41,14 @@ class EntryDetailLogicTest {
     }
 
     @Test
-    fun entryDetailDevDraftText_returnsNullWhenCleanedMatchesRaw() {
+    fun entryDetailDevDraftText_returnsDraftLineWhenCleanedMatchesRaw() {
         val entry = entry(
             rawTranscript = "same text",
             cleanedText = "same text",
             isDraft = false,
         )
 
-        assertNull(entryDetailDevDraftText(entry, showDevDraft = true))
+        assertEquals("draft: same text", entryDetailDevDraftText(entry, showDevDraft = true))
     }
 
     private fun entry(

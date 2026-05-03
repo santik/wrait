@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.wrait.app.domain.model.CleanupBackend
 import com.wrait.app.domain.model.PrivacyMode
 import kotlinx.coroutines.delay
 
@@ -49,8 +48,6 @@ private const val DISMISS_DRAG_THRESHOLD = 40f // px — upward drag to dismiss
 fun SettingsPanel(
     privacyMode: PrivacyMode,
     onModeToggle: (Boolean) -> Unit,
-    cleanupBackend: CleanupBackend,
-    onCleanupBackendToggle: (Boolean) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -135,36 +132,6 @@ fun SettingsPanel(
                         Switch(
                             checked = privacyMode == PrivacyMode.MODE_OFFLINE,
                             onCheckedChange = onModeToggle,
-                        )
-                    }
-
-                    Spacer(Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .semantics(mergeDescendants = true) {},
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 16.dp)) {
-                            Text(
-                                text = "Cleanup via backend",
-                                style = MaterialTheme.typography.bodyLarge,
-                            )
-                            Text(
-                                text = if (cleanupBackend == CleanupBackend.BACKEND) {
-                                    "BACKEND selected. Route cleanup through /api/cleanup."
-                                } else {
-                                    "ANDROID selected. Cleanup calls OpenAI directly from app."
-                                },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Switch(
-                            checked = cleanupBackend == CleanupBackend.BACKEND,
-                            onCheckedChange = onCleanupBackendToggle,
                         )
                     }
 

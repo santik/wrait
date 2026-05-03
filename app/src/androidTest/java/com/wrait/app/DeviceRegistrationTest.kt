@@ -7,7 +7,6 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.RegistrationResult
-import com.wrait.app.data.api.WraitBackendClient
 import com.wrait.app.data.device.DeviceIdProvider
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
@@ -15,7 +14,7 @@ import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
-import com.wrait.app.test.fake.FakeOpenAiApiService
+import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
@@ -70,17 +69,12 @@ class DeviceRegistrationTest {
         fakeRegistration: FakeDeviceRegistrationService = FakeDeviceRegistrationService(),
     ): Pair<MainViewModel, FakeDeviceRegistrationService> {
         val deviceIdProvider = DeviceIdProvider(context)
-        val wraitBackendClient = WraitBackendClient(deviceIdProvider)
         val vm = MainViewModel(
             preferencesRepository = fakePrefs,
             entryRepository = entryRepository,
             transcriptionService = FakeTranscriptionService(),
             cleanupTranscriptUseCase = CleanupTranscriptUseCase(
-                preferencesRepository = fakePrefs,
-                openAiApiService = FakeOpenAiApiService(),
-                wraitBackendClient = wraitBackendClient,
-                deviceIdProvider = deviceIdProvider,
-                ioDispatcher = testDispatcher,
+                transcriptCleanupService = FakeTranscriptCleanupService(),
             ),
             registerDeviceUseCase = RegisterDeviceUseCase(
                 preferencesRepository = fakePrefs,

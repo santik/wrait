@@ -13,7 +13,6 @@ val localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
     localProperties.load(localPropertiesFile.inputStream())
 }
-val openAiApiKey: String = localProperties.getProperty("OPENAI_API_KEY", "")
 val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST")
 val backendUrl: String = localProperties.getProperty("BACKEND_URL", "https://wrait-backend.vercel.app")
 val proxySecret: String = localProperties.getProperty("PROXY_SECRET", "")
@@ -43,7 +42,6 @@ android {
 
         testInstrumentationRunner = "com.wrait.app.test.HiltTestRunner"
 
-        buildConfigField("String", "OPENAI_API_KEY", "\"$openAiApiKey\"")
         buildConfigField("String", "PRIVACY_MODE", "\"$privacyMode\"")
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
         buildConfigField("String", "PROXY_SECRET", "\"$proxySecret\"")

@@ -14,7 +14,7 @@ import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.repository.EntryRepository
-import com.wrait.app.test.fake.FakeOpenAiApiService
+import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
@@ -47,7 +47,7 @@ class MainRecordingControllerTest {
     private lateinit var db: WraitDatabase
     private lateinit var entryDao: EntryDao
     private lateinit var entryRepository: EntryRepository
-    private lateinit var fakeOpenApi: FakeOpenAiApiService
+    private lateinit var fakeOpenApi: FakeTranscriptCleanupService
     private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakePrefs: FakePreferencesRepository
     private lateinit var wraitBackendClient: WraitBackendClient
@@ -63,7 +63,7 @@ class MainRecordingControllerTest {
             .build()
         entryDao = db.entryDao()
         entryRepository = EntryRepositoryImpl(entryDao, FakeTimeProvider())
-        fakeOpenApi = FakeOpenAiApiService()
+        fakeOpenApi = FakeTranscriptCleanupService()
         fakeTranscription = FakeTranscriptionService()
         fakePrefs = FakePreferencesRepository()
         deviceIdProvider = DeviceIdProvider(context)
@@ -79,7 +79,7 @@ class MainRecordingControllerTest {
 
     private fun buildController(
         prefs: FakePreferencesRepository = fakePrefs,
-        api: FakeOpenAiApiService = fakeOpenApi,
+        api: FakeTranscriptCleanupService = fakeOpenApi,
         transcription: FakeTranscriptionService = fakeTranscription,
         language: StateFlow<String> = languageState,
         scope: CoroutineScope = testScope,
@@ -89,11 +89,7 @@ class MainRecordingControllerTest {
         preferencesRepository = prefs,
         transcriptionService = transcription,
         cleanupTranscriptUseCase = CleanupTranscriptUseCase(
-            preferencesRepository = prefs,
-            openAiApiService = api,
-            wraitBackendClient = wraitBackendClient,
-            deviceIdProvider = deviceIdProvider,
-            ioDispatcher = testDispatcher,
+            transcriptCleanupService = api,
         ),
         ioDispatcher = testDispatcher,
         scope = scope,

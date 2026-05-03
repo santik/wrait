@@ -16,9 +16,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.wrait.app.MainActivity
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
-import com.wrait.app.data.api.OpenAiApiService
+import com.wrait.app.data.api.TranscriptCleanupService
 import com.wrait.app.data.speech.TranscriptionService
-import com.wrait.app.test.fake.FakeOpenAiApiService
+import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakeTranscriptionService
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -41,10 +41,10 @@ class EntryListScreenTest {
     val composeRule = createAndroidComposeRule<MainActivity>()
 
     @Inject lateinit var entryDao: EntryDao
-    @Inject lateinit var openAiApiService: OpenAiApiService
+    @Inject lateinit var transcriptCleanupService: TranscriptCleanupService
     @Inject lateinit var transcriptionService: TranscriptionService
 
-    private val fakeApi get() = openAiApiService as FakeOpenAiApiService
+    private val fakeApi get() = transcriptCleanupService as FakeTranscriptCleanupService
     private val fakeTranscription get() = transcriptionService as FakeTranscriptionService
 
     @Before
