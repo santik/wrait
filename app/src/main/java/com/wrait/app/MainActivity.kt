@@ -336,6 +336,7 @@ private fun AppNavHost(
                 showDeleteDialog  = showDeleteDialog,
                 editedText        = editedText,
                 onTextChanged     = detailViewModel::onTextChanged,
+                showDevDraft      = BuildConfig.DEV,
                 onBack            = { detailViewModel.flushEdit(); navController.popBackStack() },
                 onDeleteTapped    = detailViewModel::onDeleteTapped,
                 onDeleteCancelled = detailViewModel::onDeleteCancelled,
