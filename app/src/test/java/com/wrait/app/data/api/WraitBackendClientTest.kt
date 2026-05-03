@@ -4,10 +4,12 @@ import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.http.Headers
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
 import io.ktor.http.headersOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
@@ -146,5 +148,32 @@ class WraitBackendClientTest {
 
         assertTrue(result is CleanupResult.Failure)
         assertEquals("network error", (result as CleanupResult.Failure).reason)
+    }
+
+    @Test
+    fun transcribe_usesLanguageDetectionParams_withoutLanguageOrPunctuate() = runTest {
+        var capturedUrl: Url? = null
+        var capturedHeaders: Headers? = null
+        val engine = MockEngine { request ->
+            capturedUrl = request.url
+            capturedHeaders = request.headers
+            respond("{}", HttpStatusCode.OK, headersOf())
+        }
+        val client = WraitBackendClient(engine, overrideDeviceId = "device-123")
+
+        client.transcribe(audioBytes = byteArrayOf(1, 2, 3), selectedLanguageCode = "en-US")
+
+        val url = requireNotNull(capturedUrl)
+        assertEquals("/api/transcribe", url.encodedPath)
+        assertEquals("nova-3-general", url.parameters["model"])
+        assertEquals("true", url.parameters["smart_format"])
+        assertEquals("true", url.parameters["detect_language"])
+        assertEquals("false", url.parameters["utterances"])
+        assertEquals("true", url.parameters["filler_words"])
+        assertNull(url.parameters["language"])
+        assertNull(url.parameters["punctuate"])
+
+        val headers = requireNotNull(capturedHeaders)
+        assertEquals("device-123", headers["X-Device-Id"])
     }
 }

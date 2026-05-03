@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.util.Log
 import com.wrait.app.BuildConfig
+import com.wrait.app.data.api.DeepgramRequestParams
 import com.wrait.app.data.api.WraitBackendClient
 import com.wrait.app.domain.model.TranscriptionBackend
 import com.wrait.app.domain.repository.PreferencesRepository
@@ -12,6 +13,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
@@ -153,15 +155,13 @@ class DeepgramTranscriptionService @Inject constructor(
         Log.d(TAG, "Recording stopped: ${file.length()} bytes")
     }
 
-    private suspend fun upload(file: File, languageCode: String): TranscriptionResult {
-        val language = languageCode.substringBefore("-")
-
+    private suspend fun upload(file: File, selectedLanguageCode: String): TranscriptionResult {
         repeat(MAX_UPLOAD_RETRIES) { attempt ->
             try {
                 val bytes = withContext(Dispatchers.IO) { file.readBytes() }
                 val backend = preferencesRepository.transcriptionBackend.first()
                 Log.d(TAG, "Uploading ${bytes.size} bytes (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES, backend=$backend)")
-                val response: HttpResponse = callTranscribeEndpoint(bytes, language, backend)
+                val response: HttpResponse = callTranscribeEndpoint(bytes, selectedLanguageCode, backend)
                 return parseResponse(response)
             } catch (e: IOException) {
                 Log.w(TAG, "Network error (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
@@ -178,15 +178,19 @@ class DeepgramTranscriptionService @Inject constructor(
 
     private suspend fun callTranscribeEndpoint(
         bytes: ByteArray,
-        language: String,
+        selectedLanguageCode: String,
         backend: TranscriptionBackend,
     ): HttpResponse {
         return if (backend == TranscriptionBackend.PROXY) {
-            wraitBackendClient.transcribe(bytes, language)
+            wraitBackendClient.transcribe(bytes, selectedLanguageCode)
         } else {
-            client.post("https://api.deepgram.com/v1/listen?model=nova-3&punctuate=true&smart_format=true&language=$language&detect_language=true") {
+            client.post(BuildConfig.DEEPGRAM_LISTEN_URL) {
                 header(HttpHeaders.Authorization, "Token ${BuildConfig.DEEPGRAM_API_KEY}")
                 header(HttpHeaders.ContentType, "audio/mp4")
+                // Auto-detect strategy: keep selected language for UX, not as API constraint.
+                DeepgramRequestParams.asPairs().forEach { (name, value) ->
+                    parameter(name, value)
+                }
                 setBody(bytes)
             }
         }

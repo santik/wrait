@@ -15,6 +15,7 @@ if (localPropertiesFile.exists()) {
 }
 val openAiApiKey: String = localProperties.getProperty("OPENAI_API_KEY", "")
 val deepgramApiKey: String = localProperties.getProperty("DEEPGRAM_API_KEY", "")
+val deepgramListenUrl: String = localProperties.getProperty("DEEPGRAM_LISTEN_URL", "https://api.deepgram.com/v1/listen")
 val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST")
 val backendUrl: String = localProperties.getProperty("BACKEND_URL", "https://wrait-backend.vercel.app")
 val proxySecret: String = localProperties.getProperty("PROXY_SECRET", "")
@@ -50,6 +51,7 @@ android {
 
         buildConfigField("String", "OPENAI_API_KEY", "\"$openAiApiKey\"")
         buildConfigField("String", "DEEPGRAM_API_KEY", "\"$deepgramApiKey\"")
+        buildConfigField("String", "DEEPGRAM_LISTEN_URL", "\"$deepgramListenUrl\"")
         buildConfigField("String", "PRIVACY_MODE", "\"$privacyMode\"")
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
         buildConfigField("String", "PROXY_SECRET", "\"$proxySecret\"")
