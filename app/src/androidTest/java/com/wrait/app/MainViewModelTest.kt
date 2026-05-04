@@ -235,10 +235,9 @@ class MainViewModelTest {
     }
 
     @Test
-    fun audioDraftRetry_noLanguageMismatch_keepsOriginalLanguage() = runTest(testDispatcher) {
+    fun audioDraftRetry_detectedLanguage_overridesStoredLanguage() = runTest(testDispatcher) {
         fakeTime.time = System.currentTimeMillis()
-        
-        // Insert an audio draft with English language (no mismatch with detected English)
+
         entryDao.insert(
             EntryEntity(
                 rawTranscript = "",
@@ -247,11 +246,10 @@ class MainViewModelTest {
                 language = "en-US",
                 createdAt = fakeTime.currentTimeMillis(),
                 wordCount = 0,
-                audioPath = "/fake/audio/path.m4a"
-            )
+                audioPath = "/fake/audio/path.m4a",
+            ),
         )
-        
-        // Same base language — no mismatch
+
         fakeTranscription.nextAudioDraftResult =
             com.wrait.app.data.speech.TranscriptionResult.Success(
                 transcript = "Hello world",
@@ -264,7 +262,7 @@ class MainViewModelTest {
 
         val entries = entryRepository.getAllEntries().first()
         assertEquals(1, entries.size)
-        assertEquals("Language should remain as selected", "en-US", entries.first().language)
+        assertEquals("Language should follow detection", "en", entries.first().language)
     }
 
     // 6 — Stats update
@@ -295,68 +293,36 @@ class MainViewModelTest {
     }
 
     @Test
-    fun toggleLanguage_addsSecondLanguageWithoutChangingPrimary() = runTest(testDispatcher) {
+    fun setLanguage_updatesSelectedLanguage() = runTest(testDispatcher) {
         val fakePrefs = FakePreferencesRepository(initialLanguage = "en-US")
         val vm = createViewModel(fakePrefs = fakePrefs)
         vm.initJob.join()
 
-        vm.toggleLanguage("fr-FR")
+        vm.setLanguage("fr-FR")
         advanceUntilIdle()
 
-        val languagePreferences = vm.languagePreferences.first {
-            it.selectedLanguages == listOf("en-US", "fr-FR")
-        }
-        assertEquals(listOf("en-US", "fr-FR"), languagePreferences.selectedLanguages)
-        assertEquals("en-US", languagePreferences.primaryLanguage)
+        assertEquals("fr-FR", vm.selectedLanguage.first { it == "fr-FR" })
     }
 
     @Test
-    fun setPrimaryLanguage_selectsAndPromotesLanguage() = runTest(testDispatcher) {
-        val fakePrefs = FakePreferencesRepository(
-            initialLanguage = "en-US",
-            initialSelectedLanguages = listOf("en-US", "de-DE"),
-        )
-        val vm = createViewModel(fakePrefs = fakePrefs)
-        vm.initJob.join()
-
-        vm.setPrimaryLanguage("fr-FR")
-        advanceUntilIdle()
-
-        val languagePreferences = vm.languagePreferences.first {
-            it.primaryLanguage == "fr-FR" && "fr-FR" in it.selectedLanguages
-        }
-        assertEquals("fr-FR", languagePreferences.primaryLanguage)
-        assertTrue(languagePreferences.selectedLanguages.containsAll(listOf("en-US", "de-DE", "fr-FR")))
-    }
-
-    @Test
-    fun toggleLanguage_doesNotRemoveLastSelectedLanguage() = runTest(testDispatcher) {
+    fun setLanguage_overwritesPreviousSelection() = runTest(testDispatcher) {
         val fakePrefs = FakePreferencesRepository(initialLanguage = "en-US")
         val vm = createViewModel(fakePrefs = fakePrefs)
         vm.initJob.join()
 
-        vm.toggleLanguage("en-US")
+        vm.setLanguage("fr-FR")
+        vm.setLanguage("de-DE")
         advanceUntilIdle()
 
-        val languagePreferences = vm.languagePreferences.first()
-        assertEquals(listOf("en-US"), languagePreferences.selectedLanguages)
-        assertEquals("en-US", languagePreferences.primaryLanguage)
+        assertEquals("de-DE", vm.selectedLanguage.first { it == "de-DE" })
     }
 
     @Test
-    fun shouldPromptForLanguages_staysTrue_untilConfirmed() = runTest(testDispatcher) {
-        val fakePrefs = FakePreferencesRepository(
-            initialLanguage = "en-US",
-            initialHasConfirmedLanguagePreferences = false,
-        )
+    fun selectedLanguage_defaultsToInitialRepositoryValue() = runTest(testDispatcher) {
+        val fakePrefs = FakePreferencesRepository(initialLanguage = "en-US")
         val vm = createViewModel(fakePrefs = fakePrefs)
         vm.initJob.join()
 
-        assertTrue(vm.shouldPromptForLanguages.first { it })
-
-        assertTrue(vm.confirmLanguagePreferences())
-
-        assertFalse(vm.shouldPromptForLanguages.first { !it })
-        assertTrue(fakePrefs.hasConfirmedLanguagePreferences.first())
+        assertEquals("en-US", vm.selectedLanguage.first())
     }
 }

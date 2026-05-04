@@ -1,5 +1,6 @@
 package com.wrait.app.ui.main
 
+import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -7,30 +8,37 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import android.provider.Settings
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
-import com.wrait.app.domain.model.displayNameForLanguage
-import com.wrait.app.ui.theme.DesignTokens
 import com.wrait.app.ui.settings.SettingsPanel
+import com.wrait.app.ui.theme.DesignTokens
 import kotlinx.coroutines.delay
 
 @Composable
@@ -40,13 +48,11 @@ fun MainScreen(
     shakeErrorKey: Int,
     stats: EntryStats,
     languageSummary: String,
-    shouldPromptForLanguages: Boolean,
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
     onButtonTap: () -> Unit,
     onLanguagesTap: () -> Unit,
-    onLanguagePromptTap: () -> Unit,
     onSwipeUp: () -> Unit,
     onSwipeDown: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
@@ -57,7 +63,6 @@ fun MainScreen(
     onStatsLineTap: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // Saved auto-clear
     LaunchedEffect(recordingState) {
         if (recordingState is RecordingState.Saved) {
             delay(DesignTokens.StatusLine.ClearDelayMs.toLong())
@@ -89,16 +94,14 @@ fun MainScreen(
                         if (totalY > thresholdPx) onSwipeDown()
                     }
                 }
-            }
+            },
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Top,
         ) {
-            // Upper flex spacer
             Spacer(Modifier.weight(1f))
-            // Button
             ButtonArea(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
@@ -106,25 +109,20 @@ fun MainScreen(
                 onTap = onButtonTap,
             )
             Spacer(Modifier.height(DesignTokens.StatusLine.GapAboveDp))
-            // Status line
             StatusLine(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
-                shouldPromptForLanguages = shouldPromptForLanguages,
                 hasEverRecorded = hasEverRecorded,
                 onTap = statusLineTapAction(
                     recordingState = recordingState,
                     showBlockedMessage = showBlockedMessage,
-                    shouldPromptForLanguages = shouldPromptForLanguages,
                     hasEverRecorded = hasEverRecorded,
                     onStatusLineTap = onStatusLineTap,
                     onTapToRead = onTapToRead,
-                    onLanguagePromptTap = onLanguagePromptTap,
                     onButtonTap = onButtonTap,
                 ),
             )
             Spacer(Modifier.height(DesignTokens.StatsLine.GapAboveDp))
-            // Stats
             StatsLine(
                 stats = stats,
                 onTap = if (recordingState is RecordingState.Listening ||
@@ -134,9 +132,8 @@ fun MainScreen(
                     null
                 } else {
                     onStatsLineTap
-                }
+                },
             )
-            // Lower flex spacer
             Spacer(Modifier.weight(1f))
         }
 
@@ -156,7 +153,6 @@ fun MainScreen(
 private fun StatusLine(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
-    shouldPromptForLanguages: Boolean,
     hasEverRecorded: Boolean,
     onTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -164,13 +160,12 @@ private fun StatusLine(
     val statusText = statusTextFor(
         recordingState = recordingState,
         showBlockedMessage = showBlockedMessage,
-        shouldPromptForLanguages = shouldPromptForLanguages,
         hasEverRecorded = hasEverRecorded,
     )
     val animationsEnabled = Settings.Global.getFloat(
         LocalContext.current.contentResolver,
         Settings.Global.ANIMATOR_DURATION_SCALE,
-        1f
+        1f,
     ) != 0f
     val clickModifier = if (onTap != null) {
         Modifier.clickable(
@@ -186,7 +181,7 @@ private fun StatusLine(
         transitionSpec = {
             if (animationsEnabled) {
                 fadeIn(animationSpec = tween(DesignTokens.Animation.FadeDuration)) togetherWith
-                fadeOut(animationSpec = tween(DesignTokens.Animation.FadeDuration))
+                    fadeOut(animationSpec = tween(DesignTokens.Animation.FadeDuration))
             } else {
                 EnterTransition.None togetherWith ExitTransition.None
             }
@@ -229,7 +224,7 @@ private fun StatsLine(
     ) {
         if (stats.entryCount > 0) {
             val entryWord = if (stats.entryCount == 1) "entry" else "entries"
-            val dayWord   = if (stats.activeDays  == 1) "day"   else "days"
+            val dayWord = if (stats.activeDays == 1) "day" else "days"
             Text(
                 text = "${stats.entryCount} $entryWord · ${stats.activeDays} $dayWord" +
                     (if (onTap != null) " \u203a" else ""),
@@ -240,30 +235,20 @@ private fun StatsLine(
     }
 }
 
-// --- Pure helper functions ---
-
 internal fun statusLineTapAction(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
-    shouldPromptForLanguages: Boolean,
     hasEverRecorded: Boolean,
     onStatusLineTap: () -> Unit,
     onTapToRead: (entryId: Long) -> Unit,
-    onLanguagePromptTap: () -> Unit,
     onButtonTap: () -> Unit,
 ): (() -> Unit)? {
-    // Priority order:
-    // 1. blocked mic -> app settings
-    // 2. saved entry -> open the saved entry
-    // 3. onboarding prompt -> open language sheet
-    // 4. first-time idle -> start recording
     return when {
         showBlockedMessage -> onStatusLineTap
         recordingState is RecordingState.Saved -> {
             val entryId = recordingState.entryId
             { onTapToRead(entryId) }
         }
-        recordingState is RecordingState.Idle && shouldPromptForLanguages -> onLanguagePromptTap
         recordingState is RecordingState.Idle && !hasEverRecorded -> onButtonTap
         else -> null
     }
@@ -272,40 +257,30 @@ internal fun statusLineTapAction(
 internal fun statusTextFor(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
-    shouldPromptForLanguages: Boolean,
     hasEverRecorded: Boolean,
 ): String {
     if (showBlockedMessage) return "mic blocked · tap to open settings"
     return when (recordingState) {
-        is RecordingState.Idle       -> when {
-                                            shouldPromptForLanguages -> "select your languages"
-                                            !hasEverRecorded -> "tap button to write"
-                                            else -> ""
-                                        }
-        is RecordingState.Listening  -> "listening\u2026"
-        is RecordingState.Uploading  -> "uploading\u2026"
-        is RecordingState.Processing -> "cleaning up\u2026"
-        is RecordingState.Saved      -> if (recordingState.detectedLanguage != null) {
-                                            val name = displayNameForLanguage(recordingState.detectedLanguage)
-                                            "tap to read · detected $name"
-                                        } else "tap to read"
-        is RecordingState.Deleted    -> if (recordingState.count == 1) "entry deleted"
-                                        else "${recordingState.count} entries deleted"
-        is RecordingState.Error      -> when (recordingState.error) {
+        is RecordingState.Idle -> if (!hasEverRecorded) "tap button to write" else ""
+        is RecordingState.Listening -> "listening…"
+        is RecordingState.Uploading -> "uploading…"
+        is RecordingState.Processing -> "cleaning up…"
+        is RecordingState.Saved -> "tap to read"
+        is RecordingState.Deleted -> if (recordingState.count == 1) "entry deleted" else "${recordingState.count} entries deleted"
+        is RecordingState.Error -> when (recordingState.error) {
             RecognizerError.InsufficientPermissions -> "mic blocked · tap to open settings"
-            RecognizerError.NoMatch                 -> "nothing caught · too quiet?"
-            RecognizerError.TooShort                -> "too short · keep talking"
-            is RecognizerError.NotAvailable         -> {
-                val name = displayNameForLanguage(recordingState.error.language)
-                if (name.isNotBlank()) "no offline model for $name"
-                else "offline model not installed"
+            RecognizerError.NoMatch -> "nothing caught · too quiet?"
+            RecognizerError.TooShort -> "too short · keep talking"
+            is RecognizerError.NotAvailable -> {
+                val name = com.wrait.app.domain.model.displayNameForLanguage(recordingState.error.language)
+                if (name.isNotBlank()) "no offline model for $name" else "offline model not installed"
             }
             RecognizerError.NoInternet,
             RecognizerError.Network,
-            RecognizerError.Timeout                 -> "no connection · saved as draft"
-            RecognizerError.BackendUnavailable     -> "service unavailable · saved as draft"
-            RecognizerError.ProxyAuthFailed        -> "server config error · saved as draft"
-            else                                    -> "saved as draft · will retry"
+            RecognizerError.Timeout -> "no connection · saved as draft"
+            RecognizerError.BackendUnavailable -> "service unavailable · saved as draft"
+            RecognizerError.ProxyAuthFailed -> "server config error · saved as draft"
+            else -> "saved as draft · will retry"
         }
     }
 }

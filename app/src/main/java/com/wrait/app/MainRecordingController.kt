@@ -8,10 +8,12 @@ import com.wrait.app.data.speech.TranscriptionResult
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.data.speech.TranscriptionStatus
 import com.wrait.app.di.IoDispatcher
+import com.wrait.app.domain.model.normalizeDetectedLanguageCode
 import com.wrait.app.domain.model.PrivacyMode
-import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
+import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -23,10 +25,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
 class MainRecordingController @Inject constructor(
-    private val primaryLanguageState: StateFlow<String>,
+    private val selectedLanguageState: StateFlow<String>,
     private val entryRepository: EntryRepository,
     private val preferencesRepository: PreferencesRepository,
     private val transcriptionService: TranscriptionService,
@@ -47,15 +48,13 @@ class MainRecordingController @Inject constructor(
     fun onMainButtonTapped() {
         val current = recordingState.value
         when (current) {
-            RecordingState.Idle        -> startListening()
-            RecordingState.Listening   -> stopListening()
+            RecordingState.Idle -> startListening()
+            RecordingState.Listening -> stopListening()
             RecordingState.Uploading,
-            RecordingState.Processing  -> Unit
-//            is RecordingState.Saved    -> _recordingState.value = RecordingState.Idle
-            is RecordingState.Saved    -> startListening()
-            is RecordingState.Deleted  -> startListening()
-            is RecordingState.Error    -> {
-                // Any non-permission error should immediately restart recording.
+            RecordingState.Processing -> Unit
+            is RecordingState.Saved -> startListening()
+            is RecordingState.Deleted -> startListening()
+            is RecordingState.Error -> {
                 if (current.error == RecognizerError.InsufficientPermissions) {
                     _recordingState.value = RecordingState.Idle
                 } else {
@@ -89,21 +88,18 @@ class MainRecordingController @Inject constructor(
         resetJob?.cancel()
         listenJob?.cancel()
 
-        // Pre-flight: in offline mode, verify that an on-device speech model
-        // is available before the recognizer is created.
         scope.launch {
-            val isOffline =
-                preferencesRepository.privacyMode.first() == PrivacyMode.MODE_OFFLINE
+            val isOffline = preferencesRepository.privacyMode.first() == PrivacyMode.MODE_OFFLINE
             if (isOffline && !transcriptionService.isOfflineModelAvailable()) {
-                emitError(RecognizerError.NotAvailable(primaryLanguageState.value))
+                emitError(RecognizerError.NotAvailable(selectedLanguageState.value))
                 return@launch
             }
 
             listeningStartedAt = System.currentTimeMillis()
             _recordingState.value = RecordingState.Listening
             listenJob = scope.launch {
-                val language = primaryLanguageState.value
-                val result = transcriptionService.transcribe(language) { status ->
+                val selectedLanguage = selectedLanguageState.value
+                val result = transcriptionService.transcribe(selectedLanguage) { status ->
                     when (status) {
                         TranscriptionStatus.RecordingEnded ->
                             _recordingState.value = RecordingState.Processing
@@ -111,7 +107,6 @@ class MainRecordingController @Inject constructor(
                             _recordingState.value = RecordingState.Uploading
                     }
                 }
-                // Ensure Processing before cleanup (no-op for Android which set it via callback)
                 _recordingState.value = RecordingState.Processing
                 when (result) {
                     is TranscriptionResult.Success ->
@@ -121,11 +116,11 @@ class MainRecordingController @Inject constructor(
                             withContext(ioDispatcher) {
                                 entryRepository.saveAudioDraft(
                                     audioPath = result.audioDraftPath,
-                                    language = language,
+                                    language = selectedLanguage,
                                 )
                             }
                         }
-                        emitError(result.reason.toRecognizerError(language))
+                        emitError(result.reason.toRecognizerError(selectedLanguage))
                     }
                 }
             }
@@ -147,27 +142,22 @@ class MainRecordingController @Inject constructor(
             listenJob?.cancel()
             _recordingState.value = RecordingState.Idle
         }
-        // Otherwise the status update comes via the onStatus callback inside transcribe()
     }
 
-    /**
-     * Full pipeline:
-     * 1. Validate input — blank or overlong text is rejected before touching the DB.
-     * 2. Save raw transcript as draft (on IO) — user's words are safe before any network call.
-     * 3. Call cleanup (OpenAI direct or backend proxy, based on preference).
-     * 4a. Success → update entry with cleaned text → Saved(entryId).
-     * 4b. Failure → leave draft in DB → Error(NoInternet | ApiFailed).
-     *
-     * [detectedLanguage] is non-null when the backend detected a different language than selected.
-     * The entry is tagged with the detected language; the selector preference is unchanged.
-     */
     private suspend fun saveTranscript(text: String, detectedLanguage: String? = null) {
-        val selectedLanguage = primaryLanguageState.value
-        val mismatch = isLanguageMismatch(detectedLanguage, selectedLanguage)
-        // Use detected language only when there is a genuine mismatch; otherwise keep the user's selection.
-        val language = if (mismatch) detectedLanguage!! else selectedLanguage
+        val selectedLanguage = selectedLanguageState.value
+        val mode = preferencesRepository.privacyMode.first()
+        val normalizedDetectedLanguage = normalizeDetectedLanguageCode(detectedLanguage)
+        val effectiveLanguage = if (mode == PrivacyMode.MODE_OFFLINE) {
+            selectedLanguage
+        } else {
+            normalizedDetectedLanguage ?: selectedLanguage
+        }
 
-        // Step 1 — input guard (should not normally be reached; belt-and-braces)
+        if (detectedLanguage != null && normalizedDetectedLanguage == null) {
+            Log.w(TAG, "Ignoring invalid detected language during save: $detectedLanguage")
+        }
+
         if (text.isBlank()) {
             _shakeErrorKey.update { it + 1 }
             _recordingState.value = RecordingState.Error(RecognizerError.TooShort)
@@ -178,11 +168,9 @@ class MainRecordingController @Inject constructor(
             Log.w(TAG, "Transcript exceeds max length (${text.length} chars), truncating")
         }
 
-        // MODE_OFFLINE: save final entry immediately, skip cleanup
-        val mode = preferencesRepository.privacyMode.first()
         if (mode == PrivacyMode.MODE_OFFLINE) {
             val entryId = withContext(ioDispatcher) {
-                entryRepository.saveEntry(text, language)
+                entryRepository.saveEntry(text, selectedLanguage)
             }
             Log.d(TAG, "MODE_OFFLINE: entry saved, id=$entryId")
             withContext(ioDispatcher) {
@@ -192,21 +180,16 @@ class MainRecordingController @Inject constructor(
                     Log.w(TAG, "Failed to persist hasEverRecorded flag", e)
                 }
             }
-            _recordingState.value = RecordingState.Saved(
-                entryId,
-                detectedLanguage = if (mismatch) detectedLanguage else null,
-            )
+            _recordingState.value = RecordingState.Saved(entryId)
             delayAndReset()
             return
         }
 
-        // Step 2 — draft save (must complete before cleanup call begins)
         val entryId = withContext(ioDispatcher) {
-            entryRepository.saveDraft(text, language)
+            entryRepository.saveDraft(text, effectiveLanguage)
         }
         Log.d(TAG, "Draft saved, id=$entryId")
 
-        // Trip the "has ever recorded" flag — fires even if API cleanup later fails.
         withContext(ioDispatcher) {
             try {
                 preferencesRepository.setHasEverRecorded(true)
@@ -215,8 +198,7 @@ class MainRecordingController @Inject constructor(
             }
         }
 
-        // Step 3 — cleanup
-        when (val result = cleanupTranscriptUseCase(text, language)) {
+        when (val result = cleanupTranscriptUseCase(text, effectiveLanguage)) {
             is CleanupResult.Success -> {
                 val wordCount = result.cleanedText.trim()
                     .split(Regex("\\s+")).count { it.isNotEmpty() }
@@ -226,15 +208,18 @@ class MainRecordingController @Inject constructor(
                 Log.d(TAG, "Entry $entryId cleaned (${wordCount}w)")
                 _recordingState.value = RecordingState.Saved(
                     entryId,
-                    detectedLanguage = if (mismatch) detectedLanguage else null,
+                    detectedLanguage = normalizedDetectedLanguage,
                 )
             }
             is CleanupResult.Failure -> {
-                val isNetworkFailure = result.reason == "network error"
-                                    || result.reason == "timeout"
+                val isNetworkFailure = result.reason == "network error" ||
+                    result.reason == "timeout"
                 Log.w(TAG, "Cleanup failed for entry $entryId: ${result.reason} (draft kept)")
-                val error = if (isNetworkFailure) RecognizerError.NoInternet
-                            else RecognizerError.ApiFailed
+                val error = if (isNetworkFailure) {
+                    RecognizerError.NoInternet
+                } else {
+                    RecognizerError.ApiFailed
+                }
                 _recordingState.value = RecordingState.Error(error)
             }
         }
@@ -272,12 +257,12 @@ class MainRecordingController @Inject constructor(
 private fun TranscriptionFailureReason.toRecognizerError(
     language: String = "",
 ): RecognizerError = when (this) {
-    TranscriptionFailureReason.TooShort           -> RecognizerError.TooShort
-    TranscriptionFailureReason.NothingCaught      -> RecognizerError.NoMatch
-    TranscriptionFailureReason.MicBlocked         -> RecognizerError.InsufficientPermissions
-    TranscriptionFailureReason.NetworkError       -> RecognizerError.NoInternet
-    TranscriptionFailureReason.ModelNotAvailable  -> RecognizerError.NotAvailable(language)
+    TranscriptionFailureReason.TooShort -> RecognizerError.TooShort
+    TranscriptionFailureReason.NothingCaught -> RecognizerError.NoMatch
+    TranscriptionFailureReason.MicBlocked -> RecognizerError.InsufficientPermissions
+    TranscriptionFailureReason.NetworkError -> RecognizerError.NoInternet
+    TranscriptionFailureReason.ModelNotAvailable -> RecognizerError.NotAvailable(language)
     TranscriptionFailureReason.BackendUnavailable -> RecognizerError.BackendUnavailable
-    TranscriptionFailureReason.ProxyAuthFailed    -> RecognizerError.ProxyAuthFailed
-    TranscriptionFailureReason.ApiError           -> RecognizerError.ApiFailed
+    TranscriptionFailureReason.ProxyAuthFailed -> RecognizerError.ProxyAuthFailed
+    TranscriptionFailureReason.ApiError -> RecognizerError.ApiFailed
 }

@@ -23,12 +23,9 @@ interface TranscriptionService {
     /**
      * Optional: transcribe an existing audio file on disk (used for retrying audio drafts).
      * Default implementation returns ApiError so implementations don't have to support it.
-     *
-     * [languageCode] follows the same contract as [transcribe].
      */
     suspend fun transcribeAudioDraft(
         audioPath: String,
-        languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit = {},
     ): TranscriptionResult = TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
 

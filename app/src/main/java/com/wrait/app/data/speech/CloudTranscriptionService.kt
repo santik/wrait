@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.util.Log
 import com.wrait.app.data.api.WraitBackendClient
+import com.wrait.app.domain.model.normalizeDetectedLanguageCode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.statement.HttpResponse
@@ -56,7 +57,7 @@ class CloudTranscriptionService @Inject constructor(
                 return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
             }
             onStatus(TranscriptionStatus.Uploading)
-            when (val result = upload(tempFile, languageCode)) {
+            when (val result = upload(tempFile)) {
                 is TranscriptionResult.Success -> result
                 is TranscriptionResult.Failure -> {
                     keepFileAsDraft = shouldPersistAudioDraft(result.reason)
@@ -89,7 +90,6 @@ class CloudTranscriptionService @Inject constructor(
 
     override suspend fun transcribeAudioDraft(
         audioPath: String,
-        languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit,
     ): TranscriptionResult {
         val file = File(audioPath)
@@ -98,7 +98,7 @@ class CloudTranscriptionService @Inject constructor(
             return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
         }
         onStatus(TranscriptionStatus.Uploading)
-        return upload(file, languageCode)
+        return upload(file)
     }
 
     private suspend fun record(file: File) = withContext(Dispatchers.IO) {
@@ -137,12 +137,12 @@ class CloudTranscriptionService @Inject constructor(
         Log.d(TAG, "Recording stopped: ${file.length()} bytes")
     }
 
-    private suspend fun upload(file: File, selectedLanguageCode: String): TranscriptionResult {
+    private suspend fun upload(file: File): TranscriptionResult {
         repeat(MAX_UPLOAD_RETRIES) { attempt ->
             try {
                 val bytes = withContext(Dispatchers.IO) { file.readBytes() }
                 Log.d(TAG, "Uploading ${bytes.size} bytes via backend proxy (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES)")
-                val response: HttpResponse = callTranscribeEndpoint(bytes, selectedLanguageCode)
+                val response: HttpResponse = callTranscribeEndpoint(bytes)
                 return parseResponse(response)
             } catch (e: HttpRequestTimeoutException) {
                 Log.w(TAG, "Backend proxy timed out (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
@@ -164,11 +164,8 @@ class CloudTranscriptionService @Inject constructor(
         return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
     }
 
-    private suspend fun callTranscribeEndpoint(
-        bytes: ByteArray,
-        selectedLanguageCode: String,
-    ): HttpResponse {
-        return wraitBackendClient.transcribe(bytes, selectedLanguageCode)
+    private suspend fun callTranscribeEndpoint(bytes: ByteArray): HttpResponse {
+        return wraitBackendClient.transcribe(bytes)
     }
 
     private suspend fun parseResponse(response: HttpResponse): TranscriptionResult {
@@ -184,7 +181,11 @@ class CloudTranscriptionService @Inject constructor(
                     Log.w(TAG, "Deepgram response contained empty transcript")
                     TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
                 } else {
-                    val detected = channel.detected_language?.takeIf { it.isNotBlank() }
+                    val rawDetected = channel.detected_language?.takeIf { it.isNotBlank() }
+                    val detected = normalizeDetectedLanguageCode(rawDetected)
+                    if (rawDetected != null && detected == null) {
+                        Log.w(TAG, "Ignoring invalid detected language from backend: $rawDetected")
+                    }
                     Log.d(TAG, "Transcription received: ${transcript.length} chars, detected=$detected")
                     TranscriptionResult.Success(transcript, detectedLanguage = detected)
                 }

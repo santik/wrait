@@ -83,11 +83,11 @@ class WraitBackendClient private constructor(
 
     // region — /api/transcribe
 
-    suspend fun transcribe(audioBytes: ByteArray, selectedLanguageCode: String): HttpResponse {
+    suspend fun transcribe(audioBytes: ByteArray): HttpResponse {
         val deviceId = withContext(Dispatchers.IO) {
             overrideDeviceId ?: deviceIdProvider?.getOrStore() ?: error("DeviceIdProvider not available")
         }
-        Log.d(TAG, "Transcribing ${audioBytes.size} bytes (user language=$selectedLanguageCode, Deepgram auto-detect enabled)")
+        Log.d(TAG, "Transcribing ${audioBytes.size} bytes with Deepgram auto-detect enabled")
         return try {
             client.post("${BuildConfig.BACKEND_URL}/api/transcribe") {
                 addCommonHeaders(deviceId)

@@ -74,6 +74,11 @@ class EntryCardLogicTest {
         assertEquals("First line", entryCardDisplayText(entry, "pending · will retry"))
     }
 
+    @Test
+    fun entryCardLanguageLabel_usesReadableLanguageName() {
+        assertEquals("English", entryCardLanguageLabel("en-US"))
+    }
+
     private fun entry(
         rawTranscript: String,
         cleanedText: String?,

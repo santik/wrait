@@ -8,21 +8,22 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.repository.PreferencesRepositoryImpl
-import com.wrait.app.domain.model.LanguagePreferences
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.SUPPORTED_LANGUAGE_CODES
 import com.wrait.app.domain.repository.PreferencesRepository
+import java.io.File
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class PreferencesRepositoryTest {
@@ -40,7 +41,7 @@ class PreferencesRepositoryTest {
         prefsFile = File(context.filesDir, "test_prefs_${System.nanoTime()}.preferences_pb")
         dataStore = PreferenceDataStoreFactory.create(
             scope = testScope,
-            produceFile = { prefsFile }
+            produceFile = { prefsFile },
         )
         repository = PreferencesRepositoryImpl(dataStore)
     }
@@ -53,28 +54,11 @@ class PreferencesRepositoryTest {
 
     @Test
     fun selectedLanguage_defaultsToSupportedCode_onFreshStore() = runTest(testDispatcher) {
-        // On a fresh store with no saved value the repository falls back to the device locale,
-        // then validates it against SUPPORTED_LANGUAGE_CODES (returns "en-US" if not supported).
-        // We cannot force the device locale in an instrumented test, but we can assert the
-        // returned value is always one of the supported codes — never an arbitrary or empty string.
         val language = repository.selectedLanguage.first()
         assertTrue(
             "Default language '$language' must be in SUPPORTED_LANGUAGE_CODES",
-            language in SUPPORTED_LANGUAGE_CODES
+            language in SUPPORTED_LANGUAGE_CODES,
         )
-    }
-
-    @Test
-    fun languagePreferences_defaultsToPrimaryWithinSelectedLanguages() = runTest(testDispatcher) {
-        val languagePreferences = repository.languagePreferences.first()
-        assertTrue(languagePreferences.primaryLanguage in SUPPORTED_LANGUAGE_CODES)
-        assertTrue(languagePreferences.selectedLanguages.isNotEmpty())
-        assertTrue(languagePreferences.primaryLanguage in languagePreferences.selectedLanguages)
-    }
-
-    @Test
-    fun hasConfirmedLanguagePreferences_defaultsFalse_onFreshStore() = runTest(testDispatcher) {
-        assertFalse(repository.hasConfirmedLanguagePreferences.first())
     }
 
     @Test
@@ -85,74 +69,70 @@ class PreferencesRepositoryTest {
     }
 
     @Test
-    fun setHasConfirmedLanguagePreferences_true_persists() = runTest(testDispatcher) {
-        repository.setHasConfirmedLanguagePreferences(true)
-        assertTrue(repository.hasConfirmedLanguagePreferences.first())
-    }
-
-    @Test
-    fun setHasConfirmedLanguagePreferences_false_persists() = runTest(testDispatcher) {
-        repository.setHasConfirmedLanguagePreferences(true)
-        repository.setHasConfirmedLanguagePreferences(false)
-        assertFalse(repository.hasConfirmedLanguagePreferences.first())
-    }
-
-    @Test
-    fun saveLanguagePreferences_persistsSelectedLanguagesAndPrimary() = runTest(testDispatcher) {
-        repository.saveLanguagePreferences(
-            LanguagePreferences(
-                selectedLanguages = listOf("en-US", "fr-FR", "de-DE"),
-                primaryLanguage = "fr-FR",
-            )
-        )
-
-        val languagePreferences = repository.languagePreferences.first()
-        assertEquals(listOf("en-US", "fr-FR", "de-DE"), languagePreferences.selectedLanguages)
-        assertEquals("fr-FR", languagePreferences.primaryLanguage)
-        assertEquals("fr-FR", repository.selectedLanguage.first())
-    }
-
-    @Test
-    fun setLanguage_supportedCodes_allPersistCorrectly() = runTest(testDispatcher) {
-        val codes = listOf("en-US", "nl-NL", "ru-RU", "uk-UA", "de-DE", "es-ES",
-            "fr-FR", "it-IT", "pl-PL", "pt-PT", "tr-TR")
-        for (code in codes) {
-            repository.setLanguage(code)
-            assertEquals("Language '$code' should persist", code, repository.selectedLanguage.first())
-        }
-    }
-
-    @Test
-    fun legacySelectedLanguage_migratesToLanguagePreferencesOnRead() = runTest(testDispatcher) {
+    fun legacySelectedLanguage_migratesOnRead() = runTest(testDispatcher) {
         val legacyKey = stringPreferencesKey("selected_language")
         dataStore.edit { preferences ->
             preferences[legacyKey] = "fr-FR"
         }
 
-        val languagePreferences = repository.languagePreferences.first()
-        assertEquals(listOf("fr-FR"), languagePreferences.selectedLanguages)
-        assertEquals("fr-FR", languagePreferences.primaryLanguage)
+        assertEquals("fr-FR", repository.selectedLanguage.first())
     }
 
     @Test
-    fun invalidStoredLanguagePreferences_fallBackToSupportedDefaults() = runTest(testDispatcher) {
-        val selectedLanguagesKey = stringPreferencesKey("selected_languages")
+    fun legacyPrimaryLanguage_migratesOnRead_whenSelectedLanguageMissing() = runTest(testDispatcher) {
         val primaryLanguageKey = stringPreferencesKey("primary_language")
         dataStore.edit { preferences ->
-            preferences[selectedLanguagesKey] = "xx-YY,zz-ZZ"
-            preferences[primaryLanguageKey] = "xx-YY"
+            preferences[primaryLanguageKey] = "de-DE"
         }
 
-        val languagePreferences = repository.languagePreferences.first()
-        assertTrue(languagePreferences.selectedLanguages.isNotEmpty())
-        assertTrue(languagePreferences.primaryLanguage in SUPPORTED_LANGUAGE_CODES)
-        assertTrue(languagePreferences.primaryLanguage in languagePreferences.selectedLanguages)
+        assertEquals("de-DE", repository.selectedLanguage.first())
+    }
+
+    @Test
+    fun legacySelectedLanguages_migratesFirstValidLanguage_whenNewerKeysMissing() = runTest(testDispatcher) {
+        val selectedLanguagesKey = stringPreferencesKey("selected_languages")
+        dataStore.edit { preferences ->
+            preferences[selectedLanguagesKey] = "xx-YY,fr-FR,de-DE"
+        }
+
+        assertEquals("fr-FR", repository.selectedLanguage.first())
+    }
+
+    @Test
+    fun invalidStoredLanguages_fallBackToSupportedDefault() = runTest(testDispatcher) {
+        val selectedLanguageKey = stringPreferencesKey("selected_language")
+        val primaryLanguageKey = stringPreferencesKey("primary_language")
+        val selectedLanguagesKey = stringPreferencesKey("selected_languages")
+        dataStore.edit { preferences ->
+            preferences[selectedLanguageKey] = "xx-YY"
+            preferences[primaryLanguageKey] = "zz-ZZ"
+            preferences[selectedLanguagesKey] = "aa-AA,bb-BB"
+        }
+
+        val language = repository.selectedLanguage.first()
+        assertTrue(language in SUPPORTED_LANGUAGE_CODES)
+    }
+
+    @Test
+    fun setLanguage_clearsLegacyMultiLanguageKeys() = runTest(testDispatcher) {
+        val primaryLanguageKey = stringPreferencesKey("primary_language")
+        val selectedLanguagesKey = stringPreferencesKey("selected_languages")
+        dataStore.edit { preferences ->
+            preferences[primaryLanguageKey] = "fr-FR"
+            preferences[selectedLanguagesKey] = "fr-FR,de-DE"
+        }
+
+        repository.setLanguage("en-US")
+
+        val rawPreferences = dataStore.data.first()
+        assertEquals("en-US", rawPreferences[stringPreferencesKey("selected_language")])
+        assertFalse(rawPreferences.contains(primaryLanguageKey))
+        assertFalse(rawPreferences.contains(selectedLanguagesKey))
     }
 
     @Test
     fun hasEverRecorded_defaultsFalse_onFreshStore() = runTest(testDispatcher) {
-        val value = repository.hasEverRecorded.first()
-        assertFalse("hasEverRecorded should default to false", value)
+        assertFalse(repository.hasEverRecorded.first())
     }
 
     @Test
@@ -170,8 +150,7 @@ class PreferencesRepositoryTest {
 
     @Test
     fun privacyMode_defaultsToModeBest_onFreshStore() = runTest(testDispatcher) {
-        val mode = repository.privacyMode.first()
-        assertEquals(PrivacyMode.MODE_BEST, mode)
+        assertEquals(PrivacyMode.MODE_BEST, repository.privacyMode.first())
     }
 
     @Test
@@ -197,7 +176,6 @@ class PreferencesRepositoryTest {
     fun seedPrivacyModeOnce_doesNotOverwrite_existingValue() = runTest(testDispatcher) {
         repository.savePrivacyMode(PrivacyMode.MODE_BEST)
         repository.seedPrivacyModeOnce(PrivacyMode.MODE_OFFLINE)
-        // Seeding should not override the already-saved MODE_BEST
         assertEquals(PrivacyMode.MODE_BEST, repository.privacyMode.first())
     }
 
@@ -206,8 +184,6 @@ class PreferencesRepositoryTest {
         repository.seedPrivacyModeOnce(PrivacyMode.MODE_OFFLINE)
         repository.seedPrivacyModeOnce(PrivacyMode.MODE_BEST)
         repository.seedPrivacyModeOnce(PrivacyMode.MODE_OFFLINE)
-        // The DataStore-backed impl checks if key is absent, so subsequent calls are no-ops
-        // First seeded value (MODE_OFFLINE) should persist
         assertEquals(PrivacyMode.MODE_OFFLINE, repository.privacyMode.first())
     }
 
@@ -223,5 +199,4 @@ class PreferencesRepositoryTest {
         val rawPreferences = dataStore.data.first()
         assertFalse(rawPreferences.contains(legacyKey))
     }
-
 }

@@ -6,14 +6,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
-import com.wrait.app.data.api.WraitBackendClient
-import com.wrait.app.data.device.DeviceIdProvider
-import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.repository.EntryRepository
+import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptionService
@@ -50,8 +48,6 @@ class MainRecordingControllerTest {
     private lateinit var fakeOpenApi: FakeTranscriptCleanupService
     private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakePrefs: FakePreferencesRepository
-    private lateinit var wraitBackendClient: WraitBackendClient
-    private lateinit var deviceIdProvider: DeviceIdProvider
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -64,8 +60,6 @@ class MainRecordingControllerTest {
         fakeOpenApi = FakeTranscriptCleanupService()
         fakeTranscription = FakeTranscriptionService()
         fakePrefs = FakePreferencesRepository()
-        deviceIdProvider = DeviceIdProvider(context)
-        wraitBackendClient = WraitBackendClient(deviceIdProvider)
     }
 
     @After
@@ -79,10 +73,10 @@ class MainRecordingControllerTest {
         prefs: FakePreferencesRepository = fakePrefs,
         api: FakeTranscriptCleanupService = fakeOpenApi,
         transcription: FakeTranscriptionService = fakeTranscription,
-        language: StateFlow<String> = MutableStateFlow(prefs.currentLanguagePreferences().primaryLanguage),
+        language: StateFlow<String> = MutableStateFlow(prefs.currentSelectedLanguage()),
         scope: CoroutineScope = testScope,
     ): MainRecordingController = MainRecordingController(
-        primaryLanguageState = language,
+        selectedLanguageState = language,
         entryRepository = entryRepository,
         preferencesRepository = prefs,
         transcriptionService = transcription,
@@ -459,7 +453,7 @@ class MainRecordingControllerTest {
     }
 
     @Test
-    fun languageMismatch_modeOffline_entryTaggedWithDetectedLanguage() = runTest(testDispatcher) {
+    fun languageMismatch_modeOffline_keepsSelectedLanguage() = runTest(testDispatcher) {
         fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE)
         fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
             text = "Bonjour le monde",
@@ -471,15 +465,14 @@ class MainRecordingControllerTest {
 
         val entries = entryRepository.getAllEntries().first()
         assertEquals(1, entries.size)
-        assertEquals("Entry should be tagged with detected language", "fr", entries.first().language)
+        assertEquals("Entry should keep selected language in offline mode", "en-US", entries.first().language)
         assertFalse("Entry should not be a draft", entries.first().isDraft)
     }
 
     @Test
-    fun noLanguageMismatch_entryTaggedWithSelectedLanguage() = runTest(testDispatcher) {
+    fun detectedLanguage_modeBest_entryTaggedWithDetectedLanguage() = runTest(testDispatcher) {
         fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
         fakeOpenApi.result = CleanupResult.Success("Cleaned text.")
-        // Detected language matches selected (en == en-US base)
         fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
             text = "Hello world",
             detectedLanguage = "en",
@@ -490,9 +483,7 @@ class MainRecordingControllerTest {
 
         val entries = entryRepository.getAllEntries().first()
         assertEquals(1, entries.size)
-        // No mismatch — effectiveLanguage == "en", which differs from "en-US" only by region
-        // but base codes match so mismatch=false; language stays as selected "en-US"
-        assertEquals("Entry should keep selected language when no mismatch", "en-US", entries.first().language)
+        assertEquals("Entry should use detected language in best mode", "en", entries.first().language)
     }
 
     @Test

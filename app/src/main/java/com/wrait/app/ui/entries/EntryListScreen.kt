@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import com.wrait.app.R
 import com.wrait.app.domain.model.Entry
+import com.wrait.app.domain.model.displayNameForLanguage
 import com.wrait.app.ui.theme.DesignTokens
 import com.wrait.app.ui.theme.DesignTokens.Animation
 import com.wrait.app.ui.theme.DesignTokens.Gesture
@@ -285,6 +286,7 @@ private fun EntryCard(
     val audioDraftPreview = stringResource(R.string.entry_list_audio_draft_preview)
     val audioDraftDisabledDescription = stringResource(R.string.entry_list_audio_draft_state_description)
     val displayText = entryCardDisplayText(entry, audioDraftPreview)
+    val languageLabel = entryCardLanguageLabel(entry.language)
     val isAudioDraft = entry.isAudioOnlyDraftCard()
     val textColor = if (isAudioDraft) {
         MaterialTheme.colorScheme.tertiary
@@ -398,6 +400,12 @@ private fun EntryCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(Spacing.xs))
+                Text(
+                    text  = languageLabel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.tertiary,
+                )
             }
         }
     }
@@ -428,6 +436,9 @@ internal fun entryCardDisplayText(
     }
     return preview.lines().firstOrNull { it.isNotBlank() }.orEmpty()
 }
+
+internal fun entryCardLanguageLabel(language: String): String =
+    displayNameForLanguage(language)
 
 // --- Previews ---
 
