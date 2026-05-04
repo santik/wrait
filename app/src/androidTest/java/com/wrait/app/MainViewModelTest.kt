@@ -20,6 +20,7 @@ import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -324,5 +325,20 @@ class MainViewModelTest {
         vm.initJob.join()
 
         assertEquals("en-US", vm.selectedLanguage.first())
+    }
+
+    @Test
+    fun onOpenSettings_doesNothingWhileRecordingIsActive() = runTest(testDispatcher) {
+        fakeTranscription.transcribeGate = CompletableDeferred()
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        vm.onMainButtonTapped()
+        vm.recordingState.first { it is RecordingState.Listening }
+
+        vm.onOpenSettings()
+
+        assertFalse(vm.showSettingsPanel.first())
+        fakeTranscription.transcribeGate?.complete(Unit)
     }
 }

@@ -137,9 +137,13 @@ class MainViewModel @Inject constructor(
         recordingController.onPermissionRevoked()
     }
 
-    fun onSwipeDown() {
+    fun onOpenSettings() {
         if (recordingState.value.isActive) return
         _showSettingsPanel.value = true
+    }
+
+    fun onSwipeDown() {
+        onOpenSettings()
     }
 
     fun onSettingsPanelDismiss() {

@@ -4,6 +4,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -26,6 +27,7 @@ import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakeTranscriptionService
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
@@ -80,6 +82,25 @@ class MainScreenTest {
     }
 
     @Test
+    fun mainScreen_showsSettingsIcon_whenIdle() {
+        composeRule.onNodeWithContentDescription("Open settings").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsIcon_opensSettingsPanel() {
+        composeRule.onNodeWithContentDescription("Open settings").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("Offline mode").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("Offline mode").assertIsDisplayed()
+    }
+
+    @Test
     fun settings_hidesOfflineLanguageRow_inBestMode() {
         composeRule.onRoot().performTouchInput { swipeDown() }
 
@@ -111,6 +132,41 @@ class MainScreenTest {
 
         composeRule.onNodeWithText("Offline transcription language").assertIsDisplayed()
         composeRule.onNodeWithText("English · used only in offline mode").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsIcon_hidesWhileRecordingIsActive() {
+        fakeTranscription.transcribeGate = CompletableDeferred()
+
+        try {
+            composeRule.onNodeWithContentDescription("Main action button").performClick()
+
+            composeRule.waitUntil(timeoutMillis = 3_000) {
+                runCatching {
+                    composeRule.onNodeWithText("listening…").assertIsDisplayed()
+                    true
+                }.getOrDefault(false)
+            }
+
+            composeRule.onAllNodesWithContentDescription("Open settings").assertCountEquals(0)
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
+    }
+
+    @Test
+    fun settingsIcon_hidesWhileSettingsPanelIsOpen() {
+        composeRule.onNodeWithContentDescription("Open settings").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("Offline mode").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("Offline mode").assertIsDisplayed()
+        composeRule.onAllNodesWithContentDescription("Open settings").assertCountEquals(0)
     }
 
     @Test

@@ -178,7 +178,7 @@ class MainActivity : ComponentActivity() {
                     hasEverRecorded = hasEverRecorded,
                     showSettingsPanel = showSettingsPanel,
                     privacyMode = privacyMode,
-                    onSwipeDown = viewModel::onSwipeDown,
+                    onOpenSettings = viewModel::onOpenSettings,
                     onPrivacyModeToggle = viewModel::onPrivacyModeToggle,
                     onSettingsPanelDismiss = viewModel::onSettingsPanelDismiss,
                     onStatusCleared = { viewModel.resetToIdle() },
@@ -259,7 +259,7 @@ private fun AppNavHost(
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
-    onSwipeDown: () -> Unit,
+    onOpenSettings: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
     onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
@@ -304,7 +304,7 @@ private fun AppNavHost(
                     }
                 },
                 onSwipeUp = onStatsLineTap,
-                onSwipeDown = onSwipeDown,
+                onOpenSettings = onOpenSettings,
                 onPrivacyModeToggle = onPrivacyModeToggle,
                 onSettingsPanelDismiss = onSettingsPanelDismiss,
                 onStatusCleared = onStatusCleared,
@@ -314,7 +314,7 @@ private fun AppNavHost(
                 modifier = Modifier.fillMaxSize(),
             )
 
-            if (showLanguageSettings && privacyMode == PrivacyMode.MODE_OFFLINE) {
+            if (showLanguageSettings) {
                 LanguageSettingsSheet(
                     selectedLanguage = selectedLanguage,
                     onLanguageSelected = { code ->

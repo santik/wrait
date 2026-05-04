@@ -2,6 +2,7 @@ package com.wrait.app.ui.main
 
 import android.provider.Settings
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
@@ -19,6 +20,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.minimumInteractiveComponentSize
@@ -32,7 +39,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import com.wrait.app.R
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.EntryStats
@@ -54,7 +65,7 @@ fun MainScreen(
     onButtonTap: () -> Unit,
     onLanguagesTap: () -> Unit,
     onSwipeUp: () -> Unit,
-    onSwipeDown: () -> Unit,
+    onOpenSettings: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
     onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
@@ -71,14 +82,18 @@ fun MainScreen(
     }
 
     val density = LocalDensity.current
-    val currentShowSettingsPanel by rememberUpdatedState(showSettingsPanel)
-    val swipesEnabled by rememberUpdatedState(!recordingState.isActive)
+    val currentCanOpenSettings by rememberUpdatedState(
+        canOpenSettings(
+            recordingState = recordingState,
+            showSettingsPanel = showSettingsPanel,
+        ),
+    )
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .pointerInput(onSwipeUp, onSwipeDown) {
+            .pointerInput(onSwipeUp, onOpenSettings) {
                 val thresholdPx = with(density) { DesignTokens.Gesture.SwipeNavThresholdDp.toPx() }
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
@@ -89,13 +104,30 @@ fun MainScreen(
                         totalY += change.position.y - change.previousPosition.y
                         if (!change.pressed) break
                     }
-                    if (swipesEnabled && !currentShowSettingsPanel) {
+                    if (currentCanOpenSettings) {
                         if (totalY < -thresholdPx) onSwipeUp()
-                        if (totalY > thresholdPx) onSwipeDown()
+                        if (totalY > thresholdPx) onOpenSettings()
                     }
                 }
             },
     ) {
+        AnimatedVisibility(
+            visible = currentCanOpenSettings,
+            enter = fadeIn(animationSpec = tween(DesignTokens.Animation.FadeDuration)),
+            exit = fadeOut(animationSpec = tween(DesignTokens.Animation.FadeDuration)),
+            modifier = Modifier.align(Alignment.TopEnd),
+        ) {
+            SettingsButton(
+                onOpenSettings = onOpenSettings,
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .padding(
+                        top = DesignTokens.Spacing.md,
+                        end = DesignTokens.Spacing.sm,
+                    ),
+            )
+        }
+
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -146,6 +178,25 @@ fun MainScreen(
                 onDismiss = onSettingsPanelDismiss,
             )
         }
+    }
+}
+
+@Composable
+private fun SettingsButton(
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val description = stringResource(R.string.main_open_settings_description)
+
+    IconButton(
+        onClick = onOpenSettings,
+        modifier = modifier.semantics { contentDescription = description },
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Settings,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -253,6 +304,11 @@ internal fun statusLineTapAction(
         else -> null
     }
 }
+
+internal fun canOpenSettings(
+    recordingState: RecordingState,
+    showSettingsPanel: Boolean,
+): Boolean = !recordingState.isActive && !showSettingsPanel
 
 internal fun statusTextFor(
     recordingState: RecordingState,
