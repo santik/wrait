@@ -5,6 +5,7 @@ import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.data.speech.TranscriptionResult
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.data.speech.TranscriptionStatus
+import kotlinx.coroutines.CompletableDeferred
 
 class FakeTranscriptionService : TranscriptionService {
 
@@ -23,16 +24,19 @@ class FakeTranscriptionService : TranscriptionService {
     var nextResult: FakeResult = FakeResult.FinalTranscript("one two three four five")
     var nextAudioDraftResult: TranscriptionResult =
         TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+    var transcribeGate: CompletableDeferred<Unit>? = null
 
     fun reset() {
         nextResult = FakeResult.FinalTranscript("one two three four five")
         nextAudioDraftResult = TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+        transcribeGate = null
     }
 
     override suspend fun transcribe(
         languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit
     ): TranscriptionResult {
+        transcribeGate?.await()
         onStatus(TranscriptionStatus.RecordingEnded)
         return when (val r = nextResult) {
             is FakeResult.FinalTranscript -> TranscriptionResult.Success(r.text, r.detectedLanguage)

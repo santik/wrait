@@ -2,6 +2,7 @@
     <string name="app_name">wrait</string>
     <string name="main_button_label">wrait</string>
     <string name="main_button_description">Main action button</string>
+    <string name="main_open_settings_description">Open settings</string>
     <string name="button_tapped_message">button tapped</string>
     <string name="recording_status">Recording…</string>
     <string name="mic_blocked_message">Mic access blocked, tap to open settings</string>
