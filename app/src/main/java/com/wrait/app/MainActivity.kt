@@ -19,6 +19,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
@@ -45,6 +46,7 @@ import com.wrait.app.ui.main.LanguageSettingsSheet
 import com.wrait.app.ui.main.MainScreen
 import com.wrait.app.ui.theme.WrAItTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -65,6 +67,7 @@ class MainActivity : ComponentActivity() {
                 val shakeErrorKey by viewModel.shakeErrorKey.collectAsStateWithLifecycle()
                 val stats by viewModel.entryStats.collectAsStateWithLifecycle()
                 val languagePreferences by viewModel.languagePreferences.collectAsStateWithLifecycle()
+                val shouldPromptForLanguages by viewModel.shouldPromptForLanguages.collectAsStateWithLifecycle()
                 val hasEverRecorded by viewModel.hasEverRecorded.collectAsStateWithLifecycle()
                 val showSettingsPanel by viewModel.showSettingsPanel.collectAsStateWithLifecycle()
                 val privacyMode by viewModel.privacyMode.collectAsStateWithLifecycle()
@@ -175,6 +178,7 @@ class MainActivity : ComponentActivity() {
                     stats = stats,
                     languagePreferences = languagePreferences,
                     languageSummary = languageSummary,
+                    shouldPromptForLanguages = shouldPromptForLanguages,
                     hasEverRecorded = hasEverRecorded,
                     showSettingsPanel = showSettingsPanel,
                     privacyMode = privacyMode,
@@ -189,6 +193,7 @@ class MainActivity : ComponentActivity() {
                     },
                     onToggleLanguage = viewModel::toggleLanguage,
                     onSetPrimaryLanguage = viewModel::setPrimaryLanguage,
+                    onConfirmLanguagePreferences = viewModel::confirmLanguagePreferences,
                     onMainButtonTapped = {
                         if (recordingState is RecordingState.Error &&
                             (recordingState as RecordingState.Error).error == RecognizerError.InsufficientPermissions
@@ -257,6 +262,7 @@ private fun AppNavHost(
     stats: com.wrait.app.domain.model.EntryStats,
     languagePreferences: LanguagePreferences,
     languageSummary: String,
+    shouldPromptForLanguages: Boolean,
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
@@ -269,6 +275,7 @@ private fun AppNavHost(
     onMainButtonTapped: () -> Unit,
     onToggleLanguage: (String) -> Unit,
     onSetPrimaryLanguage: (String) -> Unit,
+    onConfirmLanguagePreferences: suspend () -> Boolean,
     modifier: Modifier = Modifier,
     onStatsLineTap: () -> Unit = {
         navController.navigate("entries") { launchSingleTop = true }
@@ -281,6 +288,7 @@ private fun AppNavHost(
     ) {
         composable("main") {
             var showLanguageSettings by remember { mutableStateOf(false) }
+            val uiScope = rememberCoroutineScope()
 
             MainScreen(
                 recordingState = recordingState,
@@ -288,11 +296,13 @@ private fun AppNavHost(
                 shakeErrorKey = shakeErrorKey,
                 stats = stats,
                 languageSummary = languageSummary,
+                shouldPromptForLanguages = shouldPromptForLanguages,
                 hasEverRecorded = hasEverRecorded,
                 showSettingsPanel = showSettingsPanel,
                 privacyMode = privacyMode,
                 onButtonTap = onMainButtonTapped,
                 onLanguagesTap = { showLanguageSettings = true },
+                onLanguagePromptTap = { showLanguageSettings = true },
                 onSwipeUp = onStatsLineTap,
                 onSwipeDown = onSwipeDown,
                 onPrivacyModeToggle = onPrivacyModeToggle,
@@ -307,9 +317,21 @@ private fun AppNavHost(
             if (showLanguageSettings) {
                 LanguageSettingsSheet(
                     languagePreferences = languagePreferences,
+                    requireConfirmation = shouldPromptForLanguages,
                     onLanguageToggled = onToggleLanguage,
                     onPrimaryLanguageSelected = onSetPrimaryLanguage,
-                    onDismiss = { showLanguageSettings = false },
+                    onConfirm = {
+                        uiScope.launch {
+                            if (onConfirmLanguagePreferences()) {
+                                showLanguageSettings = false
+                            }
+                        }
+                    },
+                    onDismiss = {
+                        if (!shouldPromptForLanguages) {
+                            showLanguageSettings = false
+                        }
+                    },
                 )
             }
         }

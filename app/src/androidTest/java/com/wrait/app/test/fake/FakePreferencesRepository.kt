@@ -12,6 +12,7 @@ class FakePreferencesRepository(
     initialLanguage: String = "en-US",
     initialSelectedLanguages: List<String> = listOf(initialLanguage),
     initialPrivacyMode: PrivacyMode = PrivacyMode.MODE_BEST,
+    initialHasConfirmedLanguagePreferences: Boolean = false,
     initialHasEverRecorded: Boolean = false,
     initialDeviceRegistered: Boolean = false,
 ) : PreferencesRepository {
@@ -24,6 +25,10 @@ class FakePreferencesRepository(
     )
     override val languagePreferences: Flow<LanguagePreferences> = _languagePreferences
     override val selectedLanguage: Flow<String> = _languagePreferences.map { it.primaryLanguage }
+
+    private val _hasConfirmedLanguagePreferences =
+        MutableStateFlow(initialHasConfirmedLanguagePreferences)
+    override val hasConfirmedLanguagePreferences: Flow<Boolean> = _hasConfirmedLanguagePreferences
 
     private val _hasEverRecorded = MutableStateFlow(initialHasEverRecorded)
     override val hasEverRecorded: Flow<Boolean> = _hasEverRecorded
@@ -53,6 +58,10 @@ class FakePreferencesRepository(
                 primaryLanguage = language,
             )
         )
+    }
+
+    override suspend fun setHasConfirmedLanguagePreferences(value: Boolean) {
+        _hasConfirmedLanguagePreferences.value = value
     }
 
     override suspend fun setHasEverRecorded(value: Boolean) {

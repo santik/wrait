@@ -26,6 +26,8 @@ class PreferencesRepositoryImpl @Inject constructor(
         val PRIMARY_LANGUAGE = stringPreferencesKey("primary_language")
         val SELECTED_LANGUAGES = stringPreferencesKey("selected_languages")
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
+        val HAS_CONFIRMED_LANGUAGE_PREFERENCES =
+            booleanPreferencesKey("has_confirmed_language_preferences")
         val HAS_EVER_RECORDED = booleanPreferencesKey("has_ever_recorded")
         val PRIVACY_MODE = stringPreferencesKey("privacy_mode")
         val DEVICE_REGISTERED = booleanPreferencesKey(WraitStorageConfig.DEVICE_REGISTERED)
@@ -57,6 +59,10 @@ class PreferencesRepositoryImpl @Inject constructor(
     }
 
     override val selectedLanguage: Flow<String> = languagePreferences.map { it.primaryLanguage }
+
+    override val hasConfirmedLanguagePreferences: Flow<Boolean> = preferences.map { stored ->
+        stored[PreferencesKeys.HAS_CONFIRMED_LANGUAGE_PREFERENCES] ?: false
+    }
 
     override val hasEverRecorded: Flow<Boolean> = preferences.map { stored ->
         stored[PreferencesKeys.HAS_EVER_RECORDED] ?: false
@@ -94,6 +100,12 @@ class PreferencesRepositoryImpl @Inject constructor(
                 primaryLanguage = language,
             )
         )
+    }
+
+    override suspend fun setHasConfirmedLanguagePreferences(value: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[PreferencesKeys.HAS_CONFIRMED_LANGUAGE_PREFERENCES] = value
+        }
     }
 
     override suspend fun setHasEverRecorded(value: Boolean) {
