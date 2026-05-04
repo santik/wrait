@@ -342,4 +342,21 @@ class MainViewModelTest {
         assertEquals(listOf("en-US"), languagePreferences.selectedLanguages)
         assertEquals("en-US", languagePreferences.primaryLanguage)
     }
+
+    @Test
+    fun shouldPromptForLanguages_staysTrue_untilConfirmed() = runTest(testDispatcher) {
+        val fakePrefs = FakePreferencesRepository(
+            initialLanguage = "en-US",
+            initialHasConfirmedLanguagePreferences = false,
+        )
+        val vm = createViewModel(fakePrefs = fakePrefs)
+        vm.initJob.join()
+
+        assertTrue(vm.shouldPromptForLanguages.first { it })
+
+        assertTrue(vm.confirmLanguagePreferences())
+
+        assertFalse(vm.shouldPromptForLanguages.first { !it })
+        assertTrue(fakePrefs.hasConfirmedLanguagePreferences.first())
+    }
 }

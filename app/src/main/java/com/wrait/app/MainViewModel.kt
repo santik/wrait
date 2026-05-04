@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -84,6 +85,17 @@ class MainViewModel @Inject constructor(
     )
 
     val recordingState: StateFlow<RecordingState> = recordingController.recordingState
+
+    val hasConfirmedLanguagePreferences: StateFlow<Boolean> =
+        preferencesRepository.hasConfirmedLanguagePreferences
+            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    val shouldPromptForLanguages: StateFlow<Boolean> = combine(
+        hasConfirmedLanguagePreferences,
+        recordingState,
+    ) { confirmed, state ->
+        !confirmed && state is RecordingState.Idle
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // Incremented on each NoMatch / TooShort error so ButtonArea can fire a shake
     // even when two identical error states are emitted in succession.
@@ -163,6 +175,22 @@ class MainViewModel @Inject constructor(
                     primaryLanguage = code,
                 )
             )
+        }
+    }
+
+    suspend fun confirmLanguagePreferences(): Boolean {
+        if (languagePreferencesState.value.selectedLanguages.isEmpty()) {
+            _userMessage.emit("Select at least one language")
+            return false
+        }
+
+        return try {
+            preferencesRepository.setHasConfirmedLanguagePreferences(true)
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to confirm language preferences", e)
+            _userMessage.emit("Couldn't save language settings")
+            false
         }
     }
 

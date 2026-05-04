@@ -1,9 +1,12 @@
 package com.wrait.app.ui.main
 
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -15,6 +18,7 @@ import com.wrait.app.data.EntryDao
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.api.TranscriptCleanupService
 import com.wrait.app.data.speech.TranscriptionService
+import com.wrait.app.domain.model.displayNameForLanguage
 import com.wrait.app.domain.repository.PreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakeTranscriptionService
@@ -58,6 +62,7 @@ class MainScreenTest {
         runBlocking {
             preferencesRepository.setHasEverRecorded(false)
             preferencesRepository.setLanguage("en-US")
+            preferencesRepository.setHasConfirmedLanguagePreferences(true)
             val ids = entryDao.getAllEntries().first().map { it.id }
             if (ids.isNotEmpty()) entryDao.deleteEntries(ids)
         }
@@ -65,10 +70,94 @@ class MainScreenTest {
 
     @Test
     fun mainScreen_noEntries_showsTapToWrite() {
-        // On first launch with an empty database the main screen shows "tap to write".
-        // The entry-list empty state ("your entries will appear here") is only reachable once at
-        // least one entry exists (stats must be non-zero to show the tappable stats line).
         composeRule.waitUntil(timeoutMillis = 2_000) {
+            runCatching {
+                composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
+    }
+
+    @Test
+    fun firstRun_showsLanguagePromptInStatusLine() {
+        runBlocking {
+            preferencesRepository.setHasConfirmedLanguagePreferences(false)
+            preferencesRepository.setHasEverRecorded(false)
+        }
+
+        composeRule.waitUntil(timeoutMillis = 2_000) {
+            runCatching {
+                composeRule.onNodeWithText("select your languages").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        composeRule.onNodeWithText("select your languages").assertIsDisplayed()
+    }
+
+    @Test
+    fun firstRun_promptOpensLanguageSheet_withDefaultPrimarySelected() {
+        val defaultLanguageCode = runBlocking {
+            preferencesRepository.setHasConfirmedLanguagePreferences(false)
+            preferencesRepository.setHasEverRecorded(false)
+            preferencesRepository.languagePreferences.first().primaryLanguage
+        }
+
+        composeRule.waitUntil(timeoutMillis = 2_000) {
+            runCatching {
+                composeRule.onNodeWithText("select your languages").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("select your languages").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("Languages").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText(displayNameForLanguage(defaultLanguageCode)).assertIsDisplayed()
+        composeRule.onNodeWithTag("language_checkbox_$defaultLanguageCode").assertIsOn()
+        composeRule.onNodeWithTag("language_primary_$defaultLanguageCode").assertIsSelected()
+    }
+
+    @Test
+    fun firstRun_confirmDismissesPrompt_andPersistsAcrossRecreation() {
+        runBlocking {
+            preferencesRepository.setHasConfirmedLanguagePreferences(false)
+            preferencesRepository.setHasEverRecorded(false)
+        }
+
+        composeRule.waitUntil(timeoutMillis = 2_000) {
+            runCatching {
+                composeRule.onNodeWithText("select your languages").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("select your languages").performClick()
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithTag("confirm_languages_button").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        composeRule.onNodeWithTag("confirm_languages_button").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
+
+        composeRule.activityRule.scenario.recreate()
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
             runCatching {
                 composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
                 true

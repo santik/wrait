@@ -73,10 +73,28 @@ class PreferencesRepositoryTest {
     }
 
     @Test
+    fun hasConfirmedLanguagePreferences_defaultsFalse_onFreshStore() = runTest(testDispatcher) {
+        assertFalse(repository.hasConfirmedLanguagePreferences.first())
+    }
+
+    @Test
     fun setLanguage_persistsAcrossRead() = runTest(testDispatcher) {
         repository.setLanguage("de-DE")
         val language = repository.selectedLanguage.first()
         assertEquals("de-DE", language)
+    }
+
+    @Test
+    fun setHasConfirmedLanguagePreferences_true_persists() = runTest(testDispatcher) {
+        repository.setHasConfirmedLanguagePreferences(true)
+        assertTrue(repository.hasConfirmedLanguagePreferences.first())
+    }
+
+    @Test
+    fun setHasConfirmedLanguagePreferences_false_persists() = runTest(testDispatcher) {
+        repository.setHasConfirmedLanguagePreferences(true)
+        repository.setHasConfirmedLanguagePreferences(false)
+        assertFalse(repository.hasConfirmedLanguagePreferences.first())
     }
 
     @Test

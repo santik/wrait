@@ -40,11 +40,13 @@ fun MainScreen(
     shakeErrorKey: Int,
     stats: EntryStats,
     languageSummary: String,
+    shouldPromptForLanguages: Boolean,
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
     privacyMode: PrivacyMode,
     onButtonTap: () -> Unit,
     onLanguagesTap: () -> Unit,
+    onLanguagePromptTap: () -> Unit,
     onSwipeUp: () -> Unit,
     onSwipeDown: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
@@ -108,16 +110,18 @@ fun MainScreen(
             StatusLine(
                 recordingState = recordingState,
                 showBlockedMessage = showBlockedMessage,
+                shouldPromptForLanguages = shouldPromptForLanguages,
                 hasEverRecorded = hasEverRecorded,
-                onTap = when {
-                    showBlockedMessage -> onStatusLineTap
-                    recordingState is RecordingState.Saved -> run {
-                        val entryId = recordingState.entryId
-                        { onTapToRead(entryId) }
-                    }
-                    recordingState is RecordingState.Idle && !hasEverRecorded -> onButtonTap
-                    else -> null
-                },
+                onTap = statusLineTapAction(
+                    recordingState = recordingState,
+                    showBlockedMessage = showBlockedMessage,
+                    shouldPromptForLanguages = shouldPromptForLanguages,
+                    hasEverRecorded = hasEverRecorded,
+                    onStatusLineTap = onStatusLineTap,
+                    onTapToRead = onTapToRead,
+                    onLanguagePromptTap = onLanguagePromptTap,
+                    onButtonTap = onButtonTap,
+                ),
             )
             Spacer(Modifier.height(DesignTokens.StatsLine.GapAboveDp))
             // Stats
@@ -152,11 +156,17 @@ fun MainScreen(
 private fun StatusLine(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
+    shouldPromptForLanguages: Boolean,
     hasEverRecorded: Boolean,
     onTap: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    val statusText = statusTextFor(recordingState, showBlockedMessage, hasEverRecorded)
+    val statusText = statusTextFor(
+        recordingState = recordingState,
+        showBlockedMessage = showBlockedMessage,
+        shouldPromptForLanguages = shouldPromptForLanguages,
+        hasEverRecorded = hasEverRecorded,
+    )
     val animationsEnabled = Settings.Global.getFloat(
         LocalContext.current.contentResolver,
         Settings.Global.ANIMATOR_DURATION_SCALE,
@@ -232,14 +242,46 @@ private fun StatsLine(
 
 // --- Pure helper functions ---
 
+internal fun statusLineTapAction(
+    recordingState: RecordingState,
+    showBlockedMessage: Boolean,
+    shouldPromptForLanguages: Boolean,
+    hasEverRecorded: Boolean,
+    onStatusLineTap: () -> Unit,
+    onTapToRead: (entryId: Long) -> Unit,
+    onLanguagePromptTap: () -> Unit,
+    onButtonTap: () -> Unit,
+): (() -> Unit)? {
+    // Priority order:
+    // 1. blocked mic -> app settings
+    // 2. saved entry -> open the saved entry
+    // 3. onboarding prompt -> open language sheet
+    // 4. first-time idle -> start recording
+    return when {
+        showBlockedMessage -> onStatusLineTap
+        recordingState is RecordingState.Saved -> {
+            val entryId = recordingState.entryId
+            { onTapToRead(entryId) }
+        }
+        recordingState is RecordingState.Idle && shouldPromptForLanguages -> onLanguagePromptTap
+        recordingState is RecordingState.Idle && !hasEverRecorded -> onButtonTap
+        else -> null
+    }
+}
+
 internal fun statusTextFor(
     recordingState: RecordingState,
     showBlockedMessage: Boolean,
+    shouldPromptForLanguages: Boolean,
     hasEverRecorded: Boolean,
 ): String {
     if (showBlockedMessage) return "mic blocked · tap to open settings"
     return when (recordingState) {
-        is RecordingState.Idle       -> if (!hasEverRecorded) "tap button to write" else ""
+        is RecordingState.Idle       -> when {
+                                            shouldPromptForLanguages -> "select your languages"
+                                            !hasEverRecorded -> "tap button to write"
+                                            else -> ""
+                                        }
         is RecordingState.Listening  -> "listening\u2026"
         is RecordingState.Uploading  -> "uploading\u2026"
         is RecordingState.Processing -> "cleaning up\u2026"
