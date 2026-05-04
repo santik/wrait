@@ -1,5 +1,6 @@
 package com.wrait.app.data.repository
 
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -7,10 +8,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.wrait.app.data.WraitStorageConfig
-import com.wrait.app.domain.model.LanguagePreferences
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.defaultSupportedLanguageCode
-import com.wrait.app.domain.model.normalizeLanguagePreferences
+import com.wrait.app.domain.model.resolveSupportedLanguageCode
 import com.wrait.app.domain.repository.PreferencesRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -26,8 +26,6 @@ class PreferencesRepositoryImpl @Inject constructor(
         val PRIMARY_LANGUAGE = stringPreferencesKey("primary_language")
         val SELECTED_LANGUAGES = stringPreferencesKey("selected_languages")
         val SELECTED_LANGUAGE = stringPreferencesKey("selected_language")
-        val HAS_CONFIRMED_LANGUAGE_PREFERENCES =
-            booleanPreferencesKey("has_confirmed_language_preferences")
         val HAS_EVER_RECORDED = booleanPreferencesKey("has_ever_recorded")
         val PRIVACY_MODE = stringPreferencesKey("privacy_mode")
         val DEVICE_REGISTERED = booleanPreferencesKey(WraitStorageConfig.DEVICE_REGISTERED)
@@ -40,29 +38,10 @@ class PreferencesRepositoryImpl @Inject constructor(
                 emit(emptyPreferences())
             } else {
                 throw exception
-            }
         }
-
-    override val languagePreferences: Flow<LanguagePreferences> = preferences.map { stored ->
-        val selectedLanguages = stored[PreferencesKeys.SELECTED_LANGUAGES]
-            ?.split(',')
-            ?.map { it.trim() }
-            ?.filter { it.isNotBlank() }
-            .orEmpty()
-        val legacyLanguage = stored[PreferencesKeys.SELECTED_LANGUAGE]
-            ?: defaultSupportedLanguageCode()
-
-        normalizeLanguagePreferences(
-            selectedLanguages = if (selectedLanguages.isEmpty()) listOf(legacyLanguage) else selectedLanguages,
-            primaryLanguage = stored[PreferencesKeys.PRIMARY_LANGUAGE] ?: legacyLanguage,
-        )
     }
 
-    override val selectedLanguage: Flow<String> = languagePreferences.map { it.primaryLanguage }
-
-    override val hasConfirmedLanguagePreferences: Flow<Boolean> = preferences.map { stored ->
-        stored[PreferencesKeys.HAS_CONFIRMED_LANGUAGE_PREFERENCES] ?: false
-    }
+    override val selectedLanguage: Flow<String> = preferences.map(::resolveStoredLanguage)
 
     override val hasEverRecorded: Flow<Boolean> = preferences.map { stored ->
         stored[PreferencesKeys.HAS_EVER_RECORDED] ?: false
@@ -79,32 +58,15 @@ class PreferencesRepositoryImpl @Inject constructor(
         stored[PreferencesKeys.DEVICE_REGISTERED] ?: false
     }
 
-    override suspend fun saveLanguagePreferences(preferences: LanguagePreferences) {
-        val normalized = normalizeLanguagePreferences(
-            selectedLanguages = preferences.selectedLanguages,
-            primaryLanguage = preferences.primaryLanguage,
-        )
-        dataStore.edit { preferences ->
-            preferences[PreferencesKeys.PRIMARY_LANGUAGE] = normalized.primaryLanguage
-            preferences[PreferencesKeys.SELECTED_LANGUAGES] =
-                normalized.selectedLanguages.joinToString(",")
-            // Keep the legacy key aligned during the transition.
-            preferences[PreferencesKeys.SELECTED_LANGUAGE] = normalized.primaryLanguage
-        }
-    }
-
     override suspend fun setLanguage(language: String) {
-        saveLanguagePreferences(
-            normalizeLanguagePreferences(
-                selectedLanguages = listOf(language),
-                primaryLanguage = language,
-            )
-        )
-    }
-
-    override suspend fun setHasConfirmedLanguagePreferences(value: Boolean) {
         dataStore.edit { preferences ->
-            preferences[PreferencesKeys.HAS_CONFIRMED_LANGUAGE_PREFERENCES] = value
+            val resolved = resolveSupportedLanguageCode(language) ?: defaultSupportedLanguageCode()
+            if (!language.equals(resolved, ignoreCase = true)) {
+                Log.w(TAG, "Requested language '$language' resolved to '$resolved'")
+            }
+            preferences[PreferencesKeys.SELECTED_LANGUAGE] = resolved
+            preferences.remove(PreferencesKeys.PRIMARY_LANGUAGE)
+            preferences.remove(PreferencesKeys.SELECTED_LANGUAGES)
         }
     }
 
@@ -133,5 +95,35 @@ class PreferencesRepositoryImpl @Inject constructor(
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.DEVICE_REGISTERED] = value
         }
+    }
+
+    private fun resolveStoredLanguage(stored: Preferences): String {
+        resolveSupportedLanguageCode(stored[PreferencesKeys.SELECTED_LANGUAGE])?.let {
+            Log.d(TAG, "Resolved selected language from selected_language: $it")
+            return it
+        }
+        resolveSupportedLanguageCode(stored[PreferencesKeys.PRIMARY_LANGUAGE])?.let {
+            Log.d(TAG, "Resolved selected language from legacy primary_language: $it")
+            return it
+        }
+
+        val fromLegacySelection = stored[PreferencesKeys.SELECTED_LANGUAGES]
+            ?.split(',')
+            ?.asSequence()
+            ?.map(String::trim)
+            ?.mapNotNull(::resolveSupportedLanguageCode)
+            ?.firstOrNull()
+        if (fromLegacySelection != null) {
+            Log.d(TAG, "Resolved selected language from legacy selected_languages: $fromLegacySelection")
+            return fromLegacySelection
+        }
+
+        val fallback = defaultSupportedLanguageCode()
+        Log.w(TAG, "Falling back to default supported language: $fallback")
+        return fallback
+    }
+
+    private companion object {
+        private const val TAG = "PreferencesRepository"
     }
 }

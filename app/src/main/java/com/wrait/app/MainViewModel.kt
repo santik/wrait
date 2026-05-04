@@ -4,20 +4,23 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wrait.app.data.api.CleanupResult
-import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
-import com.wrait.app.domain.usecase.RegisterDeviceUseCase
-import com.wrait.app.di.IoDispatcher
 import com.wrait.app.data.speech.TranscriptionService
+import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
-import com.wrait.app.domain.model.LanguagePreferences
 import com.wrait.app.domain.model.PrivacyMode
-import com.wrait.app.domain.model.defaultLanguagePreferences
-import com.wrait.app.domain.model.displayNameForLanguage
-import com.wrait.app.domain.model.normalizeLanguagePreferences
+import com.wrait.app.domain.model.defaultSupportedLanguageCode
+import com.wrait.app.domain.model.normalizeDetectedLanguageCode
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
+import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
+import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.io.File
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
@@ -28,17 +31,11 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneId
-import java.io.File
-import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -47,20 +44,14 @@ class MainViewModel @Inject constructor(
     private val transcriptionService: TranscriptionService,
     private val cleanupTranscriptUseCase: CleanupTranscriptUseCase,
     private val registerDeviceUseCase: RegisterDeviceUseCase,
-    @IoDispatcher private val ioDispatcher: CoroutineDispatcher
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
-    private val languagePreferencesState = preferencesRepository.languagePreferences.stateIn(
+    val selectedLanguage: StateFlow<String> = preferencesRepository.selectedLanguage.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
-        initialValue = defaultLanguagePreferences(),
+        initialValue = defaultSupportedLanguageCode(),
     )
-
-    val languagePreferences: StateFlow<LanguagePreferences> = languagePreferencesState
-
-    private val primaryLanguage = languagePreferencesState
-        .map { it.primaryLanguage }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, defaultLanguagePreferences().primaryLanguage)
 
     val hasEverRecorded: StateFlow<Boolean> = preferencesRepository.hasEverRecorded
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
@@ -75,7 +66,7 @@ class MainViewModel @Inject constructor(
     val userMessage = _userMessage.asSharedFlow()
 
     private val recordingController = MainRecordingController(
-        primaryLanguageState = primaryLanguage,
+        selectedLanguageState = selectedLanguage,
         entryRepository = entryRepository,
         preferencesRepository = preferencesRepository,
         transcriptionService = transcriptionService,
@@ -85,17 +76,6 @@ class MainViewModel @Inject constructor(
     )
 
     val recordingState: StateFlow<RecordingState> = recordingController.recordingState
-
-    val hasConfirmedLanguagePreferences: StateFlow<Boolean> =
-        preferencesRepository.hasConfirmedLanguagePreferences
-            .stateIn(viewModelScope, SharingStarted.Eagerly, false)
-
-    val shouldPromptForLanguages: StateFlow<Boolean> = combine(
-        hasConfirmedLanguagePreferences,
-        recordingState,
-    ) { confirmed, state ->
-        !confirmed && state is RecordingState.Idle
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     // Incremented on each NoMatch / TooShort error so ButtonArea can fire a shake
     // even when two identical error states are emitted in succession.
@@ -122,7 +102,7 @@ class MainViewModel @Inject constructor(
                 PrivacyMode.MODE_OFFLINE
             } else {
                 PrivacyMode.MODE_BEST
-            }
+            },
         )
         entryRepository.deleteStaleDrafts()
         if (preferencesRepository.privacyMode.first() != PrivacyMode.MODE_OFFLINE) {
@@ -141,56 +121,15 @@ class MainViewModel @Inject constructor(
         recordingController.resetToIdle()
     }
 
-    fun toggleLanguage(code: String) {
+    fun setLanguage(code: String) {
         viewModelScope.launch {
-            val current = languagePreferencesState.value
-            val updatedSelected = if (code in current.selectedLanguages) {
-                if (current.selectedLanguages.size == 1) {
-                    return@launch
-                }
-                current.selectedLanguages.filterNot { it == code }
-            } else {
-                current.selectedLanguages + code
+            try {
+                preferencesRepository.setLanguage(code)
+                Log.d(TAG, "Selected language saved: $code")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to save selected language: $code", e)
+                _userMessage.emit("Couldn't save language settings")
             }
-            val updatedPrimary = when {
-                code !in current.selectedLanguages -> current.primaryLanguage
-                current.primaryLanguage == code -> updatedSelected.first()
-                else -> current.primaryLanguage
-            }
-            saveLanguagePreferences(
-                normalizeLanguagePreferences(
-                    selectedLanguages = updatedSelected,
-                    primaryLanguage = updatedPrimary,
-                )
-            )
-        }
-    }
-
-    fun setPrimaryLanguage(code: String) {
-        viewModelScope.launch {
-            val current = languagePreferencesState.value
-            saveLanguagePreferences(
-                normalizeLanguagePreferences(
-                    selectedLanguages = current.selectedLanguages + code,
-                    primaryLanguage = code,
-                )
-            )
-        }
-    }
-
-    suspend fun confirmLanguagePreferences(): Boolean {
-        if (languagePreferencesState.value.selectedLanguages.isEmpty()) {
-            _userMessage.emit("Select at least one language")
-            return false
-        }
-
-        return try {
-            preferencesRepository.setHasConfirmedLanguagePreferences(true)
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to confirm language preferences", e)
-            _userMessage.emit("Couldn't save language settings")
-            false
         }
     }
 
@@ -210,7 +149,7 @@ class MainViewModel @Inject constructor(
     fun onPrivacyModeToggle(enabled: Boolean) {
         viewModelScope.launch {
             preferencesRepository.savePrivacyMode(
-                if (enabled) PrivacyMode.MODE_OFFLINE else PrivacyMode.MODE_BEST
+                if (enabled) PrivacyMode.MODE_OFFLINE else PrivacyMode.MODE_BEST,
             )
         }
     }
@@ -235,20 +174,6 @@ class MainViewModel @Inject constructor(
     }
 
     // endregion
-
-    private companion object {
-        private const val TAG = "MainViewModel"
-    }
-
-    private suspend fun saveLanguagePreferences(preferences: LanguagePreferences) {
-        try {
-            preferencesRepository.saveLanguagePreferences(preferences)
-            Log.d(TAG, "Language preferences saved: $preferences")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to save language preferences: $preferences", e)
-            _userMessage.emit("Couldn't save language settings")
-        }
-    }
 
     private suspend fun retryPendingDrafts() = withContext(ioDispatcher) {
         val drafts = try {
@@ -289,21 +214,27 @@ class MainViewModel @Inject constructor(
         val audioPath = entry.audioPath ?: return
         val transcription = transcriptionService.transcribeAudioDraft(
             audioPath = audioPath,
-            languageCode = entry.language,
         )
 
         when (transcription) {
             is com.wrait.app.data.speech.TranscriptionResult.Success -> {
                 val rawTranscript = transcription.transcript
                 val rawWordCount = rawTranscript.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
-                val detectedLanguage = transcription.detectedLanguage
+                val detectedLanguage = normalizeDetectedLanguageCode(transcription.detectedLanguage)
                 val effectiveLanguage = detectedLanguage ?: entry.language
-                val mismatch = isLanguageMismatch(detectedLanguage, entry.language)
-                if (mismatch) {
-                    // Language mismatch during draft retry: silently re-tag the entry.
-                    // No UI state is emitted here because retries run in the background on init.
-                    Log.i(TAG, "Draft retry: language mismatch detected=${detectedLanguage}, " +
-                        "original=${entry.language}. Re-tagging entry ${entry.id}.")
+
+                if (transcription.detectedLanguage != null && detectedLanguage == null) {
+                    Log.w(
+                        TAG,
+                        "Draft retry: ignoring invalid detected language '${transcription.detectedLanguage}' for entry ${entry.id}.",
+                    )
+                }
+
+                if (effectiveLanguage != entry.language) {
+                    Log.i(
+                        TAG,
+                        "Draft retry: updating entry ${entry.id} language from ${entry.language} to $effectiveLanguage.",
+                    )
                     entryRepository.updateEntryLanguage(entry.id, effectiveLanguage)
                 }
 
@@ -325,30 +256,28 @@ class MainViewModel @Inject constructor(
                 }
 
                 // Once we have text (cleaned or raw), the audio file is no longer needed.
-                try { File(audioPath).delete() } catch (_: Exception) { /* best-effort */ }
+                try {
+                    File(audioPath).delete()
+                } catch (_: Exception) {
+                    // best-effort
+                }
             }
             is com.wrait.app.data.speech.TranscriptionResult.Failure -> Unit
         }
     }
-}
 
-internal fun languageSummaryFor(preferences: LanguagePreferences): String {
-    val primaryName = displayNameForLanguage(preferences.primaryLanguage)
-    return if (preferences.selectedLanguages.size == 1) {
-        "$primaryName primary"
-    } else {
-        "$primaryName primary · ${preferences.selectedLanguages.size} selected"
+    private companion object {
+        private const val TAG = "MainViewModel"
     }
 }
 
 sealed class RecordingState {
-    data object Idle       : RecordingState()
-    data object Listening  : RecordingState()
-    data object Uploading  : RecordingState()
+    data object Idle : RecordingState()
+    data object Listening : RecordingState()
+    data object Uploading : RecordingState()
     data object Processing : RecordingState()
     data class Saved(
         val entryId: Long,
-        /** Non-null when the backend detected a language different from the selected one. */
         val detectedLanguage: String? = null,
     ) : RecordingState()
     data class Error(val error: com.wrait.app.data.speech.RecognizerError) : RecordingState()
@@ -361,5 +290,5 @@ sealed class RecordingState {
 data class EntrySummary(
     val id: Long,
     val transcript: String,
-    val createdAt: Long
+    val createdAt: Long,
 )

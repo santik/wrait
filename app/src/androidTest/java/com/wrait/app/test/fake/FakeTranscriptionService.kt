@@ -44,7 +44,6 @@ class FakeTranscriptionService : TranscriptionService {
 
     override suspend fun transcribeAudioDraft(
         audioPath: String,
-        languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit,
     ): TranscriptionResult = nextAudioDraftResult
 

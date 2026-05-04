@@ -71,7 +71,6 @@ class FullJourneyTest {
             preferencesRepository.setHasEverRecorded(false)
             preferencesRepository.savePrivacyMode(PrivacyMode.MODE_BEST)
             preferencesRepository.setLanguage("en-US")
-            preferencesRepository.setHasConfirmedLanguagePreferences(true)
 
             val ids = entryDao.getAllEntries().first().map { it.id }
             if (ids.isNotEmpty()) entryDao.deleteEntries(ids)

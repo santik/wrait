@@ -161,7 +161,7 @@ class WraitBackendClientTest {
         }
         val client = WraitBackendClient(engine, overrideDeviceId = "device-123")
 
-        client.transcribe(audioBytes = byteArrayOf(1, 2, 3), selectedLanguageCode = "en-US")
+        client.transcribe(audioBytes = byteArrayOf(1, 2, 3))
 
         val url = requireNotNull(capturedUrl)
         assertEquals("/api/transcribe", url.encodedPath)

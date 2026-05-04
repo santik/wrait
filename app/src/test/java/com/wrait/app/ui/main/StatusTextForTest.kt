@@ -3,8 +3,6 @@ package com.wrait.app.ui.main
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StatusTextForTest {
@@ -13,7 +11,6 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Idle,
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = false,
         )
         assertEquals("tap button to write", text)
@@ -24,7 +21,6 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Idle,
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
         assertEquals("", text)
@@ -35,21 +31,9 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Idle,
             showBlockedMessage = true,
-            shouldPromptForLanguages = false,
             hasEverRecorded = false,
         )
-        assertEquals("mic blocked \u00b7 tap to open settings", text)
-    }
-
-    @Test
-    fun idle_showsLanguagePrompt_untilConfirmed() {
-        val text = statusTextFor(
-            recordingState = RecordingState.Idle,
-            showBlockedMessage = false,
-            shouldPromptForLanguages = true,
-            hasEverRecorded = false,
-        )
-        assertEquals("select your languages", text)
+        assertEquals("mic blocked · tap to open settings", text)
     }
 
     @Test
@@ -57,10 +41,9 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Listening,
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
-        assertEquals("listening\u2026", text)
+        assertEquals("listening…", text)
     }
 
     @Test
@@ -68,10 +51,9 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Uploading,
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
-        assertEquals("uploading\u2026", text)
+        assertEquals("uploading…", text)
     }
 
     @Test
@@ -79,18 +61,16 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Processing,
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
-        assertEquals("cleaning up\u2026", text)
+        assertEquals("cleaning up…", text)
     }
 
     @Test
     fun saved_showsTapToRead() {
         val text = statusTextFor(
-            recordingState = RecordingState.Saved(entryId = 1L),
+            recordingState = RecordingState.Saved(entryId = 1L, detectedLanguage = "fr"),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
         assertEquals("tap to read", text)
@@ -101,7 +81,6 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Deleted(count = 1),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
         assertEquals("entry deleted", text)
@@ -112,7 +91,6 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Deleted(count = 3),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
         assertEquals("3 entries deleted", text)
@@ -123,32 +101,9 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Error(RecognizerError.NoInternet),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
-        assertEquals("no connection \u00b7 saved as draft", text)
-    }
-
-    @Test
-    fun error_network_showsSavedAsDraft() {
-        val text = statusTextFor(
-            recordingState = RecordingState.Error(RecognizerError.Network),
-            showBlockedMessage = false,
-            shouldPromptForLanguages = false,
-            hasEverRecorded = true,
-        )
-        assertEquals("no connection \u00b7 saved as draft", text)
-    }
-
-    @Test
-    fun error_timeout_showsSavedAsDraft() {
-        val text = statusTextFor(
-            recordingState = RecordingState.Error(RecognizerError.Timeout),
-            showBlockedMessage = false,
-            shouldPromptForLanguages = false,
-            hasEverRecorded = true,
-        )
-        assertEquals("no connection \u00b7 saved as draft", text)
+        assertEquals("no connection · saved as draft", text)
     }
 
     @Test
@@ -156,10 +111,9 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Error(RecognizerError.ApiFailed),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
-        assertEquals("saved as draft \u00b7 will retry", text)
+        assertEquals("saved as draft · will retry", text)
     }
 
     @Test
@@ -167,10 +121,9 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Error(RecognizerError.TooShort),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
-        assertEquals("too short \u00b7 keep talking", text)
+        assertEquals("too short · keep talking", text)
     }
 
     @Test
@@ -178,10 +131,9 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Error(RecognizerError.NoMatch),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
-        assertEquals("nothing caught \u00b7 too quiet?", text)
+        assertEquals("nothing caught · too quiet?", text)
     }
 
     @Test
@@ -189,20 +141,16 @@ class StatusTextForTest {
         val text = statusTextFor(
             recordingState = RecordingState.Error(RecognizerError.InsufficientPermissions),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
-        assertEquals("mic blocked \u00b7 tap to open settings", text)
+        assertEquals("mic blocked · tap to open settings", text)
     }
 
     @Test
     fun error_notAvailable_showsOfflineModelNotInstalled_withLanguage() {
         val text = statusTextFor(
-            recordingState = RecordingState.Error(
-                RecognizerError.NotAvailable("es-ES")
-            ),
+            recordingState = RecordingState.Error(RecognizerError.NotAvailable("es-ES")),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
         assertEquals("no offline model for Español", text)
@@ -211,50 +159,20 @@ class StatusTextForTest {
     @Test
     fun error_notAvailable_showsGenericMessage_whenLanguageEmpty() {
         val text = statusTextFor(
-            recordingState = RecordingState.Error(
-                RecognizerError.NotAvailable()
-            ),
+            recordingState = RecordingState.Error(RecognizerError.NotAvailable()),
             showBlockedMessage = false,
-            shouldPromptForLanguages = false,
             hasEverRecorded = true,
         )
         assertEquals("offline model not installed", text)
     }
 
     @Test
-    fun saved_noDetectedLanguage_showsTapToRead() {
-        val text = statusTextFor(
-            recordingState = RecordingState.Saved(entryId = 1L, detectedLanguage = null),
-            showBlockedMessage = false,
-            shouldPromptForLanguages = false,
-            hasEverRecorded = true,
-        )
-        assertEquals("tap to read", text)
-    }
-
-    @Test
-    fun saved_withDetectedLanguage_showsDetectedHint() {
-        val text = statusTextFor(
-            recordingState = RecordingState.Saved(entryId = 1L, detectedLanguage = "fr"),
-            showBlockedMessage = false,
-            shouldPromptForLanguages = false,
-            hasEverRecorded = true,
-        )
-        // Should contain the human-readable name, not raw code "fr"
-        assertTrue("Status should start with 'tap to read'", text.startsWith("tap to read"))
-        assertTrue("Status should mention detected language", text.contains("detected"))
-        assertFalse("Raw language code should not appear", text.endsWith("fr"))
-    }
-
-    @Test
     fun blocked_overridesAllNonIdleStates() {
-        // showBlockedMessage=true should always return the blocked message, regardless of state
         val text = statusTextFor(
             recordingState = RecordingState.Listening,
             showBlockedMessage = true,
-            shouldPromptForLanguages = true,
             hasEverRecorded = true,
         )
-        assertEquals("mic blocked \u00b7 tap to open settings", text)
+        assertEquals("mic blocked · tap to open settings", text)
     }
 }

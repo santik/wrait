@@ -27,6 +27,18 @@ val SUPPORTED_LANGUAGES: List<SupportedLanguage> = listOf(
 val SUPPORTED_LANGUAGE_CODES: Set<String> = SUPPORTED_LANGUAGES
     .mapTo(linkedSetOf()) { it.code }
 
+fun normalizeDetectedLanguageCode(code: String?): String? {
+    if (code.isNullOrBlank()) return null
+
+    val sanitized = code.trim().replace('_', '-')
+    val locale = Locale.forLanguageTag(sanitized)
+    val language = locale.language
+    if (language.isBlank() || language == "und") return null
+
+    val normalized = locale.toLanguageTag()
+    return if (normalized.isBlank() || normalized == "und") null else normalized
+}
+
 fun resolveSupportedLanguageCode(code: String?): String? {
     if (code.isNullOrBlank()) return null
 

@@ -26,9 +26,8 @@ class ModeAwareTranscriptionService @Inject constructor(
 
     override suspend fun transcribeAudioDraft(
         audioPath: String,
-        languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit,
-    ): TranscriptionResult = backend().transcribeAudioDraft(audioPath, languageCode, onStatus)
+    ): TranscriptionResult = backend().transcribeAudioDraft(audioPath, onStatus)
 
     override fun isOfflineModelAvailable(): Boolean =
         androidService.isOfflineModelAvailable()

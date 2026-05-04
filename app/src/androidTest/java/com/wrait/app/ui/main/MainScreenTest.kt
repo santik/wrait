@@ -1,9 +1,10 @@
 package com.wrait.app.ui.main
 
-import androidx.compose.ui.test.assertIsOn
-import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -11,20 +12,20 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.swipeDown
-import androidx.test.rule.GrantPermissionRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.rule.GrantPermissionRule
 import com.wrait.app.MainActivity
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.api.TranscriptCleanupService
 import com.wrait.app.data.speech.TranscriptionService
+import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.displayNameForLanguage
 import com.wrait.app.domain.repository.PreferencesRepository
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakeTranscriptionService
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Rule
@@ -62,9 +63,8 @@ class MainScreenTest {
         runBlocking {
             preferencesRepository.setHasEverRecorded(false)
             preferencesRepository.setLanguage("en-US")
-            preferencesRepository.setHasConfirmedLanguagePreferences(true)
-            val ids = entryDao.getAllEntries().first().map { it.id }
-            if (ids.isNotEmpty()) entryDao.deleteEntries(ids)
+            preferencesRepository.savePrivacyMode(PrivacyMode.MODE_BEST)
+            entryDao.deleteAllEntries()
         }
     }
 
@@ -80,94 +80,66 @@ class MainScreenTest {
     }
 
     @Test
-    fun firstRun_showsLanguagePromptInStatusLine() {
+    fun settings_hidesOfflineLanguageRow_inBestMode() {
+        composeRule.onRoot().performTouchInput { swipeDown() }
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("Offline mode").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("Offline mode").assertIsDisplayed()
+        composeRule.onAllNodesWithText("Offline transcription language").assertCountEquals(0)
+    }
+
+    @Test
+    fun settings_showsOfflineLanguageRow_inOfflineMode() {
         runBlocking {
-            preferencesRepository.setHasConfirmedLanguagePreferences(false)
-            preferencesRepository.setHasEverRecorded(false)
+            preferencesRepository.savePrivacyMode(PrivacyMode.MODE_OFFLINE)
         }
 
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching {
-                composeRule.onNodeWithText("select your languages").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("select your languages").assertIsDisplayed()
-    }
-
-    @Test
-    fun firstRun_promptOpensLanguageSheet_withDefaultPrimarySelected() {
-        val defaultLanguageCode = runBlocking {
-            preferencesRepository.setHasConfirmedLanguagePreferences(false)
-            preferencesRepository.setHasEverRecorded(false)
-            preferencesRepository.languagePreferences.first().primaryLanguage
-        }
-
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching {
-                composeRule.onNodeWithText("select your languages").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-
-        composeRule.onNodeWithText("select your languages").performClick()
+        composeRule.onRoot().performTouchInput { swipeDown() }
 
         composeRule.waitUntil(timeoutMillis = 3_000) {
             runCatching {
-                composeRule.onNodeWithText("Languages").assertIsDisplayed()
+                composeRule.onNodeWithText("Offline transcription language").assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
 
-        composeRule.onNodeWithText(displayNameForLanguage(defaultLanguageCode)).assertIsDisplayed()
-        composeRule.onNodeWithTag("language_checkbox_$defaultLanguageCode").assertIsOn()
-        composeRule.onNodeWithTag("language_primary_$defaultLanguageCode").assertIsSelected()
+        composeRule.onNodeWithText("Offline transcription language").assertIsDisplayed()
+        composeRule.onNodeWithText("English · used only in offline mode").assertIsDisplayed()
     }
 
     @Test
-    fun firstRun_confirmDismissesPrompt_andPersistsAcrossRecreation() {
+    fun offlineLanguageRow_opensSingleSelectSheet() {
+        val selectedLanguage = "en-US"
         runBlocking {
-            preferencesRepository.setHasConfirmedLanguagePreferences(false)
-            preferencesRepository.setHasEverRecorded(false)
+            preferencesRepository.savePrivacyMode(PrivacyMode.MODE_OFFLINE)
+            preferencesRepository.setLanguage(selectedLanguage)
         }
 
-        composeRule.waitUntil(timeoutMillis = 2_000) {
-            runCatching {
-                composeRule.onNodeWithText("select your languages").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-
-        composeRule.onNodeWithText("select your languages").performClick()
-        composeRule.waitUntil(timeoutMillis = 3_000) {
-            runCatching {
-                composeRule.onNodeWithTag("confirm_languages_button").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-        composeRule.onNodeWithTag("confirm_languages_button").performClick()
+        composeRule.onRoot().performTouchInput { swipeDown() }
+        composeRule.onNodeWithText("Offline transcription language").performClick()
 
         composeRule.waitUntil(timeoutMillis = 3_000) {
             runCatching {
-                composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
+                composeRule.onNodeWithText("Offline transcription language").assertIsDisplayed()
+                composeRule.onNodeWithText(
+                    "Used only for offline transcription. Cloud transcription detects language automatically.",
+                ).assertIsDisplayed()
                 true
             }.getOrDefault(false)
         }
-        composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
 
-        composeRule.activityRule.scenario.recreate()
-
-        composeRule.waitUntil(timeoutMillis = 3_000) {
-            runCatching {
-                composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-        composeRule.onNodeWithText("tap button to write").assertIsDisplayed()
+        composeRule.onNodeWithText(displayNameForLanguage(selectedLanguage)).assertIsDisplayed()
+        composeRule.onNodeWithTag("language_option_$selectedLanguage").assertIsSelected()
     }
 
     @Test
-    fun recordingSuccess_shows_tapToRead() {
+    fun recordingSuccess_showsTapToRead() {
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
         fakeApi.result = CleanupResult.Success("Cleaned entry text.")
@@ -217,10 +189,8 @@ class MainScreenTest {
         composeRule.onNodeWithText("1 entry", substring = true).assertIsDisplayed()
 
         composeRule.waitForIdle()
-
         composeRule.onNodeWithText("1 entry", substring = true).performClick()
 
-        // Verify the list screen is now showing (back button visible)
         composeRule.waitUntil(timeoutMillis = 3_000) {
             runCatching {
                 composeRule.onNodeWithContentDescription("Navigate back to recording screen")
@@ -229,20 +199,5 @@ class MainScreenTest {
             }.getOrDefault(false)
         }
         composeRule.onNodeWithContentDescription("Navigate back to recording screen").assertIsDisplayed()
-    }
-
-    @Test
-    fun swipeDown_opensSettingsWithLanguagesRow() {
-        composeRule.onRoot().performTouchInput { swipeDown() }
-
-        composeRule.waitUntil(timeoutMillis = 3_000) {
-            runCatching {
-                composeRule.onNodeWithText("Languages").assertIsDisplayed()
-                true
-            }.getOrDefault(false)
-        }
-
-        composeRule.onNodeWithText("Languages").assertIsDisplayed()
-        composeRule.onNodeWithText("English primary").assertIsDisplayed()
     }
 }
