@@ -20,9 +20,12 @@ class TranscriptCleanupServiceImpl @Inject constructor(
     override suspend fun cleanupTranscript(rawText: String, language: String): CleanupResult {
         val normalized = rawText.trim()
         if (normalized.isEmpty()) return CleanupResult.Failure("empty transcript")
-        val boundedTranscript = if (normalized.length > MAX_TRANSCRIPT_LENGTH) {
-            Log.i(TAG, "Truncating transcript from ${normalized.length} to $MAX_TRANSCRIPT_LENGTH chars")
-            normalized.take(MAX_TRANSCRIPT_LENGTH)
+        val boundedTranscript = if (normalized.length > MAX_CLEANUP_REQUEST_LENGTH) {
+            Log.i(
+                TAG,
+                "Truncating transcript from ${normalized.length} to $MAX_CLEANUP_REQUEST_LENGTH chars",
+            )
+            normalized.take(MAX_CLEANUP_REQUEST_LENGTH)
         } else {
             normalized
         }
@@ -63,7 +66,9 @@ class TranscriptCleanupServiceImpl @Inject constructor(
 
     private companion object {
         const val TAG = "TranscriptCleanupService"
-        const val MAX_TRANSCRIPT_LENGTH = 3_000
+        // Separate from MainRecordingController's persistence cap: this tighter bound keeps
+        // cleanup requests small enough for backend processing and prompt sizing.
+        const val MAX_CLEANUP_REQUEST_LENGTH = 3_000
         const val MAX_RETRIES = 3
         const val BASE_RETRY_DELAY_MS = 500
     }
