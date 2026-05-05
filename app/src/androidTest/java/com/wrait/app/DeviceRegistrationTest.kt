@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.RegistrationResult
+import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.device.DeviceIdProvider
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
@@ -16,6 +17,7 @@ import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
+import com.wrait.app.test.fake.FakeNetworkAvailability
 import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +46,7 @@ class DeviceRegistrationTest {
     private lateinit var db: WraitDatabase
     private lateinit var entryDao: EntryDao
     private lateinit var entryRepository: EntryRepository
+    private lateinit var fakeNetworkAvailability: FakeNetworkAvailability
     private val createdVms = mutableListOf<MainViewModel>()
 
     @Before
@@ -54,6 +57,7 @@ class DeviceRegistrationTest {
             .build()
         entryDao = db.entryDao()
         entryRepository = EntryRepositoryImpl(entryDao, FakeTimeProvider())
+        fakeNetworkAvailability = FakeNetworkAvailability()
     }
 
     @After
@@ -67,12 +71,14 @@ class DeviceRegistrationTest {
     private fun createViewModel(
         fakePrefs: FakePreferencesRepository = FakePreferencesRepository(),
         fakeRegistration: FakeDeviceRegistrationService = FakeDeviceRegistrationService(),
+        networkAvailability: NetworkAvailability = fakeNetworkAvailability,
     ): Pair<MainViewModel, FakeDeviceRegistrationService> {
         val deviceIdProvider = DeviceIdProvider(context)
         val vm = MainViewModel(
             preferencesRepository = fakePrefs,
             entryRepository = entryRepository,
             transcriptionService = FakeTranscriptionService(),
+            networkAvailability = networkAvailability,
             cleanupTranscriptUseCase = CleanupTranscriptUseCase(
                 transcriptCleanupService = FakeTranscriptCleanupService(),
             ),

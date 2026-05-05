@@ -40,6 +40,7 @@ private fun RecognizerError.toFailureReason(): TranscriptionFailureReason = when
     RecognizerError.NoMatch               -> TranscriptionFailureReason.NothingCaught
     RecognizerError.InsufficientPermissions -> TranscriptionFailureReason.MicBlocked
     is RecognizerError.NotAvailable       -> TranscriptionFailureReason.ModelNotAvailable
+    RecognizerError.ConnectionRequired,
     RecognizerError.Network,
     RecognizerError.Timeout,
     RecognizerError.NoInternet            -> TranscriptionFailureReason.NetworkError

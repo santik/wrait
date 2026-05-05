@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.Entry
@@ -42,6 +43,7 @@ class MainViewModel @Inject constructor(
     private val preferencesRepository: PreferencesRepository,
     private val entryRepository: EntryRepository,
     private val transcriptionService: TranscriptionService,
+    private val networkAvailability: NetworkAvailability,
     private val cleanupTranscriptUseCase: CleanupTranscriptUseCase,
     private val registerDeviceUseCase: RegisterDeviceUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
@@ -70,6 +72,7 @@ class MainViewModel @Inject constructor(
         entryRepository = entryRepository,
         preferencesRepository = preferencesRepository,
         transcriptionService = transcriptionService,
+        networkAvailability = networkAvailability,
         cleanupTranscriptUseCase = cleanupTranscriptUseCase,
         ioDispatcher = ioDispatcher,
         scope = viewModelScope,

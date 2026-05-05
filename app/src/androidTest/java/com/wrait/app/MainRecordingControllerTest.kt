@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.repository.EntryRepositoryImpl
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionFailureReason
@@ -14,10 +15,12 @@ import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
+import com.wrait.app.test.fake.FakeNetworkAvailability
 import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -48,6 +51,7 @@ class MainRecordingControllerTest {
     private lateinit var fakeOpenApi: FakeTranscriptCleanupService
     private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakePrefs: FakePreferencesRepository
+    private lateinit var fakeNetworkAvailability: FakeNetworkAvailability
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -60,6 +64,7 @@ class MainRecordingControllerTest {
         fakeOpenApi = FakeTranscriptCleanupService()
         fakeTranscription = FakeTranscriptionService()
         fakePrefs = FakePreferencesRepository()
+        fakeNetworkAvailability = FakeNetworkAvailability()
     }
 
     @After
@@ -73,6 +78,7 @@ class MainRecordingControllerTest {
         prefs: FakePreferencesRepository = fakePrefs,
         api: FakeTranscriptCleanupService = fakeOpenApi,
         transcription: FakeTranscriptionService = fakeTranscription,
+        networkAvailability: NetworkAvailability = fakeNetworkAvailability,
         language: StateFlow<String> = MutableStateFlow(prefs.currentSelectedLanguage()),
         scope: CoroutineScope = testScope,
     ): MainRecordingController = MainRecordingController(
@@ -80,6 +86,7 @@ class MainRecordingControllerTest {
         entryRepository = entryRepository,
         preferencesRepository = prefs,
         transcriptionService = transcription,
+        networkAvailability = networkAvailability,
         cleanupTranscriptUseCase = CleanupTranscriptUseCase(
             transcriptCleanupService = api,
         ),
@@ -98,15 +105,122 @@ class MainRecordingControllerTest {
         // Configure transcription to not return immediately so we can observe Listening state
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.FinalTranscript("hello world test one two")
+        fakeTranscription.transcribeGate = CompletableDeferred()
         val controller = buildController()
-        // With UnconfinedTestDispatcher, tap immediately progresses to Processing
-        // but state passes through Listening first
-        controller.onMainButtonTapped()
-        // After full pipeline: should be Saved or transitioned past Listening
-        // We verify the pipeline ran by checking DB
+        try {
+            controller.onMainButtonTapped()
+            assertEquals(RecordingState.Listening, controller.recordingState.value)
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
         advanceUntilIdle()
+    }
+
+    @Test
+    fun bestMode_offline_emitsImmediateError_withoutStartingRecording() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeNetworkAvailability.isAvailable = false
+        val controller = buildController(prefs = fakePrefs)
+
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        val state = controller.recordingState.value
+        assertTrue(
+            "Offline best mode should show a connection-required error before recording",
+            (state is RecordingState.Error && state.error == RecognizerError.ConnectionRequired) ||
+                state is RecordingState.Idle,
+        )
+        assertEquals(
+            "Recording should not start when best mode is offline",
+            0,
+            fakeTranscription.transcribeCallCount,
+        )
+        assertTrue(
+            "No draft or entry should be created when recording never starts",
+            entryRepository.getAllEntries().first().isEmpty(),
+        )
+    }
+
+    @Test
+    fun bestMode_online_startsRecording() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeNetworkAvailability.isAvailable = true
+        fakeTranscription.transcribeGate = CompletableDeferred()
+        val controller = buildController(prefs = fakePrefs)
+
+        try {
+            controller.onMainButtonTapped()
+            assertEquals(RecordingState.Listening, controller.recordingState.value)
+            assertEquals(1, fakeTranscription.transcribeCallCount)
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun bestMode_retryAfterConnectionRestored_startsRecording() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeNetworkAvailability.isAvailable = false
+        val controller = buildController(prefs = fakePrefs)
+
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+        assertEquals(0, fakeTranscription.transcribeCallCount)
+
+        fakeNetworkAvailability.isAvailable = true
+        fakeTranscription.transcribeGate = CompletableDeferred()
+
+        try {
+            controller.onMainButtonTapped()
+            assertEquals(RecordingState.Listening, controller.recordingState.value)
+            assertEquals(1, fakeTranscription.transcribeCallCount)
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun offlineMode_skipsConnectivityPreflight() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE)
+        fakeNetworkAvailability.reset(isAvailable = false)
+        fakeTranscription.transcribeGate = CompletableDeferred()
+        val controller = buildController(prefs = fakePrefs)
+
+        try {
+            controller.onMainButtonTapped()
+            assertEquals(RecordingState.Listening, controller.recordingState.value)
+            assertEquals(
+                "Offline mode should not consult connectivity before recording",
+                0,
+                fakeNetworkAvailability.callCount,
+            )
+            assertEquals(1, fakeTranscription.transcribeCallCount)
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun bestMode_networkFailureAfterStart_persistsAudioDraft() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeNetworkAvailability.isAvailable = true
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FailureWithAudioDraft(
+            reason = TranscriptionFailureReason.NetworkError,
+            audioPath = "/tmp/best_mode_network_drop.m4a",
+        )
+        val controller = buildController(prefs = fakePrefs)
+
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
         val entries = entryRepository.getAllEntries().first()
-        assertTrue("Pipeline should have produced an entry", entries.isNotEmpty())
+        assertEquals(1, entries.size)
+        assertEquals("/tmp/best_mode_network_drop.m4a", entries.first().audioPath)
+        assertTrue(entries.first().isDraft)
     }
 
     @Test

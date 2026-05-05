@@ -327,6 +327,7 @@ internal fun statusTextFor(
             RecognizerError.InsufficientPermissions -> "mic blocked · tap to open settings"
             RecognizerError.NoMatch -> "nothing caught · too quiet?"
             RecognizerError.TooShort -> "too short · keep talking"
+            RecognizerError.ConnectionRequired -> "best mode needs connection"
             is RecognizerError.NotAvailable -> {
                 val name = com.wrait.app.domain.model.displayNameForLanguage(recordingState.error.language)
                 if (name.isNotBlank()) "no offline model for $name" else "offline model not installed"

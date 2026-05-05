@@ -8,6 +8,7 @@ import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.device.DeviceIdProvider
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
@@ -17,6 +18,7 @@ import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
+import com.wrait.app.test.fake.FakeNetworkAvailability
 import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
@@ -45,6 +47,7 @@ class MainViewModelTest {
     private lateinit var entryRepository: EntryRepository
     private lateinit var fakeApi: FakeTranscriptCleanupService
     private lateinit var fakeTranscription: FakeTranscriptionService
+    private lateinit var fakeNetworkAvailability: FakeNetworkAvailability
     private lateinit var fakeTime: FakeTimeProvider
     private val createdVms = mutableListOf<MainViewModel>()
 
@@ -60,6 +63,7 @@ class MainViewModelTest {
         entryRepository = EntryRepositoryImpl(entryDao, fakeTime)
         fakeApi = FakeTranscriptCleanupService()
         fakeTranscription = FakeTranscriptionService()
+        fakeNetworkAvailability = FakeNetworkAvailability()
     }
 
     @After
@@ -73,6 +77,7 @@ class MainViewModelTest {
     private fun createViewModel(
         fakePrefs: FakePreferencesRepository = FakePreferencesRepository(),
         fakeRegistration: FakeDeviceRegistrationService = FakeDeviceRegistrationService(),
+        networkAvailability: NetworkAvailability = fakeNetworkAvailability,
     ): MainViewModel {
         val deviceIdProvider = DeviceIdProvider(
             InstrumentationRegistry.getInstrumentation().targetContext
@@ -81,6 +86,7 @@ class MainViewModelTest {
             preferencesRepository = fakePrefs,
             entryRepository = entryRepository,
             transcriptionService = fakeTranscription,
+            networkAvailability = networkAvailability,
             cleanupTranscriptUseCase = CleanupTranscriptUseCase(
                 transcriptCleanupService = fakeApi,
             ),
