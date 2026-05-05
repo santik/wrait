@@ -59,7 +59,11 @@ class MainViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     val privacyMode: StateFlow<PrivacyMode> = preferencesRepository.privacyMode
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PrivacyMode.MODE_BEST)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(STATE_SUBSCRIPTION_TIMEOUT_MS),
+            PrivacyMode.MODE_BEST,
+        )
 
     private val _showSettingsPanel = MutableStateFlow(false)
     val showSettingsPanel: StateFlow<Boolean> = _showSettingsPanel.asStateFlow()
@@ -84,15 +88,21 @@ class MainViewModel @Inject constructor(
     // even when two identical error states are emitted in succession.
     val shakeErrorKey: StateFlow<Int> = recordingController.shakeErrorKey
 
-    val entries: StateFlow<List<EntrySummary>> = entryRepository.getAllEntries()
-        .map { list ->
-            list.map { EntrySummary(it.id, it.rawTranscript, it.createdAt) }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+    // Share one upstream entries flow for all derived main-screen state while the UI is observing it.
+    private val allEntries: StateFlow<List<Entry>> = entryRepository.getAllEntries()
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(STATE_SUBSCRIPTION_TIMEOUT_MS),
+            emptyList(),
+        )
 
-    val entryStats: StateFlow<EntryStats> = entryRepository.getAllEntries()
+    val entryStats: StateFlow<EntryStats> = allEntries
         .map { list -> computeStats(list) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), EntryStats.Empty)
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(STATE_SUBSCRIPTION_TIMEOUT_MS),
+            EntryStats.Empty,
+        )
 
     internal val initJob: Job = viewModelScope.launch {
         try {
@@ -275,6 +285,7 @@ class MainViewModel @Inject constructor(
 
     private companion object {
         private const val TAG = "MainViewModel"
+        private const val STATE_SUBSCRIPTION_TIMEOUT_MS = 5_000L
     }
 }
 
@@ -293,9 +304,3 @@ sealed class RecordingState {
     val isActive: Boolean
         get() = this is Listening || this is Uploading || this is Processing
 }
-
-data class EntrySummary(
-    val id: Long,
-    val transcript: String,
-    val createdAt: Long,
-)
