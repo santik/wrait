@@ -40,6 +40,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -92,9 +93,12 @@ fun EntryListScreen(
     val sorted = remember(uiState.entries) {
         uiState.entries.sortedByDescending { it.createdAt }
     }
+    val density = LocalDensity.current
     val backDescription = stringResource(R.string.entry_list_back_description)
     val emptyStateText  = stringResource(R.string.entry_list_empty_state)
     val haptic          = LocalHapticFeedback.current
+    val swipeBackThresholdPx = with(density) { Gesture.SwipeBackThresholdDp.toPx() }
+    val currentOnBack by rememberUpdatedState(onBack)
 
     var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
 
@@ -105,7 +109,7 @@ fun EntryListScreen(
 
     // Swipe-down-to-back via the LazyColumn's overscroll. onPreFling resets the accumulator so a
     // fling that doesn't reach the threshold doesn't carry state into the next drag.
-    val nestedScrollConnection = remember {
+    val nestedScrollConnection = remember(swipeBackThresholdPx) {
         object : NestedScrollConnection {
             private var accumulated = 0f
             private var hasFired = false
@@ -118,9 +122,9 @@ fun EntryListScreen(
                 if (source == NestedScrollSource.UserInput && !hasFired) {
                     if (available.y > 0f) {
                         accumulated += available.y
-                        if (accumulated > Gesture.SwipeBackThresholdPx) {
+                        if (accumulated > swipeBackThresholdPx) {
                             hasFired = true
-                            onBack()
+                            currentOnBack()
                         }
                     } else {
                         accumulated = 0f
@@ -147,7 +151,7 @@ fun EntryListScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pointerInput(Unit) {
+                    .pointerInput(swipeBackThresholdPx) {
                         var accumulated = 0f
                         var hasFired    = false
                         detectVerticalDragGestures(
@@ -158,10 +162,10 @@ fun EntryListScreen(
                                 if (hasFired) return@detectVerticalDragGestures
                                 if (dragAmount > 0f) {
                                     accumulated += dragAmount
-                                    if (accumulated > Gesture.SwipeBackThresholdPx) {
+                                    if (accumulated > swipeBackThresholdPx) {
                                         hasFired = true
                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        onBack()
+                                        currentOnBack()
                                     }
                                 } else {
                                     accumulated = 0f
