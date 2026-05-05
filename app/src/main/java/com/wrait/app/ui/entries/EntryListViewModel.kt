@@ -2,10 +2,11 @@ package com.wrait.app.ui.entries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.repository.EntryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -20,7 +21,8 @@ data class EntryListUiState(
 
 @HiltViewModel
 class EntryListViewModel @Inject constructor(
-    private val entryRepository: EntryRepository
+    private val entryRepository: EntryRepository,
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
     val uiState: StateFlow<EntryListUiState> = entryRepository.getAllEntries()
@@ -34,7 +36,7 @@ class EntryListViewModel @Inject constructor(
     fun deleteEntry(id: Long) {
         viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) { entryRepository.deleteEntries(listOf(id)) }
+                withContext(ioDispatcher) { entryRepository.deleteEntries(listOf(id)) }
             } catch (_: Exception) {
                 // DB errors are silent — the entry remains in the list if deletion fails,
                 // which is the correct fail-safe (no phantom deletes).
