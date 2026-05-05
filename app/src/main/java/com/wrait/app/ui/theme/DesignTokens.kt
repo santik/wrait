@@ -32,7 +32,7 @@ object DesignTokens {
     }
 
     object Gesture {
-        const val SwipeBackThresholdPx  = 200f  // px — accumulated overscroll to trigger back
+        val SwipeBackThresholdDp        = 80.dp // dp — accumulated overscroll to trigger back
         val SwipeNavThresholdDp         = 80.dp // dp — single-frame delta to trigger navigation
 
         // Swipe-to-delete card reveal

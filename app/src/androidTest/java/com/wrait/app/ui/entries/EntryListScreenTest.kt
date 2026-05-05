@@ -7,7 +7,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.swipeDown
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.geometry.Offset
 import com.wrait.app.ui.theme.DesignTokens.Gesture
@@ -33,6 +32,11 @@ import javax.inject.Inject
 @HiltAndroidTest
 @RunWith(AndroidJUnit4::class)
 class EntryListScreenTest {
+
+    companion object {
+        private const val BELOW_THRESHOLD_RATIO = 0.4f
+        private const val ABOVE_THRESHOLD_RATIO = 1.1f
+    }
 
     @get:Rule(order = 0)
     val hiltRule = HiltAndroidRule(this)
@@ -81,6 +85,15 @@ class EntryListScreenTest {
                 true
             }.getOrDefault(false)
         }
+    }
+
+    private fun dragDownOnNode(text: String, distancePx: Float) {
+        composeRule.onNodeWithText(text)
+            .performTouchInput {
+                down(center)
+                moveTo(Offset(center.x, center.y + distancePx))
+                up()
+            }
     }
 
     @Test
@@ -283,11 +296,14 @@ class EntryListScreenTest {
 
     @Test
     @Ignore
-    fun swipeDown_emptyList_navigatesBackToMain() {
+    fun swipeDown_emptyList_aboveThreshold_navigatesBackToMain() {
         navigateToEmptyList()
+        val swipeBackThresholdPx = with(composeRule.density) { Gesture.SwipeBackThresholdDp.toPx() }
 
-        composeRule.onNodeWithText("your entries will appear here")
-            .performTouchInput { swipeDown() }
+        dragDownOnNode(
+            text = "your entries will appear here",
+            distancePx = swipeBackThresholdPx * ABOVE_THRESHOLD_RATIO,
+        )
 
         composeRule.waitUntil(timeoutMillis = 3_000) {
             runCatching {
@@ -303,17 +319,48 @@ class EntryListScreenTest {
     fun swipeDown_emptyList_belowThreshold_doesNotNavigate() {
         navigateToEmptyList()
 
-        // Drag 40 % of SwipeBackThresholdPx — well below the threshold, must NOT navigate.
-        composeRule.onNodeWithText("your entries will appear here")
-            .performTouchInput {
-                down(center)
-                moveTo(Offset(center.x, center.y + Gesture.SwipeBackThresholdPx * 0.4f))
-                up()
-            }
+        val swipeBackThresholdPx = with(composeRule.density) { Gesture.SwipeBackThresholdDp.toPx() }
+
+        // Drag 40% of swipeBackThresholdPx (computed from SwipeBackThresholdDp) — well below
+        // the threshold, so the gesture must not navigate away from the list screen.
+        dragDownOnNode(
+            text = "your entries will appear here",
+            distancePx = swipeBackThresholdPx * BELOW_THRESHOLD_RATIO,
+        )
 
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.onNodeWithContentDescription("Navigate back to recording screen")
             .assertIsDisplayed()
+    }
+
+    @Test
+    @Ignore
+    fun swipeDown_populatedList_aboveThreshold_navigatesBackToMain() {
+        val text = "Entry for populated swipe-back test"
+        insertEntry(text)
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("1 entry").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        navigateToList("1 entry")
+
+        val swipeBackThresholdPx = with(composeRule.density) { Gesture.SwipeBackThresholdDp.toPx() }
+        dragDownOnNode(
+            text = text,
+            distancePx = swipeBackThresholdPx * ABOVE_THRESHOLD_RATIO,
+        )
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithContentDescription("Main action button").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        composeRule.onNodeWithContentDescription("Main action button").assertIsDisplayed()
     }
 
     @Test

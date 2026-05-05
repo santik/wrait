@@ -30,10 +30,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,7 +82,7 @@ fun EntryDetailScreen(
     val shareSheetTitle = stringResource(R.string.entry_detail_share_title)
     val shareUnavailableMessage = stringResource(R.string.entry_detail_share_unavailable)
     val scrollState = rememberScrollState()
-    val swipeThresholdPx = with(LocalDensity.current) { 120.dp.toPx() }
+    val swipeBackThresholdPx = with(LocalDensity.current) { DesignTokens.Gesture.SwipeBackThresholdDp.toPx() }
     var swipeAccumPx by remember { mutableFloatStateOf(0f) }
     var swipeTriggered by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -94,16 +95,17 @@ fun EntryDetailScreen(
         focusManager.clearFocus()
         onBack()
     }
+    val currentDismissAndBack by rememberUpdatedState(dismissAndBack)
 
-    val swipeToDismissConnection = remember {
+    val swipeToDismissConnection = remember(swipeBackThresholdPx, scrollState) {
         object : NestedScrollConnection {
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
                 if (source != NestedScrollSource.UserInput) return Offset.Zero
                 if (scrollState.value == 0 && available.y > 0) {
                     swipeAccumPx += available.y
-                    if (!swipeTriggered && swipeAccumPx >= swipeThresholdPx) {
+                    if (!swipeTriggered && swipeAccumPx >= swipeBackThresholdPx) {
                         swipeTriggered = true
-                        dismissAndBack()
+                        currentDismissAndBack()
                     }
                 } else {
                     swipeAccumPx = 0f
