@@ -4,6 +4,7 @@ import android.content.Context
 import android.media.MediaRecorder
 import android.util.Log
 import com.wrait.app.data.api.WraitBackendClient
+import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.normalizeDetectedLanguageCode
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.ktor.client.plugins.HttpRequestTimeoutException
@@ -12,7 +13,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -34,6 +35,7 @@ import javax.inject.Singleton
 class CloudTranscriptionService @Inject constructor(
     @ApplicationContext private val context: Context,
     private val wraitBackendClient: WraitBackendClient,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : TranscriptionService {
 
     @Volatile private var stopSignal = CompletableDeferred<Unit>()
@@ -101,7 +103,7 @@ class CloudTranscriptionService @Inject constructor(
         return upload(file)
     }
 
-    private suspend fun record(file: File) = withContext(Dispatchers.IO) {
+    private suspend fun record(file: File) = withContext(ioDispatcher) {
         @Suppress("DEPRECATION")
         val recorder = MediaRecorder()
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -140,7 +142,7 @@ class CloudTranscriptionService @Inject constructor(
     private suspend fun upload(file: File): TranscriptionResult {
         repeat(MAX_UPLOAD_RETRIES) { attempt ->
             try {
-                val bytes = withContext(Dispatchers.IO) { file.readBytes() }
+                val bytes = withContext(ioDispatcher) { file.readBytes() }
                 Log.d(TAG, "Uploading ${bytes.size} bytes via backend proxy (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES)")
                 val response: HttpResponse = callTranscribeEndpoint(bytes)
                 return parseResponse(response)

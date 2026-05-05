@@ -3,6 +3,7 @@ package com.wrait.app.data.api
 import android.util.Log
 import com.wrait.app.BuildConfig
 import com.wrait.app.data.device.DeviceIdProvider
+import com.wrait.app.di.IoDispatcher
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.android.Android
@@ -18,7 +19,7 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.isSuccess
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -34,9 +35,13 @@ class WraitBackendClient private constructor(
     private val client: HttpClient,
     private val deviceIdProvider: DeviceIdProvider?,
     private val overrideDeviceId: String? = null,
+    private val ioDispatcher: CoroutineDispatcher,
 ) : DeviceRegistrationService {
 
-    @Inject constructor(deviceIdProvider: DeviceIdProvider) : this(
+    @Inject constructor(
+        deviceIdProvider: DeviceIdProvider,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher,
+    ) : this(
         HttpClient(Android) {
             install(HttpTimeout) {
                 requestTimeoutMillis = REQUEST_TIMEOUT_MS
@@ -45,10 +50,15 @@ class WraitBackendClient private constructor(
         },
         deviceIdProvider,
         null,
+        ioDispatcher,
     )
 
     // Test constructor — injects a MockEngine and an optional fixed device ID.
-    internal constructor(engine: HttpClientEngine, overrideDeviceId: String? = null) : this(
+    internal constructor(
+        engine: HttpClientEngine,
+        overrideDeviceId: String? = null,
+        ioDispatcher: CoroutineDispatcher,
+    ) : this(
         HttpClient(engine) {
             install(HttpTimeout) {
                 requestTimeoutMillis = REQUEST_TIMEOUT_MS
@@ -57,6 +67,7 @@ class WraitBackendClient private constructor(
         },
         null,
         overrideDeviceId,
+        ioDispatcher,
     )
 
     // region — /api/register
@@ -84,7 +95,7 @@ class WraitBackendClient private constructor(
     // region — /api/transcribe
 
     suspend fun transcribe(audioBytes: ByteArray): HttpResponse {
-        val deviceId = withContext(Dispatchers.IO) {
+        val deviceId = withContext(ioDispatcher) {
             overrideDeviceId ?: deviceIdProvider?.getOrStore() ?: error("DeviceIdProvider not available")
         }
         Log.d(TAG, "Transcribing ${audioBytes.size} bytes with Deepgram auto-detect enabled")

@@ -60,6 +60,7 @@ class EntryDetailViewModelTest {
     private fun createVm(entryId: Long): EntryDetailViewModel =
         EntryDetailViewModel(
             entryRepository = repository,
+            ioDispatcher = testDispatcher,
             savedStateHandle = SavedStateHandle(mapOf("entryId" to entryId)),
         ).also { createdVms.add(it) }
 

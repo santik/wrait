@@ -6,6 +6,8 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.headersOf
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -16,10 +18,19 @@ import java.io.IOException
 
 class WraitBackendClientTest {
 
+    private fun TestScope.createClient(
+        engine: MockEngine,
+        overrideDeviceId: String? = null,
+    ): WraitBackendClient = WraitBackendClient(
+        engine = engine,
+        overrideDeviceId = overrideDeviceId,
+        ioDispatcher = UnconfinedTestDispatcher(testScheduler),
+    )
+
     @Test
     fun register_201_returnsSuccess() = runTest {
         val engine = MockEngine { respond("", HttpStatusCode.Created, headersOf()) }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.register("a".repeat(64))
 
@@ -29,7 +40,7 @@ class WraitBackendClientTest {
     @Test
     fun register_200_returnsSuccess() = runTest {
         val engine = MockEngine { respond("", HttpStatusCode.OK, headersOf()) }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.register("a".repeat(64))
 
@@ -39,7 +50,7 @@ class WraitBackendClientTest {
     @Test
     fun register_400_returnsFailure() = runTest {
         val engine = MockEngine { respond("", HttpStatusCode.BadRequest, headersOf()) }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.register("a".repeat(64))
 
@@ -50,7 +61,7 @@ class WraitBackendClientTest {
     @Test
     fun register_429_returnsFailure() = runTest {
         val engine = MockEngine { respond("", HttpStatusCode.TooManyRequests, headersOf()) }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.register("a".repeat(64))
 
@@ -61,7 +72,7 @@ class WraitBackendClientTest {
     @Test
     fun register_500_returnsFailure() = runTest {
         val engine = MockEngine { respond("", HttpStatusCode.InternalServerError, headersOf()) }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.register("a".repeat(64))
 
@@ -72,7 +83,7 @@ class WraitBackendClientTest {
     @Test
     fun register_networkException_returnsFailure() = runTest {
         val engine = MockEngine { throw IOException("no route to host") }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.register("a".repeat(64))
 
@@ -88,7 +99,7 @@ class WraitBackendClientTest {
             capturedHeaders = request.headers
             respond("", HttpStatusCode.Created, headersOf())
         }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         client.register(deviceId)
 
@@ -108,7 +119,7 @@ class WraitBackendClientTest {
                 headers = headersOf(),
             )
         }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.cleanupTranscript(
             transcript = "um hello world",
@@ -123,7 +134,7 @@ class WraitBackendClientTest {
     @Test
     fun cleanupTranscript_non2xx_returnsFailure() = runTest {
         val engine = MockEngine { respond("", HttpStatusCode.InternalServerError, headersOf()) }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.cleanupTranscript(
             transcript = "hello world",
@@ -138,7 +149,7 @@ class WraitBackendClientTest {
     @Test
     fun cleanupTranscript_networkException_returnsFailure() = runTest {
         val engine = MockEngine { throw IOException("no route to host") }
-        val client = WraitBackendClient(engine)
+        val client = createClient(engine)
 
         val result = client.cleanupTranscript(
             transcript = "hello world",
@@ -159,7 +170,7 @@ class WraitBackendClientTest {
             capturedHeaders = request.headers
             respond("{}", HttpStatusCode.OK, headersOf())
         }
-        val client = WraitBackendClient(engine, overrideDeviceId = "device-123")
+        val client = createClient(engine, overrideDeviceId = "device-123")
 
         client.transcribe(audioBytes = byteArrayOf(1, 2, 3))
 

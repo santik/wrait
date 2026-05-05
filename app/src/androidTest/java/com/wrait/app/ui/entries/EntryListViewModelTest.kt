@@ -57,7 +57,7 @@ class EntryListViewModelTest {
     }
 
     private fun createVm(): EntryListViewModel =
-        EntryListViewModel(repository).also { createdVms.add(it) }
+        EntryListViewModel(repository, testDispatcher).also { createdVms.add(it) }
 
     private suspend fun insertEntry(transcript: String = "hello world", createdAt: Long = System.currentTimeMillis()): Long =
         dao.insert(EntryEntity(

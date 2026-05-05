@@ -4,10 +4,11 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.repository.EntryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class EntryDetailViewModel @Inject constructor(
     private val entryRepository: EntryRepository,
-    savedStateHandle: SavedStateHandle
+    @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val entryId: Long = savedStateHandle.get<Long>("entryId") ?: run {
@@ -64,7 +66,7 @@ class EntryDetailViewModel @Inject constructor(
     private suspend fun persistEdit(text: String) {
         try {
             val wc = text.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }.size
-            withContext(Dispatchers.IO) { entryRepository.updateWithCleanedText(entryId, text, wc) }
+            withContext(ioDispatcher) { entryRepository.updateWithCleanedText(entryId, text, wc) }
         } catch (e: Exception) {
             Log.e("EntryDetailViewModel", "Failed to save edit for entry $entryId", e)
         }
@@ -80,7 +82,7 @@ class EntryDetailViewModel @Inject constructor(
         _showDeleteDialog.value = false
         viewModelScope.launch {
             try {
-                withContext(Dispatchers.IO) { entryRepository.deleteEntries(listOf(entryId)) }
+                withContext(ioDispatcher) { entryRepository.deleteEntries(listOf(entryId)) }
                 onDeleted()
             } catch (e: Exception) {
                 Log.e("EntryDetailViewModel", "Failed to delete entry $entryId", e)
