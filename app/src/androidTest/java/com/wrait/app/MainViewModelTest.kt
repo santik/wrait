@@ -10,6 +10,8 @@ import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.device.DeviceIdProvider
+import com.wrait.app.domain.model.Entry
+import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
 import com.wrait.app.data.speech.RecognizerError
@@ -23,8 +25,16 @@ import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -38,6 +48,7 @@ import org.junit.runner.RunWith
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModelTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -68,7 +79,11 @@ class MainViewModelTest {
 
     @After
     fun tearDown() {
-        createdVms.forEach { it.viewModelScope.cancel() }
+        runBlocking {
+            createdVms.forEach { vm ->
+                vm.viewModelScope.coroutineContext[Job]?.cancelAndJoin()
+            }
+        }
         createdVms.clear()
         Dispatchers.resetMain()
         db.close()
@@ -78,13 +93,14 @@ class MainViewModelTest {
         fakePrefs: FakePreferencesRepository = FakePreferencesRepository(),
         fakeRegistration: FakeDeviceRegistrationService = FakeDeviceRegistrationService(),
         networkAvailability: NetworkAvailability = fakeNetworkAvailability,
+        entryRepo: EntryRepository = entryRepository,
     ): MainViewModel {
         val deviceIdProvider = DeviceIdProvider(
             InstrumentationRegistry.getInstrumentation().targetContext
         )
         return MainViewModel(
             preferencesRepository = fakePrefs,
-            entryRepository = entryRepository,
+            entryRepository = entryRepo,
             transcriptionService = fakeTranscription,
             networkAvailability = networkAvailability,
             cleanupTranscriptUseCase = CleanupTranscriptUseCase(
@@ -300,6 +316,62 @@ class MainViewModelTest {
     }
 
     @Test
+    fun entryStats_usesSingleUpstreamEntriesCollection() = runTest(testDispatcher) {
+        val countingRepository = CountingEntryRepository()
+        val vm = createViewModel(
+            fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE),
+            entryRepo = countingRepository,
+        )
+        vm.initJob.join()
+        advanceUntilIdle()
+
+        assertEquals(0, countingRepository.collectionCount)
+
+        val statsCollector = backgroundScope.launch(testDispatcher) {
+            vm.entryStats.collect { }
+        }
+        advanceUntilIdle()
+
+        assertEquals(1, countingRepository.collectionCount)
+
+        vm.entryStats.first()
+        advanceUntilIdle()
+
+        assertEquals(1, countingRepository.collectionCount)
+        statsCollector.cancel()
+    }
+
+    @Test
+    fun statsUpdate_reactsAfterStartup() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.initJob.join()
+        advanceUntilIdle()
+
+        assertEquals(0, vm.entryStats.first().entryCount)
+        assertEquals(0, vm.entryStats.first().activeDays)
+
+        val day1 = 1_700_000_000_000L
+        val day2 = day1 + TimeUnit.HOURS.toMillis(26)
+        listOf(day1, day2).forEach { ts ->
+            entryDao.insert(
+                EntryEntity(
+                    rawTranscript = "word one two three four",
+                    cleanedText = "cleaned",
+                    isDraft = false,
+                    language = "en-US",
+                    createdAt = ts,
+                    wordCount = 5,
+                ),
+            )
+        }
+        advanceUntilIdle()
+
+        val stats = vm.entryStats.first { it.entryCount == 2 }
+        assertEquals(2, stats.entryCount)
+        assertEquals(2, stats.activeDays)
+    }
+
+    @Test
     fun setLanguage_updatesSelectedLanguage() = runTest(testDispatcher) {
         val fakePrefs = FakePreferencesRepository(initialLanguage = "en-US")
         val vm = createViewModel(fakePrefs = fakePrefs)
@@ -346,5 +418,46 @@ class MainViewModelTest {
 
         assertFalse(vm.showSettingsPanel.first())
         fakeTranscription.transcribeGate?.complete(Unit)
+    }
+
+    private class CountingEntryRepository(
+        initialEntries: List<Entry> = emptyList(),
+    ) : EntryRepository {
+        private val entries = MutableStateFlow(initialEntries)
+        var collectionCount: Int = 0
+            private set
+
+        override suspend fun saveDraft(transcript: String, language: String): Long = 0L
+
+        override suspend fun saveEntry(transcript: String, language: String): Long = 0L
+
+        override suspend fun saveAudioDraft(audioPath: String, language: String): Long = 0L
+
+        override suspend fun updateWithCleanedText(id: Long, text: String, wordCount: Int) = Unit
+
+        override suspend fun updateDraftTranscript(id: Long, rawTranscript: String, wordCount: Int) = Unit
+
+        override suspend fun finalizeDraftWithCleanedText(
+            id: Long,
+            rawTranscript: String,
+            cleanedText: String,
+            wordCount: Int,
+        ) = Unit
+
+        override suspend fun updateEntryLanguage(id: Long, language: String) = Unit
+
+        override fun getAllEntries(): Flow<List<Entry>> = entries.onStart {
+            collectionCount += 1
+        }
+
+        override fun getEntryById(id: Long): Flow<Result<Entry?>> = flowOf(Result.success(null))
+
+        override suspend fun getPendingDrafts(): List<Entry> = emptyList()
+
+        override suspend fun deleteStaleDrafts(daysOld: Int) = Unit
+
+        override suspend fun deleteStaleDrafts() = Unit
+
+        override suspend fun deleteEntries(ids: List<Long>) = Unit
     }
 }
