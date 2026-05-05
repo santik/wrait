@@ -8,7 +8,7 @@ Thanks for testing wrait. This guide tells you everything you need to know to ge
 
 A voice diary for your phone. You open it, tap a button, talk, and tap again. Your entry is saved. That's it.
 
-There's no account. Nothing goes to the cloud. Your entries stay encrypted on your phone.
+There's no account. In Best mode, your audio and raw transcript go through the wrait backend proxy for transcription and cleanup. In Offline mode, your entries stay encrypted on your phone.
 
 ---
 
@@ -43,6 +43,8 @@ Android blocks apps from unknown sources by default. You need to allow your file
 
 The app will clean up your recording automatically (removes filler words, fixes punctuation). This takes a second or two. When it's done, you'll see **"tap to read"** — tap it to open the new entry directly.
 
+If Best mode is selected and your phone has no connection, the app now blocks before recording starts instead of letting you record something it cannot upload.
+
 ### Reading your entries
 
 Swipe up from anywhere on the main screen, or tap the stats line ("12 entries · 8 days") at the bottom. Your entries appear newest first. Tap any entry to read the full text. The entry text is selectable — you can copy it to the clipboard if you want to use it elsewhere.
@@ -61,15 +63,15 @@ Swipe right on any entry in the entries list to reveal a delete button. Tap it a
 
 ### Changing the language
 
-Tap the language name above the button (e.g. "Nederlands" or "English"). Pick the language you'll be speaking in. This tells the app which language to transcribe and clean up — it's important to set this correctly before recording.
+Open the settings panel from the settings icon in the top-right corner or by swiping down from the top of the main screen. Tap **Offline transcription language**. Pick the language you'll be speaking in when you use Offline mode.
 
-If you speak in a different language than selected, the app will detect it and show "tap to read · detected <lang>" after saving. The entry will be tagged with the detected language.
+In Best mode, cloud transcription detects language automatically. If you speak in a different language than the offline language selected in settings, the app will detect it and show "tap to read · detected <lang>" after saving. The entry will be tagged with the detected language.
 
 ### Offline mode
 
-Swipe down from the top of the main screen to open the settings panel. You'll see an **Offline mode** toggle:
+Tap the settings icon in the top-right corner, or swipe down from the top of the main screen, to open the settings panel. You'll see an **Offline mode** toggle:
 
-- **Off (Best mode)** — Audio is sent to Deepgram for transcription. The transcript is sent to OpenAI for cleanup. Best accuracy, requires internet.
+- **Off (Best mode)** — Audio is sent to the wrait backend proxy for transcription. The raw transcript is sent to the wrait backend proxy for cleanup. Best accuracy, requires internet.
 - **On (Offline mode)** — Everything stays on your phone. Android's on-device speech recognition is used. No internet needed. No cleanup step. Lower transcription quality.
 
 The change takes effect on the next recording — no restart needed. The panel closes when you swipe up or tap outside it.
@@ -80,11 +82,11 @@ The change takes effect on the next recording — no restart needed. The panel c
 
 ## What happens to your data
 
-**In Best mode (default):** Your audio is sent to [Deepgram](https://deepgram.com) for transcription, and the raw transcript is sent to OpenAI to clean it up. Nothing is ever sent to us — we have no servers.
+**In Best mode (default):** Your audio is sent to the wrait backend proxy for transcription, and the raw transcript is sent to the wrait backend proxy for cleanup. The cleaned entry text still stays on your device.
 
-**In Offline mode:** Nothing leaves your phone. Transcription runs on-device. There is no cleanup step.
+**In Offline mode:** No recording audio or transcript leaves your phone. Transcription runs on-device. There is no cleanup step.
 
-In both modes, your entries are saved encrypted on your phone only. Audio is discarded immediately after transcription and is never stored on your device.
+In both modes, your entries are saved encrypted on your phone only. Audio is discarded immediately after transcription and is never stored on your device, unless a recoverable Best-mode failure requires a local draft retry. On app launch, an anonymous device ID may also be sent to the wrait backend to register the device for the beta service.
 
 For full details, see the [privacy policy](https://santik.github.io/wrait/PRIVACY).
 
@@ -98,7 +100,7 @@ For full details, see the [privacy policy](https://santik.github.io/wrait/PRIVAC
 
 **Short recordings are discarded.** If you tap stop before saying at least a few words, nothing is saved. This is expected.
 
-**If you lose your internet connection** while recording, your entry is saved as a draft on your phone and cleaned up automatically the next time you open the app with a connection.
+**If you lose your internet connection** before starting a recording in Best mode, the app blocks immediately. If the connection drops while recording or during upload/cleanup, your entry is saved as a draft on your phone and cleaned up automatically the next time you open the app with a connection.
 
 ---
 
@@ -112,9 +114,11 @@ Here are some things worth testing — especially in the first week:
 - After saving, tap "tap to read" to open the entry directly
 - Tap the stats line ("12 entries · 8 days") to navigate to the entry list
 - Swipe up to browse your entries — does the list update immediately after recording?
-- Switch languages and record in a different one
-- Try recording in a different language than selected — check if the app detects it and shows the detected language
+- Open the settings panel from the new settings icon in the top-right corner
+- Change the Offline transcription language in settings and record in a different one
+- Try recording in a different language than the offline language selected in settings — check if the app detects it and shows the detected language
 - Try recording with a poor connection and check if the draft recovers on the next open
+- Try starting a Best-mode recording with no connection — the app should block before recording starts
 - Swipe right on an entry to delete it — confirm the dialog and check it's gone
 - Open an entry and try editing the text — check that it saves automatically
 - Open an entry and try sharing it — check that the share sheet opens with the correct text
@@ -150,6 +154,7 @@ What's most useful to hear about:
 - Did the cleanup output sound natural in your language?
 - Did the app feel slow or unresponsive at any point?
 - Did anything confuse you, especially around the recording flow?
+- Did the new settings entry point feel clearer?
 - Did you lose an entry or see unexpected behaviour?
 
 ---

@@ -37,6 +37,7 @@ The core loop takes about thirty seconds.
 - All diary entries — both the raw transcript and the cleaned text
 - The encryption key (protected by Android Keystore hardware)
 - Your language preference
+- Your anonymous device ID (stored encrypted on-device)
 
 ### What leaves your device
 
@@ -44,19 +45,21 @@ This depends on your selected **mode** (see below). In the default **Best** mode
 
 1. **Voice audio** is sent to the wrait backend proxy (`/api/transcribe`), which forwards it to [Deepgram](https://deepgram.com) (Nova-3) for transcription. The Android app no longer calls Deepgram directly.
 
-2. **The raw transcript text** (not the cleaned entry) is sent to OpenAI's GPT API for cleanup. Same stateless model — no session, no history.
+2. **The raw transcript text** (not the cleaned entry) is sent to the wrait backend proxy (`/api/cleanup`), which forwards cleanup to OpenAI's GPT API. Same stateless model — no session, no history.
 
 The cleaned entry text never leaves your device.
 
-In **Offline** mode, nothing leaves your device at all — transcription runs on-device via Android SpeechRecognizer.
+In **Offline** mode, no recording audio or transcript text leaves your device — transcription runs on-device via Android SpeechRecognizer.
+
+On app launch, an anonymous device ID may still be sent to the wrait backend to register the device for the beta service.
 
 ### Offline mode
 
-wrait has two modes, switchable at runtime from the settings panel (swipe down from the top of the main screen):
+wrait has two modes, switchable at runtime from the settings panel (tap the settings icon in the top-right corner or swipe down from the top of the main screen):
 
 | Mode | Transcription | Cleanup | Network required |
 |------|--------------|---------|-----------------|
-| **Best** | Backend proxy (Deepgram cloud STT) | OpenAI gpt-4o-mini (cloud) | Yes |
+| **Best** | Backend proxy (Deepgram cloud STT) | Backend proxy (OpenAI gpt-4o-mini) | Yes |
 | **Offline** | Android SpeechRecognizer (on-device) | None | No |
 
 The selected mode takes effect on the next recording. No restart needed.
@@ -66,7 +69,6 @@ Offline mode requires an offline speech model for the selected language to be in
 ### What is never sent anywhere
 
 - Cleaned diary entry text
-- Device identifiers
 - Location
 - Any account information (there is no account)
 
@@ -119,7 +121,7 @@ Instrumented tests run on a connected device or emulator:
 ./gradlew connectedAndroidTest
 ```
 
-These are functional integration tests — they run against a real in-memory database and real ViewModels. There are no unit tests.
+These are functional integration tests — they run against a real in-memory database and real ViewModels. There are also JVM unit tests for backend and UI logic.
 
 ---
 
@@ -143,9 +145,9 @@ com.wrait.app/
 
 ### Transcription backends
 
-Offline mode is a runtime user setting (swipe down → settings panel) backed by DataStore. The default is set at build time via `PRIVACY_MODE` in `local.properties`:
+Offline mode is a runtime user setting (settings icon or swipe down → settings panel) backed by DataStore. The default is set at build time via `PRIVACY_MODE` in `local.properties`:
 
-- **`MODE_BEST`** — backend-proxied Deepgram Nova-3 STT (network) + OpenAI gpt-4o-mini cleanup (network). Draft-first pipeline: entry is written to DB before any API call.
+- **`MODE_BEST`** — backend-proxied Deepgram Nova-3 STT (network) + backend-proxied OpenAI gpt-4o-mini cleanup (network). Draft-first pipeline: entry is written to DB before any API call.
 - **`MODE_OFFLINE`** — Android `SpeechRecognizer` (on-device). No cleanup, no network calls. Entry saved immediately as final. Requires offline speech model for the selected language.
 
 `ModeAwareTranscriptionService` reads the current DataStore value at call time, so switching modes takes effect on the next recording without restarting the app.
@@ -168,7 +170,7 @@ Offline mode is a runtime user setting (swipe down → settings panel) backed by
 - **No search.** Planned for a later version once there are enough entries to make it useful.
 - **2-minute recording cap.** By design — longer recordings degrade cleanup quality and push the app toward voice memo territory.
 - **Android only.** No iOS plans in the near term.
-- **Secrets in binary/config.** In the closed beta build, the OpenAI key plus backend configuration values are compiled into the APK via `BuildConfig`. This is acceptable for a private friends-and-family beta with hard spend caps set on the upstream services.
+- **Secrets in binary/config.** In the closed beta build, the backend configuration values are compiled into the APK via `BuildConfig`. This is acceptable for a private friends-and-family beta with hard spend caps set on the upstream services.
 
 ---
 

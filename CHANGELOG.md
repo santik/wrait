@@ -4,6 +4,35 @@ All notable changes to wrait are documented here.
 
 ---
 
+## [1.3-beta] — 2026-05-05
+
+Proxy-based cloud processing, language/settings simplification, device registration, and recording-flow polish.
+
+### New features
+
+- **Discoverable settings button** — Added a visible settings icon on the main screen. Swipe down still works, but settings are now easier to find.
+- **Anonymous device registration** — The app now derives an anonymous device ID, stores it encrypted on-device, and sends it to the backend for beta-service registration.
+
+### Improvements
+
+- **Proxy-only Best mode** — Cloud transcription and transcript cleanup now both go through the wrait backend proxy.
+- **Language selection simplified** — The language picker now lives in settings and only affects Offline mode. Best mode transcription detects language automatically.
+- **Swipe-back consistency** — List and detail screens now use the same density-aware swipe-back threshold for more consistent gesture feel across devices.
+
+### Fixes
+
+- **Best mode offline preflight** — If the phone is offline, the app now blocks before recording starts instead of letting you record something it cannot upload.
+- **Transcript truncation** — Oversized transcripts are now truncated before persistence and cleanup.
+- **Draft retry path** — Pending drafts continue through the same backend cleanup path used by normal recordings.
+
+### Internal changes
+
+- **Direct Deepgram/OpenAI app wiring removed** — The Android client is now centered around `WraitBackendClient` and backend endpoints.
+- **Entry stats flow cleanup** — Main screen stats now share one upstream entries flow instead of subscribing twice.
+- **Dispatcher injection cleanup** — Entry-focused view models and backend-related code now use injected IO dispatchers instead of hardcoded ones.
+
+---
+
 ## [1.2-beta] — 2026-04-15
 
 Major UX improvements: edit entries, share entries, swipe-to-delete, language detection, responsive layout, button behavior fixes, and offline mode.
