@@ -19,10 +19,12 @@ import com.wrait.app.MainActivity
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.api.TranscriptCleanupService
+import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.displayNameForLanguage
 import com.wrait.app.domain.repository.PreferencesRepository
+import com.wrait.app.test.fake.FakeNetworkAvailability
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakeTranscriptionService
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -53,15 +55,18 @@ class MainScreenTest {
     @Inject lateinit var preferencesRepository: PreferencesRepository
     @Inject lateinit var transcriptCleanupService: TranscriptCleanupService
     @Inject lateinit var transcriptionService: TranscriptionService
+    @Inject lateinit var networkAvailability: NetworkAvailability
 
     private val fakeApi get() = transcriptCleanupService as FakeTranscriptCleanupService
     private val fakeTranscription get() = transcriptionService as FakeTranscriptionService
+    private val fakeNetworkAvailability get() = networkAvailability as FakeNetworkAvailability
 
     @Before
     fun setUp() {
         hiltRule.inject()
         fakeApi.reset()
         fakeTranscription.reset()
+        fakeNetworkAvailability.reset(isAvailable = true)
         runBlocking {
             preferencesRepository.setHasEverRecorded(false)
             preferencesRepository.setLanguage("en-US")
@@ -226,6 +231,38 @@ class MainScreenTest {
             }.getOrDefault(false)
         }
         composeRule.onNodeWithText("no connection · saved as draft").assertIsDisplayed()
+    }
+
+    @Test
+    fun offlineBestMode_showsError_andRetryStartsRecording_whenConnectionReturns() {
+        fakeNetworkAvailability.isAvailable = false
+
+        composeRule.onNodeWithContentDescription("Main action button").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            runCatching {
+                composeRule.onNodeWithText("best mode needs connection").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+        composeRule.onNodeWithText("best mode needs connection").assertIsDisplayed()
+
+        fakeNetworkAvailability.isAvailable = true
+        fakeTranscription.transcribeGate = CompletableDeferred()
+
+        try {
+            composeRule.onNodeWithContentDescription("Main action button").performClick()
+
+            composeRule.waitUntil(timeoutMillis = 5_000) {
+                runCatching {
+                    composeRule.onNodeWithText("listening…").assertIsDisplayed()
+                    true
+                }.getOrDefault(false)
+            }
+            composeRule.onNodeWithText("listening…").assertIsDisplayed()
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
     }
 
     @Test

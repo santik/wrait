@@ -313,6 +313,8 @@ sealed class RecognizerError {
     data object NoMatch : RecognizerError()
     data object TooShort : RecognizerError()
     data object Network : RecognizerError()
+    /** Best mode was selected but the device was offline before recording began. */
+    data object ConnectionRequired : RecognizerError()
     data object Audio : RecognizerError()
     data object Client : RecognizerError()
     data object Server : RecognizerError()

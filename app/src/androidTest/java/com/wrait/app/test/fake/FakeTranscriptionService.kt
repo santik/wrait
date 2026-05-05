@@ -25,17 +25,20 @@ class FakeTranscriptionService : TranscriptionService {
     var nextAudioDraftResult: TranscriptionResult =
         TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
     var transcribeGate: CompletableDeferred<Unit>? = null
+    var transcribeCallCount: Int = 0
 
     fun reset() {
         nextResult = FakeResult.FinalTranscript("one two three four five")
         nextAudioDraftResult = TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
         transcribeGate = null
+        transcribeCallCount = 0
     }
 
     override suspend fun transcribe(
         languageCode: String,
         onStatus: (TranscriptionStatus) -> Unit
     ): TranscriptionResult {
+        transcribeCallCount += 1
         transcribeGate?.await()
         onStatus(TranscriptionStatus.RecordingEnded)
         return when (val r = nextResult) {
@@ -59,6 +62,7 @@ private fun RecognizerError.toFailureReason(): TranscriptionFailureReason = when
     RecognizerError.NoMatch                 -> TranscriptionFailureReason.NothingCaught
     RecognizerError.InsufficientPermissions -> TranscriptionFailureReason.MicBlocked
     is RecognizerError.NotAvailable        -> TranscriptionFailureReason.ModelNotAvailable
+    RecognizerError.ConnectionRequired,
     RecognizerError.Network,
     RecognizerError.Timeout,
     RecognizerError.NoInternet              -> TranscriptionFailureReason.NetworkError

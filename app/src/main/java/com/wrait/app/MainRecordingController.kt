@@ -1,6 +1,7 @@
 package com.wrait.app
 
 import android.util.Log
+import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionFailureReason
@@ -31,6 +32,7 @@ class MainRecordingController @Inject constructor(
     private val entryRepository: EntryRepository,
     private val preferencesRepository: PreferencesRepository,
     private val transcriptionService: TranscriptionService,
+    private val networkAvailability: NetworkAvailability,
     private val cleanupTranscriptUseCase: CleanupTranscriptUseCase,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope,
@@ -89,10 +91,20 @@ class MainRecordingController @Inject constructor(
         listenJob?.cancel()
 
         scope.launch {
-            val isOffline = preferencesRepository.privacyMode.first() == PrivacyMode.MODE_OFFLINE
-            if (isOffline && !transcriptionService.isOfflineModelAvailable()) {
-                emitError(RecognizerError.NotAvailable(selectedLanguageState.value))
-                return@launch
+            when (preferencesRepository.privacyMode.first()) {
+                PrivacyMode.MODE_BEST -> {
+                    if (!networkAvailability.canAttemptCloudUpload()) {
+                        emitError(RecognizerError.ConnectionRequired)
+                        return@launch
+                    }
+                }
+
+                PrivacyMode.MODE_OFFLINE -> {
+                    if (!transcriptionService.isOfflineModelAvailable()) {
+                        emitError(RecognizerError.NotAvailable(selectedLanguageState.value))
+                        return@launch
+                    }
+                }
             }
 
             listeningStartedAt = System.currentTimeMillis()

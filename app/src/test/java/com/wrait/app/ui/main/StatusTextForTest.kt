@@ -127,6 +127,16 @@ class StatusTextForTest {
     }
 
     @Test
+    fun error_connectionRequired_showsBestModeNeedsConnection() {
+        val text = statusTextFor(
+            recordingState = RecordingState.Error(RecognizerError.ConnectionRequired),
+            showBlockedMessage = false,
+            hasEverRecorded = true,
+        )
+        assertEquals("best mode needs connection", text)
+    }
+
+    @Test
     fun error_noMatch_showsTooQuiet() {
         val text = statusTextFor(
             recordingState = RecordingState.Error(RecognizerError.NoMatch),
