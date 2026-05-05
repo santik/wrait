@@ -305,6 +305,56 @@ class MainRecordingControllerTest {
     }
 
     @Test
+    fun oversizedTranscript_modeOffline_savesTruncatedText() = runTest(testDispatcher) {
+        val oversizedTranscript = "a".repeat(CONTROLLER_TRANSCRIPT_LIMIT + 321)
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_OFFLINE)
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.FinalTranscript(oversizedTranscript)
+        val controller = buildController(prefs = fakePrefs, api = fakeOpenApi)
+
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(1, entries.size)
+        assertEquals(
+            "MODE_OFFLINE should persist the controller-bounded transcript",
+            oversizedTranscript.take(CONTROLLER_TRANSCRIPT_LIMIT),
+            entries.first().rawTranscript,
+        )
+        assertEquals(CONTROLLER_TRANSCRIPT_LIMIT, entries.first().rawTranscript.length)
+        assertEquals("Cleanup must not run in MODE_OFFLINE", 0, fakeOpenApi.callCount)
+    }
+
+    @Test
+    fun exactLimitTranscript_modeBest_isNotTruncated() = runTest(testDispatcher) {
+        val exactLimitTranscript = "c".repeat(CONTROLLER_TRANSCRIPT_LIMIT)
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeOpenApi.result = CleanupResult.Success("Cleaned text.")
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = exactLimitTranscript,
+            detectedLanguage = "en",
+        )
+        val controller = buildController(prefs = fakePrefs, api = fakeOpenApi)
+
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        val entries = entryRepository.getAllEntries().first()
+        assertEquals(1, entries.size)
+        assertEquals(
+            "A transcript at the controller limit should be stored unchanged",
+            exactLimitTranscript,
+            entries.first().rawTranscript,
+        )
+        assertEquals(
+            "Cleanup should receive the unchanged transcript at the controller limit",
+            exactLimitTranscript,
+            fakeOpenApi.lastRawText,
+        )
+    }
+
+    @Test
     @Ignore
     fun apiFailure_network_leavesEntryAsDraft() = runTest(testDispatcher) {
         fakeOpenApi.result = CleanupResult.Failure("network error")
@@ -505,6 +555,38 @@ class MainRecordingControllerTest {
     }
 
     @Test
+    fun oversizedTranscript_modeBest_savesTruncatedTextAndCleansBoundedTranscript() =
+        runTest(testDispatcher) {
+            val oversizedTranscript = "b".repeat(CONTROLLER_TRANSCRIPT_LIMIT + 777)
+            val expectedTranscript = oversizedTranscript.take(CONTROLLER_TRANSCRIPT_LIMIT)
+            fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+            fakeOpenApi.result = CleanupResult.Success("Cleaned text.")
+            fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+                text = oversizedTranscript,
+                detectedLanguage = "en",
+            )
+            val controller = buildController(prefs = fakePrefs, api = fakeOpenApi)
+
+            controller.onMainButtonTapped()
+            advanceUntilIdle()
+
+            val entries = entryRepository.getAllEntries().first()
+            assertEquals(1, entries.size)
+            assertEquals(
+                "MODE_BEST should persist the controller-bounded transcript in the draft/final entry",
+                expectedTranscript,
+                entries.first().rawTranscript,
+            )
+            assertEquals(CONTROLLER_TRANSCRIPT_LIMIT, entries.first().rawTranscript.length)
+            assertEquals(
+                "Cleanup should receive the controller-bounded transcript",
+                expectedTranscript,
+                fakeOpenApi.lastRawText,
+            )
+            assertEquals("Cleanup should run exactly once", 1, fakeOpenApi.callCount)
+        }
+
+    @Test
     fun shakeErrorKey_doesNotIncrement_onNetworkError() = runTest(testDispatcher) {
         fakeTranscription.nextResult =
             FakeTranscriptionService.FakeResult.SpeechError(RecognizerError.NoInternet)
@@ -513,5 +595,10 @@ class MainRecordingControllerTest {
         controller.onMainButtonTapped()
         advanceUntilIdle()
         assertEquals("Shake key should NOT increment for network error", before, controller.shakeErrorKey.value)
+    }
+
+    private companion object {
+        // Mirrors MainRecordingController's persistence cap.
+        private const val CONTROLLER_TRANSCRIPT_LIMIT = 10_000
     }
 }

@@ -164,13 +164,19 @@ class MainRecordingController @Inject constructor(
             delayAndReset()
             return
         }
-        if (text.length > MAX_TRANSCRIPT_LENGTH) {
-            Log.w(TAG, "Transcript exceeds max length (${text.length} chars), truncating")
+        val safeText = if (text.length > MAX_TRANSCRIPT_LENGTH) {
+            Log.w(
+                TAG,
+                "Truncating transcript from ${text.length} to $MAX_TRANSCRIPT_LENGTH chars before persistence",
+            )
+            text.take(MAX_TRANSCRIPT_LENGTH)
+        } else {
+            text
         }
 
         if (mode == PrivacyMode.MODE_OFFLINE) {
             val entryId = withContext(ioDispatcher) {
-                entryRepository.saveEntry(text, selectedLanguage)
+                entryRepository.saveEntry(safeText, selectedLanguage)
             }
             Log.d(TAG, "MODE_OFFLINE: entry saved, id=$entryId")
             withContext(ioDispatcher) {
@@ -186,7 +192,7 @@ class MainRecordingController @Inject constructor(
         }
 
         val entryId = withContext(ioDispatcher) {
-            entryRepository.saveDraft(text, effectiveLanguage)
+            entryRepository.saveDraft(safeText, effectiveLanguage)
         }
         Log.d(TAG, "Draft saved, id=$entryId")
 
@@ -198,7 +204,7 @@ class MainRecordingController @Inject constructor(
             }
         }
 
-        when (val result = cleanupTranscriptUseCase(text, effectiveLanguage)) {
+        when (val result = cleanupTranscriptUseCase(safeText, effectiveLanguage)) {
             is CleanupResult.Success -> {
                 val wordCount = result.cleanedText.trim()
                     .split(Regex("\\s+")).count { it.isNotEmpty() }
@@ -248,6 +254,8 @@ class MainRecordingController @Inject constructor(
 
     private companion object {
         private const val TAG = "MainRecordingController"
+        // Caps what we persist locally for a single transcript. Cleanup applies its own
+        // smaller request-size limit before calling the backend.
         private const val MAX_TRANSCRIPT_LENGTH = 10_000
         private const val MIN_RECORDING_MS = 5_000L
         private const val AUTO_CLEAR_DELAY_MS = 3_000L
