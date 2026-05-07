@@ -13,6 +13,7 @@ import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
+import com.wrait.app.test.fake.FakeAnalyticsTracker
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeNetworkAvailability
@@ -52,6 +53,7 @@ class MainRecordingControllerTest {
     private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakePrefs: FakePreferencesRepository
     private lateinit var fakeNetworkAvailability: FakeNetworkAvailability
+    private lateinit var fakeAnalytics: FakeAnalyticsTracker
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
@@ -65,6 +67,7 @@ class MainRecordingControllerTest {
         fakeTranscription = FakeTranscriptionService()
         fakePrefs = FakePreferencesRepository()
         fakeNetworkAvailability = FakeNetworkAvailability()
+        fakeAnalytics = FakeAnalyticsTracker()
     }
 
     @After
@@ -79,6 +82,7 @@ class MainRecordingControllerTest {
         api: FakeTranscriptCleanupService = fakeOpenApi,
         transcription: FakeTranscriptionService = fakeTranscription,
         networkAvailability: NetworkAvailability = fakeNetworkAvailability,
+        analytics: FakeAnalyticsTracker = fakeAnalytics,
         language: StateFlow<String> = MutableStateFlow(prefs.currentSelectedLanguage()),
         scope: CoroutineScope = testScope,
     ): MainRecordingController = MainRecordingController(
@@ -90,6 +94,7 @@ class MainRecordingControllerTest {
         cleanupTranscriptUseCase = CleanupTranscriptUseCase(
             transcriptCleanupService = api,
         ),
+        analyticsTracker = analytics,
         ioDispatcher = testDispatcher,
         scope = scope,
     )
@@ -157,6 +162,87 @@ class MainRecordingControllerTest {
             fakeTranscription.transcribeGate?.complete(Unit)
         }
         advanceUntilIdle()
+    }
+
+    @Test
+    fun bestMode_online_tracksRecordingStarted() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeTranscription.transcribeGate = CompletableDeferred()
+        val controller = buildController(prefs = fakePrefs)
+
+        try {
+            controller.onMainButtonTapped()
+            assertTrue(
+                fakeAnalytics.events.any {
+                    it is FakeAnalyticsTracker.Event.RecordingStarted &&
+                        it.privacyMode == PrivacyMode.MODE_BEST &&
+                        it.selectedLanguage == fakePrefs.currentSelectedLanguage()
+                }
+            )
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun cleanupSuccess_tracksTranscriptionCleanupAndEntrySaved() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeOpenApi.result = CleanupResult.Success("Cleaned text")
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
+        val controller = buildController(prefs = fakePrefs)
+
+        controller.onMainButtonTapped()
+        controller.recordingState.first { it is RecordingState.Saved }
+        advanceUntilIdle()
+
+        assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.TranscriptionSucceeded })
+        assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.CleanupSucceeded })
+        assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.EntrySaved })
+    }
+
+    @Test
+    fun cleanupFailure_tracksCleanupFailureWithoutEntrySaved() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeOpenApi.result = CleanupResult.Failure("network error")
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
+        val controller = buildController(prefs = fakePrefs)
+
+        controller.onMainButtonTapped()
+        controller.recordingState.first { it is RecordingState.Error }
+        advanceUntilIdle()
+
+        assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.TranscriptionSucceeded })
+        assertTrue(
+            fakeAnalytics.events.any {
+                it is FakeAnalyticsTracker.Event.CleanupFailed && it.reason == "network error"
+            }
+        )
+        assertFalse(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.EntrySaved })
+    }
+
+    @Test
+    fun analyticsFailure_doesNotBreakRecordingFlow() = runTest(testDispatcher) {
+        fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakeOpenApi.result = CleanupResult.Success("Cleaned text")
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
+        val controller = buildController(
+            prefs = fakePrefs,
+            analytics = FakeAnalyticsTracker(shouldThrow = true),
+        )
+
+        controller.onMainButtonTapped()
+        controller.recordingState.first { it is RecordingState.Saved }
+        advanceTimeBy(3_000)
+        advanceUntilIdle()
+
+        assertTrue(
+            controller.recordingState.value !is RecordingState.Error,
+        )
+        assertEquals(1, entryRepository.getAllEntries().first().size)
     }
 
     @Test

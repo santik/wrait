@@ -2,6 +2,8 @@ package com.wrait.app.ui.entries
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wrait.app.analytics.trackSafely
+import com.wrait.app.analytics.AnalyticsTracker
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.repository.EntryRepository
@@ -22,6 +24,7 @@ data class EntryListUiState(
 @HiltViewModel
 class EntryListViewModel @Inject constructor(
     private val entryRepository: EntryRepository,
+    private val analyticsTracker: AnalyticsTracker,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -33,6 +36,12 @@ class EntryListViewModel @Inject constructor(
             initialValue = EntryListUiState()
         )
 
+    fun onEntriesListOpened(entryCount: Int) {
+        analyticsTracker.trackSafely(TAG, "entries list opened") {
+            trackEntriesListOpened(entryCount)
+        }
+    }
+
     fun deleteEntry(id: Long) {
         viewModelScope.launch {
             try {
@@ -42,5 +51,9 @@ class EntryListViewModel @Inject constructor(
                 // which is the correct fail-safe (no phantom deletes).
             }
         }
+    }
+
+    private companion object {
+        private const val TAG = "EntryListViewModel"
     }
 }

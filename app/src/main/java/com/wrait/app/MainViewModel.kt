@@ -3,6 +3,9 @@ package com.wrait.app
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wrait.app.analytics.AnalyticsSavePath
+import com.wrait.app.analytics.AnalyticsTracker
+import com.wrait.app.analytics.trackSafely
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.speech.TranscriptionService
@@ -46,6 +49,7 @@ class MainViewModel @Inject constructor(
     private val networkAvailability: NetworkAvailability,
     private val cleanupTranscriptUseCase: CleanupTranscriptUseCase,
     private val registerDeviceUseCase: RegisterDeviceUseCase,
+    private val analyticsTracker: AnalyticsTracker,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
 
@@ -78,6 +82,7 @@ class MainViewModel @Inject constructor(
         transcriptionService = transcriptionService,
         networkAvailability = networkAvailability,
         cleanupTranscriptUseCase = cleanupTranscriptUseCase,
+        analyticsTracker = analyticsTracker,
         ioDispatcher = ioDispatcher,
         scope = viewModelScope,
     )
@@ -118,9 +123,11 @@ class MainViewModel @Inject constructor(
             },
         )
         entryRepository.deleteStaleDrafts()
-        if (preferencesRepository.privacyMode.first() != PrivacyMode.MODE_OFFLINE) {
+        val currentPrivacyMode = preferencesRepository.privacyMode.first()
+        if (currentPrivacyMode != PrivacyMode.MODE_OFFLINE) {
             retryPendingDrafts()
         }
+        trackAppOpened(currentPrivacyMode)
     }
 
     // region — button handling
@@ -165,9 +172,14 @@ class MainViewModel @Inject constructor(
 
     fun onPrivacyModeToggle(enabled: Boolean) {
         viewModelScope.launch {
-            preferencesRepository.savePrivacyMode(
-                if (enabled) PrivacyMode.MODE_OFFLINE else PrivacyMode.MODE_BEST,
-            )
+            val from = preferencesRepository.privacyMode.first()
+            val to = if (enabled) PrivacyMode.MODE_OFFLINE else PrivacyMode.MODE_BEST
+            if (from == to) return@launch
+
+            preferencesRepository.savePrivacyMode(to)
+            analyticsTracker.trackSafely(TAG, "privacy mode toggled") {
+                trackPrivacyModeToggled(from, to)
+            }
         }
     }
 
@@ -216,25 +228,56 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    private suspend fun trackAppOpened(privacyMode: PrivacyMode) {
+        val entryCount = try {
+            entryRepository.getAllEntries().first().size
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to compute app-opened entry count", e)
+            0
+        }
+
+        analyticsTracker.trackSafely(TAG, "app opened") {
+            trackAppOpened(privacyMode, entryCount)
+        }
+    }
+
     private suspend fun retryTextDraft(entry: Entry) {
+        val privacyMode = preferencesRepository.privacyMode.first()
         when (val result = cleanupTranscriptUseCase(entry.rawTranscript, entry.language)) {
             is CleanupResult.Success -> {
                 val cleaned = result.cleanedText
                 val wordCount = cleaned.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
                 entryRepository.updateWithCleanedText(entry.id, cleaned, wordCount)
+                analyticsTracker.trackSafely(TAG, "cleanup succeeded (retry text draft)") {
+                    trackCleanupSucceeded(privacyMode, AnalyticsSavePath.Retry)
+                    trackEntrySaved(privacyMode, AnalyticsSavePath.Retry)
+                }
             }
-            is CleanupResult.Failure -> Unit
+            is CleanupResult.Failure -> {
+                analyticsTracker.trackSafely(TAG, "cleanup failed (retry text draft)") {
+                    trackCleanupFailed(privacyMode, AnalyticsSavePath.Retry, result.reason)
+                }
+            }
         }
     }
 
     private suspend fun retryAudioDraft(entry: Entry) {
         val audioPath = entry.audioPath ?: return
+        val privacyMode = preferencesRepository.privacyMode.first()
         val transcription = transcriptionService.transcribeAudioDraft(
             audioPath = audioPath,
         )
 
         when (transcription) {
             is com.wrait.app.data.speech.TranscriptionResult.Success -> {
+                analyticsTracker.trackSafely(TAG, "transcription succeeded (retry audio draft)") {
+                    trackTranscriptionSucceeded(
+                        privacyMode = privacyMode,
+                        detectedLanguagePresent = transcription.detectedLanguage != null,
+                        savePath = AnalyticsSavePath.Retry,
+                    )
+                }
+
                 val rawTranscript = transcription.transcript
                 val rawWordCount = rawTranscript.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
                 val detectedLanguage = normalizeDetectedLanguageCode(transcription.detectedLanguage)
@@ -265,10 +308,17 @@ class MainViewModel @Inject constructor(
                             cleanedText = cleaned,
                             wordCount = cleanedWordCount,
                         )
+                        analyticsTracker.trackSafely(TAG, "cleanup succeeded (retry audio draft)") {
+                            trackCleanupSucceeded(privacyMode, AnalyticsSavePath.Retry)
+                            trackEntrySaved(privacyMode, AnalyticsSavePath.Retry)
+                        }
                     }
                     is CleanupResult.Failure -> {
                         // Still valuable: convert audio-only draft into a text draft.
                         entryRepository.updateDraftTranscript(entry.id, rawTranscript, rawWordCount)
+                        analyticsTracker.trackSafely(TAG, "cleanup failed (retry audio draft)") {
+                            trackCleanupFailed(privacyMode, AnalyticsSavePath.Retry, cleanup.reason)
+                        }
                     }
                 }
 

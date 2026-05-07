@@ -17,8 +17,14 @@ val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST
 val backendUrl: String = localProperties.getProperty("BACKEND_URL", "https://wrait-backend.vercel.app")
 val proxySecret: String = localProperties.getProperty("PROXY_SECRET", "")
 val devRaw: String = localProperties.getProperty("DEV", "false").trim().lowercase()
+val posthogApiKey: String = localProperties.getProperty("POSTHOG_API_KEY", "")
+val posthogHost: String = localProperties.getProperty("POSTHOG_HOST", "https://us.i.posthog.com")
+val posthogEnabledRaw: String = localProperties.getProperty("POSTHOG_ENABLED", "false").trim().lowercase()
 require(devRaw == "true" || devRaw == "false") {
     "DEV in local.properties must be true or false, got: \"$devRaw\""
+}
+require(posthogEnabledRaw == "true" || posthogEnabledRaw == "false") {
+    "POSTHOG_ENABLED in local.properties must be true or false, got: \"$posthogEnabledRaw\""
 }
 val keystorePath: String? = localProperties.getProperty("KEYSTORE_PATH")
 val releaseKeystorePassword: String? = localProperties.getProperty("KEYSTORE_PASSWORD")
@@ -46,6 +52,9 @@ android {
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
         buildConfigField("String", "PROXY_SECRET", "\"$proxySecret\"")
         buildConfigField("boolean", "DEV", devRaw)
+        buildConfigField("String", "POSTHOG_API_KEY", "\"$posthogApiKey\"")
+        buildConfigField("String", "POSTHOG_HOST", "\"$posthogHost\"")
+        buildConfigField("boolean", "POSTHOG_ENABLED", posthogEnabledRaw)
     }
 
     signingConfigs {
@@ -146,6 +155,7 @@ dependencies {
 
     // Security
     implementation(libs.tink.android)
+    implementation(libs.posthog.android)
 
     // Testing
     testImplementation(libs.junit)

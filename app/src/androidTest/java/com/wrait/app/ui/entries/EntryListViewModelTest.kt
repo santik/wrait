@@ -11,6 +11,7 @@ import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.repository.EntryRepositoryImpl
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.util.TimeProvider
+import com.wrait.app.test.fake.FakeAnalyticsTracker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
@@ -33,6 +34,7 @@ class EntryListViewModelTest {
     private lateinit var db: WraitDatabase
     private lateinit var dao: EntryDao
     private lateinit var repository: EntryRepository
+    private lateinit var analytics: FakeAnalyticsTracker
     private val createdVms = mutableListOf<EntryListViewModel>()
 
     @Before
@@ -46,6 +48,7 @@ class EntryListViewModelTest {
         repository = EntryRepositoryImpl(dao, object : TimeProvider {
             override fun currentTimeMillis() = System.currentTimeMillis()
         })
+        analytics = FakeAnalyticsTracker()
     }
 
     @After
@@ -57,7 +60,7 @@ class EntryListViewModelTest {
     }
 
     private fun createVm(): EntryListViewModel =
-        EntryListViewModel(repository, testDispatcher).also { createdVms.add(it) }
+        EntryListViewModel(repository, analytics, testDispatcher).also { createdVms.add(it) }
 
     private suspend fun insertEntry(transcript: String = "hello world", createdAt: Long = System.currentTimeMillis()): Long =
         dao.insert(EntryEntity(
@@ -110,5 +113,23 @@ class EntryListViewModelTest {
         val updated = vm.uiState.first { it.entries.isNotEmpty() }
         assertEquals(1, updated.entries.size)
         assertEquals("new entry added directly", updated.entries.first().rawTranscript)
+    }
+
+    @Test
+    fun onEntriesListOpened_tracksEntryCount() = runTest(testDispatcher) {
+        insertEntry("first")
+        insertEntry("second")
+        val vm = createVm()
+        val populated = vm.uiState.first { it.entries.size == 2 }
+        assertEquals(2, populated.entries.size)
+
+        vm.onEntriesListOpened(entryCount = populated.entries.size)
+        advanceUntilIdle()
+
+        assertTrue(
+            analytics.events.any {
+                it is FakeAnalyticsTracker.Event.EntriesListOpened && it.entryCount == 2
+            }
+        )
     }
 }

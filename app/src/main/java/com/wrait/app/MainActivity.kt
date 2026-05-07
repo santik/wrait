@@ -328,6 +328,9 @@ private fun AppNavHost(
         composable("entries") {
             val entryListViewModel: EntryListViewModel = hiltViewModel()
             val entryListUiState by entryListViewModel.uiState.collectAsStateWithLifecycle()
+            LaunchedEffect(Unit) {
+                entryListViewModel.onEntriesListOpened(entryListUiState.entries.size)
+            }
             EntryListScreen(
                 uiState = entryListUiState,
                 onEntryClick = { id -> navController.navigate("entry/$id") },

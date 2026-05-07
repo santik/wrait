@@ -1,6 +1,9 @@
 package com.wrait.app
 
 import android.util.Log
+import com.wrait.app.analytics.AnalyticsSavePath
+import com.wrait.app.analytics.AnalyticsTracker
+import com.wrait.app.analytics.trackSafely
 import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.speech.RecognizerError
@@ -34,6 +37,7 @@ class MainRecordingController @Inject constructor(
     private val transcriptionService: TranscriptionService,
     private val networkAvailability: NetworkAvailability,
     private val cleanupTranscriptUseCase: CleanupTranscriptUseCase,
+    private val analyticsTracker: AnalyticsTracker,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope,
 ) {
@@ -46,6 +50,7 @@ class MainRecordingController @Inject constructor(
     private var listenJob: Job? = null
     private var resetJob: Job? = null
     private var listeningStartedAt = 0L
+    private var lastKnownPrivacyMode: PrivacyMode = PrivacyMode.MODE_BEST
 
     fun onMainButtonTapped() {
         val current = recordingState.value
@@ -91,17 +96,20 @@ class MainRecordingController @Inject constructor(
         listenJob?.cancel()
 
         scope.launch {
-            when (preferencesRepository.privacyMode.first()) {
+            val privacyMode = preferencesRepository.privacyMode.first()
+            lastKnownPrivacyMode = privacyMode
+
+            when (privacyMode) {
                 PrivacyMode.MODE_BEST -> {
                     if (!networkAvailability.canAttemptCloudUpload()) {
-                        emitError(RecognizerError.ConnectionRequired)
+                        emitError(RecognizerError.ConnectionRequired, privacyMode)
                         return@launch
                     }
                 }
 
                 PrivacyMode.MODE_OFFLINE -> {
                     if (!transcriptionService.isOfflineModelAvailable()) {
-                        emitError(RecognizerError.NotAvailable(selectedLanguageState.value))
+                        emitError(RecognizerError.NotAvailable(selectedLanguageState.value), privacyMode)
                         return@launch
                     }
                 }
@@ -109,6 +117,9 @@ class MainRecordingController @Inject constructor(
 
             listeningStartedAt = System.currentTimeMillis()
             _recordingState.value = RecordingState.Listening
+            analyticsTracker.trackSafely(TAG, "recording started") {
+                trackRecordingStarted(privacyMode, selectedLanguageState.value)
+            }
             listenJob = scope.launch {
                 val selectedLanguage = selectedLanguageState.value
                 val result = transcriptionService.transcribe(selectedLanguage) { status ->
@@ -132,7 +143,7 @@ class MainRecordingController @Inject constructor(
                                 )
                             }
                         }
-                        emitError(result.reason.toRecognizerError(selectedLanguage))
+                        emitError(result.reason.toRecognizerError(selectedLanguage), privacyMode)
                     }
                 }
             }
@@ -145,7 +156,7 @@ class MainRecordingController @Inject constructor(
             if (elapsed < MIN_RECORDING_MS) {
                 transcriptionService.stopRecording()
                 listenJob?.cancel()
-                scope.launch { emitError(RecognizerError.TooShort) }
+                scope.launch { emitError(RecognizerError.TooShort, lastKnownPrivacyMode) }
                 return
             }
         }
@@ -159,6 +170,7 @@ class MainRecordingController @Inject constructor(
     private suspend fun saveTranscript(text: String, detectedLanguage: String? = null) {
         val selectedLanguage = selectedLanguageState.value
         val mode = preferencesRepository.privacyMode.first()
+        lastKnownPrivacyMode = mode
         val normalizedDetectedLanguage = normalizeDetectedLanguageCode(detectedLanguage)
         val effectiveLanguage = if (mode == PrivacyMode.MODE_OFFLINE) {
             selectedLanguage
@@ -186,6 +198,14 @@ class MainRecordingController @Inject constructor(
             text
         }
 
+        analyticsTracker.trackSafely(TAG, "transcription succeeded") {
+            trackTranscriptionSucceeded(
+                privacyMode = mode,
+                detectedLanguagePresent = normalizedDetectedLanguage != null,
+                savePath = AnalyticsSavePath.Fresh,
+            )
+        }
+
         if (mode == PrivacyMode.MODE_OFFLINE) {
             val entryId = withContext(ioDispatcher) {
                 entryRepository.saveEntry(safeText, selectedLanguage)
@@ -197,6 +217,9 @@ class MainRecordingController @Inject constructor(
                 } catch (e: Exception) {
                     Log.w(TAG, "Failed to persist hasEverRecorded flag", e)
                 }
+            }
+            analyticsTracker.trackSafely(TAG, "entry saved (offline)") {
+                trackEntrySaved(mode, AnalyticsSavePath.Fresh)
             }
             _recordingState.value = RecordingState.Saved(entryId)
             delayAndReset()
@@ -224,6 +247,10 @@ class MainRecordingController @Inject constructor(
                     entryRepository.updateWithCleanedText(entryId, result.cleanedText, wordCount)
                 }
                 Log.d(TAG, "Entry $entryId cleaned (${wordCount}w)")
+                analyticsTracker.trackSafely(TAG, "cleanup succeeded") {
+                    trackCleanupSucceeded(mode, AnalyticsSavePath.Fresh)
+                    trackEntrySaved(mode, AnalyticsSavePath.Fresh)
+                }
                 _recordingState.value = RecordingState.Saved(
                     entryId,
                     detectedLanguage = normalizedDetectedLanguage,
@@ -233,6 +260,9 @@ class MainRecordingController @Inject constructor(
                 val isNetworkFailure = result.reason == "network error" ||
                     result.reason == "timeout"
                 Log.w(TAG, "Cleanup failed for entry $entryId: ${result.reason} (draft kept)")
+                analyticsTracker.trackSafely(TAG, "cleanup failed") {
+                    trackCleanupFailed(mode, AnalyticsSavePath.Fresh, result.reason)
+                }
                 val error = if (isNetworkFailure) {
                     RecognizerError.NoInternet
                 } else {
@@ -245,7 +275,13 @@ class MainRecordingController @Inject constructor(
         delayAndReset()
     }
 
-    private fun emitError(error: RecognizerError) {
+    private fun emitError(
+        error: RecognizerError,
+        privacyMode: PrivacyMode,
+    ) {
+        analyticsTracker.trackSafely(TAG, "transcription failed") {
+            trackTranscriptionFailed(privacyMode, error)
+        }
         if (error == RecognizerError.NoMatch || error == RecognizerError.TooShort) {
             _shakeErrorKey.update { it + 1 }
         }
@@ -272,6 +308,7 @@ class MainRecordingController @Inject constructor(
         private const val MIN_RECORDING_MS = 5_000L
         private const val AUTO_CLEAR_DELAY_MS = 3_000L
     }
+
 }
 
 private fun TranscriptionFailureReason.toRecognizerError(
