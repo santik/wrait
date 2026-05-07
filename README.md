@@ -80,6 +80,22 @@ Screenshots and the recent apps thumbnail are blocked via `FLAG_SECURE`.
 
 ---
 
+## Backend
+
+The Android app relies on a separate backend service for **Best** mode and beta device registration. That backend lives in its own repository:
+
+- [wrait-backend](https://github.com/santik/wrait-backend)
+
+The app talks to that service through these endpoints:
+
+- `/api/register` for anonymous device registration
+- `/api/transcribe` for speech-to-text proxying
+- `/api/cleanup` for transcript cleanup proxying
+
+By default, the app uses `https://wrait-backend.vercel.app` as `BACKEND_URL`. If you're running your own backend deployment, set `BACKEND_URL` in `local.properties` to point at that compatible instance.
+
+---
+
 ## Building from source
 
 ### Requirements
