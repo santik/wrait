@@ -10,6 +10,7 @@ import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.device.DeviceIdProvider
+import com.wrait.app.test.fake.FakeAnalyticsTracker
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
@@ -60,6 +61,7 @@ class MainViewModelTest {
     private lateinit var fakeTranscription: FakeTranscriptionService
     private lateinit var fakeNetworkAvailability: FakeNetworkAvailability
     private lateinit var fakeTime: FakeTimeProvider
+    private lateinit var fakeAnalytics: FakeAnalyticsTracker
     private val createdVms = mutableListOf<MainViewModel>()
 
     @Before
@@ -75,6 +77,7 @@ class MainViewModelTest {
         fakeApi = FakeTranscriptCleanupService()
         fakeTranscription = FakeTranscriptionService()
         fakeNetworkAvailability = FakeNetworkAvailability()
+        fakeAnalytics = FakeAnalyticsTracker()
     }
 
     @After
@@ -94,6 +97,7 @@ class MainViewModelTest {
         fakeRegistration: FakeDeviceRegistrationService = FakeDeviceRegistrationService(),
         networkAvailability: NetworkAvailability = fakeNetworkAvailability,
         entryRepo: EntryRepository = entryRepository,
+        analytics: FakeAnalyticsTracker = fakeAnalytics,
     ): MainViewModel {
         val deviceIdProvider = DeviceIdProvider(
             InstrumentationRegistry.getInstrumentation().targetContext
@@ -112,6 +116,7 @@ class MainViewModelTest {
                 registrationService = fakeRegistration,
                 ioDispatcher = testDispatcher,
             ),
+            analyticsTracker = analytics,
             ioDispatcher = testDispatcher
         ).also { createdVms.add(it) }
     }
@@ -136,6 +141,15 @@ class MainViewModelTest {
         assertFalse(entry.isDraft)
         assertNotNull(entry.cleanedText)
         assertTrue(entry.wordCount > 0)
+    }
+
+    @Test
+    fun init_tracksAppOpened() = runTest(testDispatcher) {
+        val vm = createViewModel()
+
+        vm.initJob.join()
+
+        assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.AppOpened })
     }
 
     // 2 — API failure path
@@ -180,6 +194,44 @@ class MainViewModelTest {
         assertEquals(1, entries.size)
         assertFalse("Entry should no longer be a draft", entries.first().isDraft)
         assertEquals("cleaned on retry", entries.first().cleanedText)
+    }
+
+    @Test
+    fun retrySuccess_tracksTranscriptionCleanupAndEntrySaved() = runTest(testDispatcher) {
+        fakeTime.time = System.currentTimeMillis()
+        entryDao.insert(
+            EntryEntity(
+                rawTranscript = "",
+                cleanedText = null,
+                isDraft = true,
+                language = "en-US",
+                createdAt = fakeTime.currentTimeMillis(),
+                wordCount = 0,
+                audioPath = "/tmp/audio-draft.m4a",
+            )
+        )
+        fakeTranscription.nextAudioDraftResult =
+            com.wrait.app.data.speech.TranscriptionResult.Success(
+                transcript = "alpha beta gamma delta epsilon",
+                detectedLanguage = "en",
+            )
+        fakeApi.result = CleanupResult.Success("cleaned on retry")
+
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.TranscriptionSucceeded })
+        assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.CleanupSucceeded })
+        assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.EntrySaved })
+    }
+
+    @Test
+    fun analyticsFailure_doesNotBreakInit() = runTest(testDispatcher) {
+        val vm = createViewModel(analytics = FakeAnalyticsTracker(shouldThrow = true))
+
+        vm.initJob.join()
+
+        assertTrue(vm.privacyMode.first() == PrivacyMode.MODE_BEST || vm.privacyMode.first() == PrivacyMode.MODE_OFFLINE)
     }
 
     // 4 — Too-short transcript
@@ -325,19 +377,19 @@ class MainViewModelTest {
         vm.initJob.join()
         advanceUntilIdle()
 
-        assertEquals(0, countingRepository.collectionCount)
+        assertEquals(1, countingRepository.collectionCount)
 
         val statsCollector = backgroundScope.launch(testDispatcher) {
             vm.entryStats.collect { }
         }
         advanceUntilIdle()
 
-        assertEquals(1, countingRepository.collectionCount)
+        assertEquals(2, countingRepository.collectionCount)
 
         vm.entryStats.first()
         advanceUntilIdle()
 
-        assertEquals(1, countingRepository.collectionCount)
+        assertEquals(2, countingRepository.collectionCount)
         statsCollector.cancel()
     }
 

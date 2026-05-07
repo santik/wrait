@@ -17,6 +17,7 @@ ktor = "3.4.2"
 coroutines = "1.10.2"
 datastore = "1.2.1"
 tink = "1.21.0"
+posthog = "3.41.0"
 testRunner = "1.7.0"
 coroutinesTest = "1.10.2"
 navigationCompose = "2.9.7"
@@ -78,6 +79,7 @@ hilt-navigation-compose = { group = "androidx.hilt", name = "hilt-navigation-com
 
 # Security
 tink-android = { group = "com.google.crypto.tink", name = "tink-android", version.ref = "tink" }
+posthog-android = { group = "com.posthog", name = "posthog-android", version.ref = "posthog" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
