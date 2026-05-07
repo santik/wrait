@@ -13,6 +13,7 @@ interface EntryRepository {
     suspend fun updateEntryLanguage(id: Long, language: String)
     fun getAllEntries(): Flow<List<Entry>>
     fun getEntryById(id: Long): Flow<Result<Entry?>>
+    suspend fun getEntryByIdOnce(id: Long): Result<Entry?>
     suspend fun getPendingDrafts(): List<Entry>
     suspend fun deleteStaleDrafts(daysOld: Int)
     suspend fun deleteStaleDrafts()

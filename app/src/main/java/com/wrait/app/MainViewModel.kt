@@ -3,6 +3,8 @@ package com.wrait.app
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wrait.app.analytics.AnalyticsDraftType
+import com.wrait.app.analytics.AnalyticsRetryFailureStage
 import com.wrait.app.analytics.AnalyticsSavePath
 import com.wrait.app.analytics.AnalyticsTracker
 import com.wrait.app.analytics.trackSafely
@@ -19,6 +21,8 @@ import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.repository.PreferencesRepository
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.domain.usecase.RegisterDeviceUseCase
+import com.wrait.app.analytics.cleanupReasonToAnalyticsErrorType
+import com.wrait.app.analytics.toAnalyticsErrorType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.io.File
 import java.time.Instant
@@ -157,6 +161,31 @@ class MainViewModel @Inject constructor(
         recordingController.onPermissionRevoked()
     }
 
+    fun onMicrophonePermissionRequested() {
+        analyticsTracker.trackSafely(TAG, "microphone permission requested") {
+            trackMicrophonePermissionRequested()
+        }
+    }
+
+    fun onMicrophonePermissionResult(granted: Boolean, permanentlyDenied: Boolean) {
+        if (granted) return
+
+        analyticsTracker.trackSafely(
+            TAG,
+            if (permanentlyDenied) {
+                "microphone permission permanently denied"
+            } else {
+                "microphone permission denied"
+            },
+        ) {
+            if (permanentlyDenied) {
+                trackMicrophonePermissionPermanentlyDenied()
+            } else {
+                trackMicrophonePermissionDenied()
+            }
+        }
+    }
+
     fun onOpenSettings() {
         if (recordingState.value.isActive) return
         _showSettingsPanel.value = true
@@ -243,6 +272,9 @@ class MainViewModel @Inject constructor(
 
     private suspend fun retryTextDraft(entry: Entry) {
         val privacyMode = preferencesRepository.privacyMode.first()
+        analyticsTracker.trackSafely(TAG, "draft retry started (text)") {
+            trackDraftRetryStarted(AnalyticsDraftType.Text)
+        }
         when (val result = cleanupTranscriptUseCase(entry.rawTranscript, entry.language)) {
             is CleanupResult.Success -> {
                 val cleaned = result.cleanedText
@@ -251,11 +283,17 @@ class MainViewModel @Inject constructor(
                 analyticsTracker.trackSafely(TAG, "cleanup succeeded (retry text draft)") {
                     trackCleanupSucceeded(privacyMode, AnalyticsSavePath.Retry)
                     trackEntrySaved(privacyMode, AnalyticsSavePath.Retry)
+                    trackDraftRetrySucceeded(AnalyticsDraftType.Text)
                 }
             }
             is CleanupResult.Failure -> {
                 analyticsTracker.trackSafely(TAG, "cleanup failed (retry text draft)") {
                     trackCleanupFailed(privacyMode, AnalyticsSavePath.Retry, result.reason)
+                    trackDraftRetryFailed(
+                        draftType = AnalyticsDraftType.Text,
+                        failureStage = AnalyticsRetryFailureStage.Cleanup,
+                        errorType = cleanupReasonToAnalyticsErrorType(result.reason),
+                    )
                 }
             }
         }
@@ -264,6 +302,9 @@ class MainViewModel @Inject constructor(
     private suspend fun retryAudioDraft(entry: Entry) {
         val audioPath = entry.audioPath ?: return
         val privacyMode = preferencesRepository.privacyMode.first()
+        analyticsTracker.trackSafely(TAG, "draft retry started (audio)") {
+            trackDraftRetryStarted(AnalyticsDraftType.Audio)
+        }
         val transcription = transcriptionService.transcribeAudioDraft(
             audioPath = audioPath,
         )
@@ -311,6 +352,7 @@ class MainViewModel @Inject constructor(
                         analyticsTracker.trackSafely(TAG, "cleanup succeeded (retry audio draft)") {
                             trackCleanupSucceeded(privacyMode, AnalyticsSavePath.Retry)
                             trackEntrySaved(privacyMode, AnalyticsSavePath.Retry)
+                            trackDraftRetrySucceeded(AnalyticsDraftType.Audio)
                         }
                     }
                     is CleanupResult.Failure -> {
@@ -318,6 +360,11 @@ class MainViewModel @Inject constructor(
                         entryRepository.updateDraftTranscript(entry.id, rawTranscript, rawWordCount)
                         analyticsTracker.trackSafely(TAG, "cleanup failed (retry audio draft)") {
                             trackCleanupFailed(privacyMode, AnalyticsSavePath.Retry, cleanup.reason)
+                            trackDraftRetryFailed(
+                                draftType = AnalyticsDraftType.Audio,
+                                failureStage = AnalyticsRetryFailureStage.Cleanup,
+                                errorType = cleanupReasonToAnalyticsErrorType(cleanup.reason),
+                            )
                         }
                     }
                 }
@@ -329,7 +376,15 @@ class MainViewModel @Inject constructor(
                     // best-effort
                 }
             }
-            is com.wrait.app.data.speech.TranscriptionResult.Failure -> Unit
+            is com.wrait.app.data.speech.TranscriptionResult.Failure -> {
+                analyticsTracker.trackSafely(TAG, "transcription failed (retry audio draft)") {
+                    trackDraftRetryFailed(
+                        draftType = AnalyticsDraftType.Audio,
+                        failureStage = AnalyticsRetryFailureStage.Transcription,
+                        errorType = transcription.reason.toAnalyticsErrorType(),
+                    )
+                }
+            }
         }
     }
 

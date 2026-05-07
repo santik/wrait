@@ -27,21 +27,27 @@ class AnalyticsHelpersTest {
 
     @Test
     fun recognizerErrors_mapToApprovedAnalyticsTypes() {
-        assertEquals("too_short", RecognizerError.TooShort.toAnalyticsErrorType())
-        assertEquals("no_match", RecognizerError.NoMatch.toAnalyticsErrorType())
-        assertEquals("permission_denied", RecognizerError.InsufficientPermissions.toAnalyticsErrorType())
-        assertEquals("network", RecognizerError.ConnectionRequired.toAnalyticsErrorType())
-        assertEquals("network", RecognizerError.NoInternet.toAnalyticsErrorType())
-        assertEquals("offline_unavailable", RecognizerError.NotAvailable("en-US").toAnalyticsErrorType())
-        assertEquals("api_failed", RecognizerError.ApiFailed.toAnalyticsErrorType())
-        assertEquals("api_failed", RecognizerError.Unknown(123).toAnalyticsErrorType())
+        assertEquals(AnalyticsErrorType.TooShort, RecognizerError.TooShort.toAnalyticsErrorType())
+        assertEquals(AnalyticsErrorType.NoMatch, RecognizerError.NoMatch.toAnalyticsErrorType())
+        assertEquals(
+            AnalyticsErrorType.PermissionDenied,
+            RecognizerError.InsufficientPermissions.toAnalyticsErrorType()
+        )
+        assertEquals(AnalyticsErrorType.Network, RecognizerError.ConnectionRequired.toAnalyticsErrorType())
+        assertEquals(AnalyticsErrorType.Network, RecognizerError.NoInternet.toAnalyticsErrorType())
+        assertEquals(
+            AnalyticsErrorType.OfflineUnavailable,
+            RecognizerError.NotAvailable("en-US").toAnalyticsErrorType()
+        )
+        assertEquals(AnalyticsErrorType.ApiFailed, RecognizerError.ApiFailed.toAnalyticsErrorType())
+        assertEquals(AnalyticsErrorType.ApiFailed, RecognizerError.Unknown(123).toAnalyticsErrorType())
     }
 
     @Test
     fun cleanupReasons_mapToCoarseAnalyticsTypes() {
-        assertEquals("network", cleanupReasonToAnalyticsErrorType("network error"))
-        assertEquals("network", cleanupReasonToAnalyticsErrorType("timeout"))
-        assertEquals("api_failed", cleanupReasonToAnalyticsErrorType("backend exploded"))
+        assertEquals(AnalyticsErrorType.Network, cleanupReasonToAnalyticsErrorType("network error"))
+        assertEquals(AnalyticsErrorType.Network, cleanupReasonToAnalyticsErrorType("timeout"))
+        assertEquals(AnalyticsErrorType.ApiFailed, cleanupReasonToAnalyticsErrorType("backend exploded"))
     }
 
     @Test

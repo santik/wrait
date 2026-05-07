@@ -38,6 +38,9 @@ interface EntryDao {
     @Query("SELECT * FROM entries WHERE id = :id")
     fun getEntryById(id: Long): Flow<EntryEntity?>
 
+    @Query("SELECT * FROM entries WHERE id = :id")
+    suspend fun getEntryByIdOnce(id: Long): EntryEntity?
+
     @Query("UPDATE entries SET language = :language WHERE id = :id")
     suspend fun updateEntryLanguage(id: Long, language: String): Int
 

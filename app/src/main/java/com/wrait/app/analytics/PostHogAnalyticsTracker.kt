@@ -47,7 +47,7 @@ class PostHogAnalyticsTracker : AnalyticsTracker {
             AnalyticsEventNames.TRANSCRIPTION_FAILED,
             mapOf(
                 "privacy_mode" to privacyMode.toAnalyticsValue(),
-                "error_type" to error.toAnalyticsErrorType(),
+                "error_type" to error.toAnalyticsErrorType().toAnalyticsValue(),
             ),
         )
     }
@@ -72,7 +72,7 @@ class PostHogAnalyticsTracker : AnalyticsTracker {
             mapOf(
                 "privacy_mode" to privacyMode.toAnalyticsValue(),
                 "save_path" to savePath.toAnalyticsValue(),
-                "error_type" to cleanupReasonToAnalyticsErrorType(reason),
+                "error_type" to cleanupReasonToAnalyticsErrorType(reason).toAnalyticsValue(),
             ),
         )
     }
@@ -101,6 +101,87 @@ class PostHogAnalyticsTracker : AnalyticsTracker {
         capture(
             AnalyticsEventNames.ENTRIES_LIST_OPENED,
             mapOf("entry_count_bucket" to bucketEntryCount(entryCount)),
+        )
+    }
+
+    override fun trackMicrophonePermissionRequested() {
+        capture(AnalyticsEventNames.MICROPHONE_PERMISSION_REQUESTED, emptyMap())
+    }
+
+    override fun trackMicrophonePermissionDenied() {
+        capture(AnalyticsEventNames.MICROPHONE_PERMISSION_DENIED, emptyMap())
+    }
+
+    override fun trackMicrophonePermissionPermanentlyDenied() {
+        capture(AnalyticsEventNames.MICROPHONE_PERMISSION_PERMANENTLY_DENIED, emptyMap())
+    }
+
+    override fun trackDraftRetryStarted(draftType: AnalyticsDraftType) {
+        capture(
+            AnalyticsEventNames.DRAFT_RETRY_STARTED,
+            mapOf("draft_type" to draftType.toAnalyticsValue()),
+        )
+    }
+
+    override fun trackDraftRetrySucceeded(draftType: AnalyticsDraftType) {
+        capture(
+            AnalyticsEventNames.DRAFT_RETRY_SUCCEEDED,
+            mapOf(
+                "draft_type" to draftType.toAnalyticsValue(),
+                "result" to "entry_saved",
+            ),
+        )
+    }
+
+    override fun trackDraftRetryFailed(
+        draftType: AnalyticsDraftType,
+        failureStage: AnalyticsRetryFailureStage,
+        errorType: AnalyticsErrorType,
+    ) {
+        capture(
+            AnalyticsEventNames.DRAFT_RETRY_FAILED,
+            mapOf(
+                "draft_type" to draftType.toAnalyticsValue(),
+                "failure_stage" to failureStage.toAnalyticsValue(),
+                "error_type" to errorType.toAnalyticsValue(),
+            ),
+        )
+    }
+
+    override fun trackEntryDetailOpened(isDraft: Boolean) {
+        capture(
+            AnalyticsEventNames.ENTRY_DETAIL_OPENED,
+            mapOf("is_draft" to isDraft),
+        )
+    }
+
+    override fun trackEntryShared(source: AnalyticsEntrySource) {
+        capture(
+            AnalyticsEventNames.ENTRY_SHARED,
+            mapOf(
+                "source" to source.toAnalyticsValue(),
+                "is_draft" to false,
+            ),
+        )
+    }
+
+    override fun trackEntryDeleteInitiated(source: AnalyticsEntrySource, isDraft: Boolean) {
+        capture(
+            AnalyticsEventNames.ENTRY_DELETE_INITIATED,
+            mapOf(
+                "source" to source.toAnalyticsValue(),
+                "is_draft" to isDraft,
+            ),
+        )
+    }
+
+    override fun trackEntryDeleted(source: AnalyticsEntrySource, isDraft: Boolean) {
+        capture(
+            AnalyticsEventNames.ENTRY_DELETED,
+            mapOf(
+                "source" to source.toAnalyticsValue(),
+                "is_draft" to isDraft,
+            ),
         )
     }
 

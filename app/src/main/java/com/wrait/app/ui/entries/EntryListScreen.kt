@@ -82,11 +82,16 @@ import java.util.Locale
 
 private enum class SwipeState { Default, Revealed }
 
+private data class PendingDeleteEntry(
+    val id: Long,
+)
+
 @Composable
 fun EntryListScreen(
     uiState: EntryListUiState,
     onEntryClick: (Long) -> Unit,
     onBack: () -> Unit,
+    onDeleteInitiated: (Long) -> Unit,
     onDeleteEntry: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -100,7 +105,7 @@ fun EntryListScreen(
     val swipeBackThresholdPx = with(density) { Gesture.SwipeBackThresholdDp.toPx() }
     val currentOnBack by rememberUpdatedState(onBack)
 
-    var pendingDeleteId by remember { mutableStateOf<Long?>(null) }
+    var pendingDeleteEntry by remember { mutableStateOf<PendingDeleteEntry?>(null) }
 
     // Top: room for the overlaid back-button IconButton (Spacing.md offset + ~48 dp touch target)
     val listTopPadding    = Spacing.md + Spacing.xxl
@@ -196,8 +201,11 @@ fun EntryListScreen(
                     EntryCard(
                         entry           = entry,
                         onEntryClick    = onEntryClick,
-                        pendingDeleteId = pendingDeleteId,
-                        onSwipeRevealed = { id -> pendingDeleteId = id },
+                        pendingDeleteId = pendingDeleteEntry?.id,
+                        onSwipeRevealed = { id ->
+                            pendingDeleteEntry = PendingDeleteEntry(id)
+                            onDeleteInitiated(id)
+                        },
                         modifier        = Modifier.animateItem(
                             fadeOutSpec = tween(Animation.DeleteFadeDuration)
                         )
@@ -220,15 +228,15 @@ fun EntryListScreen(
             )
         }
 
-        if (pendingDeleteId != null) {
+        if (pendingDeleteEntry != null) {
             AlertDialog(
-                onDismissRequest = { pendingDeleteId = null },
+                onDismissRequest = { pendingDeleteEntry = null },
                 title   = { Text(stringResource(R.string.swipe_delete_dialog_title)) },
                 text    = { Text(stringResource(R.string.swipe_delete_dialog_message)) },
                 confirmButton = {
                     TextButton(onClick = {
-                        pendingDeleteId?.let { onDeleteEntry(it) }
-                        pendingDeleteId = null
+                        pendingDeleteEntry?.let { onDeleteEntry(it.id) }
+                        pendingDeleteEntry = null
                     }) {
                         Text(
                             text  = stringResource(R.string.swipe_delete_confirm),
@@ -237,7 +245,7 @@ fun EntryListScreen(
                     }
                 },
                 dismissButton = {
-                    TextButton(onClick = { pendingDeleteId = null }) {
+                    TextButton(onClick = { pendingDeleteEntry = null }) {
                         Text(stringResource(R.string.swipe_delete_cancel))
                     }
                 }
@@ -475,7 +483,8 @@ private fun EntryListScreenPreview() {
             ),
             onEntryClick  = {},
             onBack        = {},
-            onDeleteEntry = {}
+            onDeleteInitiated = { _ -> },
+            onDeleteEntry = { _ -> }
         )
     }
 }
@@ -503,7 +512,8 @@ private fun EntryListAudioDraftPreview() {
             ),
             onEntryClick  = {},
             onBack        = {},
-            onDeleteEntry = {}
+            onDeleteInitiated = { _ -> },
+            onDeleteEntry = { _ -> }
         )
     }
 }
@@ -516,7 +526,8 @@ private fun EntryListScreenEmptyPreview() {
             uiState       = EntryListUiState(),
             onEntryClick  = {},
             onBack        = {},
-            onDeleteEntry = {}
+            onDeleteInitiated = { _ -> },
+            onDeleteEntry = { _ -> }
         )
     }
 }

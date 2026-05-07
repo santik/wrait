@@ -4,6 +4,9 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.wrait.app.analytics.AnalyticsDraftType
+import com.wrait.app.analytics.AnalyticsErrorType
+import com.wrait.app.analytics.AnalyticsRetryFailureStage
 import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.WraitDatabase
@@ -16,6 +19,7 @@ import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.usecase.CleanupTranscriptUseCase
 import com.wrait.app.data.repository.EntryRepositoryImpl
 import com.wrait.app.data.speech.RecognizerError
+import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
@@ -152,6 +156,52 @@ class MainViewModelTest {
         assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.AppOpened })
     }
 
+    @Test
+    fun permissionRequested_tracksEvent() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        vm.onMicrophonePermissionRequested()
+
+        assertTrue(
+            fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.MicrophonePermissionRequested }
+        )
+    }
+
+    @Test
+    fun permissionDenied_tracksEvent() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        vm.onMicrophonePermissionResult(granted = false, permanentlyDenied = false)
+
+        assertTrue(
+            fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.MicrophonePermissionDenied }
+        )
+        assertFalse(
+            fakeAnalytics.events.any {
+                it is FakeAnalyticsTracker.Event.MicrophonePermissionPermanentlyDenied
+            }
+        )
+    }
+
+    @Test
+    fun permissionPermanentlyDenied_tracksEvent() = runTest(testDispatcher) {
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        vm.onMicrophonePermissionResult(granted = false, permanentlyDenied = true)
+
+        assertTrue(
+            fakeAnalytics.events.any {
+                it is FakeAnalyticsTracker.Event.MicrophonePermissionPermanentlyDenied
+            }
+        )
+        assertFalse(
+            fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.MicrophonePermissionDenied }
+        )
+    }
+
     // 2 — API failure path
     @Test
     fun apiFailure_entryRemainsAsDraft_uiStateShowsError() = runTest(testDispatcher) {
@@ -223,6 +273,85 @@ class MainViewModelTest {
         assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.TranscriptionSucceeded })
         assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.CleanupSucceeded })
         assertTrue(fakeAnalytics.events.any { it is FakeAnalyticsTracker.Event.EntrySaved })
+        assertTrue(
+            fakeAnalytics.events.any {
+                it is FakeAnalyticsTracker.Event.DraftRetryStarted &&
+                    it.draftType == AnalyticsDraftType.Audio
+            }
+        )
+        assertTrue(
+            fakeAnalytics.events.any {
+                it is FakeAnalyticsTracker.Event.DraftRetrySucceeded &&
+                    it.draftType == AnalyticsDraftType.Audio
+            }
+        )
+    }
+
+    @Test
+    fun retryCleanupFailure_tracksDraftRetryFailure() = runTest(testDispatcher) {
+        fakeTime.time = System.currentTimeMillis()
+        entryDao.insert(
+            EntryEntity(
+                rawTranscript = "alpha beta gamma",
+                cleanedText = null,
+                isDraft = true,
+                language = "en-US",
+                createdAt = fakeTime.currentTimeMillis(),
+                wordCount = 3,
+            )
+        )
+        fakeApi.result = CleanupResult.Failure("network error")
+
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        assertTrue(
+            fakeAnalytics.events.any {
+                it is FakeAnalyticsTracker.Event.DraftRetryStarted &&
+                    it.draftType == AnalyticsDraftType.Text
+            }
+        )
+        assertTrue(
+            fakeAnalytics.events.any {
+                it is FakeAnalyticsTracker.Event.DraftRetryFailed &&
+                    it.draftType == AnalyticsDraftType.Text &&
+                    it.failureStage == AnalyticsRetryFailureStage.Cleanup &&
+                    it.errorType == AnalyticsErrorType.Network
+            }
+        )
+    }
+
+    @Test
+    fun retryTranscriptionFailure_tracksDraftRetryFailure() = runTest(testDispatcher) {
+        fakeTime.time = System.currentTimeMillis()
+        entryDao.insert(
+            EntryEntity(
+                rawTranscript = "",
+                cleanedText = null,
+                isDraft = true,
+                language = "en-US",
+                createdAt = fakeTime.currentTimeMillis(),
+                wordCount = 0,
+                audioPath = "/tmp/audio-draft.m4a",
+            )
+        )
+        fakeTranscription.nextAudioDraftResult =
+            com.wrait.app.data.speech.TranscriptionResult.Failure(
+                reason = TranscriptionFailureReason.ApiError,
+                audioDraftPath = null,
+            )
+
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        assertTrue(
+            fakeAnalytics.events.any {
+                it is FakeAnalyticsTracker.Event.DraftRetryFailed &&
+                    it.draftType == AnalyticsDraftType.Audio &&
+                    it.failureStage == AnalyticsRetryFailureStage.Transcription &&
+                    it.errorType == AnalyticsErrorType.ApiFailed
+            }
+        )
     }
 
     @Test
@@ -503,6 +632,10 @@ class MainViewModelTest {
         }
 
         override fun getEntryById(id: Long): Flow<Result<Entry?>> = flowOf(Result.success(null))
+
+        override suspend fun getEntryByIdOnce(id: Long): Result<Entry?> = Result.success(
+            entries.value.firstOrNull { it.id == id }
+        )
 
         override suspend fun getPendingDrafts(): List<Entry> = emptyList()
 

@@ -9,6 +9,30 @@ enum class AnalyticsSavePath {
     Retry,
 }
 
+enum class AnalyticsDraftType {
+    Text,
+    Audio,
+}
+
+enum class AnalyticsRetryFailureStage {
+    Transcription,
+    Cleanup,
+}
+
+enum class AnalyticsErrorType {
+    TooShort,
+    NoMatch,
+    PermissionDenied,
+    Network,
+    ApiFailed,
+    OfflineUnavailable,
+}
+
+enum class AnalyticsEntrySource {
+    List,
+    Detail,
+}
+
 interface AnalyticsTracker {
     fun trackAppOpened(privacyMode: PrivacyMode, entryCount: Int)
     fun trackRecordingStarted(privacyMode: PrivacyMode, selectedLanguage: String)
@@ -23,6 +47,20 @@ interface AnalyticsTracker {
     fun trackEntrySaved(privacyMode: PrivacyMode, savePath: AnalyticsSavePath)
     fun trackPrivacyModeToggled(from: PrivacyMode, to: PrivacyMode)
     fun trackEntriesListOpened(entryCount: Int)
+    fun trackMicrophonePermissionRequested()
+    fun trackMicrophonePermissionDenied()
+    fun trackMicrophonePermissionPermanentlyDenied()
+    fun trackDraftRetryStarted(draftType: AnalyticsDraftType)
+    fun trackDraftRetrySucceeded(draftType: AnalyticsDraftType)
+    fun trackDraftRetryFailed(
+        draftType: AnalyticsDraftType,
+        failureStage: AnalyticsRetryFailureStage,
+        errorType: AnalyticsErrorType,
+    )
+    fun trackEntryDetailOpened(isDraft: Boolean)
+    fun trackEntryShared(source: AnalyticsEntrySource)
+    fun trackEntryDeleteInitiated(source: AnalyticsEntrySource, isDraft: Boolean)
+    fun trackEntryDeleted(source: AnalyticsEntrySource, isDraft: Boolean)
     fun optIn()
     fun optOut()
 }

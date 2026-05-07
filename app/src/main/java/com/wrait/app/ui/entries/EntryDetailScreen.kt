@@ -71,6 +71,7 @@ fun EntryDetailScreen(
     onTextChanged:     (String) -> Unit,
     showDevDraft:      Boolean = false,
     onBack:            () -> Unit,
+    onShareSucceeded:  () -> Unit,
     onDeleteTapped:    () -> Unit,
     onDeleteCancelled: () -> Unit,
     onDeleteConfirmed: () -> Unit,
@@ -177,6 +178,9 @@ fun EntryDetailScreen(
                                 if (intent.resolveActivity(context.packageManager) != null) {
                                     try {
                                         context.startActivity(Intent.createChooser(intent, shareSheetTitle))
+                                        // Android does not give us a reliable completion callback here,
+                                        // so analytics treats this as share-chooser launch intent.
+                                        onShareSucceeded()
                                     } catch (_: ActivityNotFoundException) {
                                         Toast.makeText(
                                             context,
@@ -410,6 +414,7 @@ private fun EntryDetailScreenDraftPreview() {
             editedText        = null,
             onTextChanged     = {},
             onBack            = {},
+            onShareSucceeded  = {},
             onDeleteTapped    = {},
             onDeleteCancelled = {},
             onDeleteConfirmed = {}
@@ -437,6 +442,7 @@ private fun EntryDetailScreenCleanPreview() {
             editedText        = "The meeting this morning was difficult. I didn't expect the team to push back on the timeline so strongly. We need to rethink the whole approach before the next sprint.",
             onTextChanged     = {},
             onBack            = {},
+            onShareSucceeded  = {},
             onDeleteTapped    = {},
             onDeleteCancelled = {},
             onDeleteConfirmed = {}
@@ -454,6 +460,7 @@ private fun EntryDetailScreenErrorPreview() {
             editedText        = null,
             onTextChanged     = {},
             onBack            = {},
+            onShareSucceeded  = {},
             onDeleteTapped    = {},
             onDeleteCancelled = {},
             onDeleteConfirmed = {}
