@@ -103,11 +103,17 @@ class MainActivity : ComponentActivity() {
                         showBlockedMessage = false
                         hasRequestedPermission = false
                     } else {
-                        val permanentlyDenied = hasRequestedPermission &&
-                            !ActivityCompat.shouldShowRequestPermissionRationale(
+                        val permanentlyDenied = isMicrophonePermissionPermanentlyDenied(
+                            hasRequestedPermission = hasRequestedPermission,
+                            shouldShowRationale = ActivityCompat.shouldShowRequestPermissionRationale(
                                 activity,
                                 android.Manifest.permission.RECORD_AUDIO,
-                            )
+                            ),
+                        )
+                        viewModel.onMicrophonePermissionResult(
+                            granted = false,
+                            permanentlyDenied = permanentlyDenied,
+                        )
                         if (permanentlyDenied) {
                             showBlockedMessage = true
                         }
@@ -206,11 +212,13 @@ class MainActivity : ComponentActivity() {
                             return@AppNavHost
                         }
 
-                        val permanentlyDenied = hasRequestedPermission &&
-                            !ActivityCompat.shouldShowRequestPermissionRationale(
+                        val permanentlyDenied = isMicrophonePermissionPermanentlyDenied(
+                            hasRequestedPermission = hasRequestedPermission,
+                            shouldShowRationale = ActivityCompat.shouldShowRequestPermissionRationale(
                                 activity,
                                 android.Manifest.permission.RECORD_AUDIO,
-                            )
+                            ),
+                        )
 
                         if (permanentlyDenied) {
                             showBlockedMessage = true
@@ -221,6 +229,7 @@ class MainActivity : ComponentActivity() {
                             context.startActivity(intent)
                         } else {
                             hasRequestedPermission = true
+                            viewModel.onMicrophonePermissionRequested()
                             requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
                         }
                     },
@@ -246,6 +255,11 @@ internal fun keepScreenOnCommand(
         else -> KeepScreenOnCommand.None
     }
 }
+
+internal fun isMicrophonePermissionPermanentlyDenied(
+    hasRequestedPermission: Boolean,
+    shouldShowRationale: Boolean,
+): Boolean = hasRequestedPermission && !shouldShowRationale
 
 @Composable
 private fun AppNavHost(
@@ -335,6 +349,7 @@ private fun AppNavHost(
                 uiState = entryListUiState,
                 onEntryClick = { id -> navController.navigate("entry/$id") },
                 onBack = { navController.popBackStack() },
+                onDeleteInitiated = entryListViewModel::onDeleteInitiated,
                 onDeleteEntry = entryListViewModel::deleteEntry,
             )
         }
@@ -353,6 +368,7 @@ private fun AppNavHost(
                 onTextChanged = detailViewModel::onTextChanged,
                 showDevDraft = BuildConfig.DEV,
                 onBack = { detailViewModel.flushEdit(); navController.popBackStack() },
+                onShareSucceeded = detailViewModel::onShareSucceeded,
                 onDeleteTapped = detailViewModel::onDeleteTapped,
                 onDeleteCancelled = detailViewModel::onDeleteCancelled,
                 onDeleteConfirmed = {

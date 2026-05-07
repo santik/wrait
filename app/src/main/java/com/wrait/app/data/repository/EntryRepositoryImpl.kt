@@ -113,6 +113,15 @@ class EntryRepositoryImpl @Inject constructor(
                 emit(Result.failure(e))
             }
 
+    override suspend fun getEntryByIdOnce(id: Long): Result<Entry?> {
+        return try {
+            Result.success(entryDao.getEntryByIdOnce(id)?.toDomain())
+        } catch (e: Exception) {
+            Log.e("EntryRepository", "Database error getting entry once $id", e)
+            Result.failure(e)
+        }
+    }
+
     override suspend fun getPendingDrafts(): List<Entry> {
         return entryDao.getPendingDrafts().map { it.toDomain() }
     }

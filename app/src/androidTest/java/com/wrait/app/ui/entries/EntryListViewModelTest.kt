@@ -9,12 +9,15 @@ import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.repository.EntryRepositoryImpl
+import com.wrait.app.analytics.AnalyticsEntrySource
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.domain.util.TimeProvider
 import com.wrait.app.test.fake.FakeAnalyticsTracker
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -53,7 +56,9 @@ class EntryListViewModelTest {
 
     @After
     fun tearDown() {
-        createdVms.forEach { it.viewModelScope.cancel() }
+        runBlocking {
+            createdVms.forEach { it.viewModelScope.coroutineContext.job.cancelAndJoin() }
+        }
         createdVms.clear()
         Dispatchers.resetMain()
         db.close()
@@ -129,6 +134,83 @@ class EntryListViewModelTest {
         assertTrue(
             analytics.events.any {
                 it is FakeAnalyticsTracker.Event.EntriesListOpened && it.entryCount == 2
+            }
+        )
+    }
+
+    @Test
+    fun onDeleteInitiated_tracksListSourceAndDraftFlag() = runTest(testDispatcher) {
+        val id = dao.insert(
+            EntryEntity(
+                rawTranscript = "draft content",
+                cleanedText = null,
+                isDraft = true,
+                language = "en-US",
+                createdAt = System.currentTimeMillis(),
+                wordCount = 2,
+            )
+        )
+        val vm = createVm()
+        val populated = vm.uiState.first { state -> state.entries.any { it.id == id } }
+        assertTrue(populated.entries.any { it.id == id && it.isDraft })
+
+        vm.onDeleteInitiated(id)
+        advanceUntilIdle()
+
+        assertTrue(
+            analytics.events.any {
+                it is FakeAnalyticsTracker.Event.EntryDeleteInitiated &&
+                    it.source == AnalyticsEntrySource.List &&
+                    it.isDraft
+            }
+        )
+    }
+
+    @Test
+    fun deleteEntry_success_tracksDeletion() = runTest(testDispatcher) {
+        val id = insertEntry("entry to delete")
+        val vm = createVm()
+        val populated = vm.uiState.first { state -> state.entries.any { it.id == id } }
+        assertTrue(populated.entries.any { it.id == id && !it.isDraft })
+
+        vm.deleteEntry(id)
+        val updated = vm.uiState.first { state -> state.entries.none { it.id == id } }
+        assertTrue(updated.entries.none { it.id == id })
+
+        assertTrue(
+            analytics.events.any {
+                it is FakeAnalyticsTracker.Event.EntryDeleted &&
+                    it.source == AnalyticsEntrySource.List &&
+                    !it.isDraft
+            }
+        )
+    }
+
+    @Test
+    fun deleteEntry_usesCurrentDraftStateAtDeleteTime() = runTest(testDispatcher) {
+        val id = dao.insert(
+            EntryEntity(
+                rawTranscript = "draft content",
+                cleanedText = null,
+                isDraft = true,
+                language = "en-US",
+                createdAt = System.currentTimeMillis(),
+                wordCount = 2,
+            )
+        )
+        val vm = createVm()
+        val populated = vm.uiState.first { state -> state.entries.any { it.id == id } }
+        assertTrue(populated.entries.any { it.id == id && it.isDraft })
+
+        vm.deleteEntry(id)
+        val updated = vm.uiState.first { state -> state.entries.none { it.id == id } }
+        assertTrue(updated.entries.none { it.id == id })
+
+        assertTrue(
+            analytics.events.any {
+                it is FakeAnalyticsTracker.Event.EntryDeleted &&
+                    it.source == AnalyticsEntrySource.List &&
+                    it.isDraft
             }
         )
     }

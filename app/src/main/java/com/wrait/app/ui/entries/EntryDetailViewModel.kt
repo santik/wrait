@@ -4,6 +4,9 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.wrait.app.analytics.AnalyticsEntrySource
+import com.wrait.app.analytics.AnalyticsTracker
+import com.wrait.app.analytics.trackSafely
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.repository.EntryRepository
@@ -23,8 +26,9 @@ import javax.inject.Inject
 @HiltViewModel
 class EntryDetailViewModel @Inject constructor(
     private val entryRepository: EntryRepository,
+    private val analyticsTracker: AnalyticsTracker,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
-    savedStateHandle: SavedStateHandle,
+    private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val entryId: Long = savedStateHandle.get<Long>("entryId") ?: run {
@@ -36,19 +40,23 @@ class EntryDetailViewModel @Inject constructor(
         .getEntryById(entryId)
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
+            started = SharingStarted.WhileSubscribed(STATE_SUBSCRIPTION_TIMEOUT_MS),
             initialValue = Result.success(null)
         )
 
     private val _editedText = MutableStateFlow<String?>(null)
     val editedText: StateFlow<String?> = _editedText.asStateFlow()
+    private var hasTrackedEntryOpened = false
 
     init {
         viewModelScope.launch {
+            val currentEntry = currentEntryForAnalytics() ?: return@launch
+            applyLoadedEntry(currentEntry)
+        }
+        viewModelScope.launch {
             entry.collect { result ->
                 val e = result.getOrNull() ?: return@collect
-                if (_editedText.value == null && !e.isDraft)
-                    _editedText.value = e.cleanedText ?: e.rawTranscript
+                applyLoadedEntry(e)
             }
         }
         viewModelScope.launch {
@@ -75,18 +83,84 @@ class EntryDetailViewModel @Inject constructor(
     private val _showDeleteDialog = MutableStateFlow(false)
     val showDeleteDialog: StateFlow<Boolean> = _showDeleteDialog.asStateFlow()
 
-    fun onDeleteTapped()    { _showDeleteDialog.value = true  }
+    fun onDeleteTapped() {
+        _showDeleteDialog.value = true
+        entry.value.getOrNull()?.let { currentEntry ->
+            analyticsTracker.trackSafely(TAG, "entry delete initiated") {
+                trackEntryDeleteInitiated(AnalyticsEntrySource.Detail, currentEntry.isDraft)
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            val currentEntry = currentEntryForAnalytics() ?: return@launch
+            analyticsTracker.trackSafely(TAG, "entry delete initiated") {
+                trackEntryDeleteInitiated(AnalyticsEntrySource.Detail, currentEntry.isDraft)
+            }
+        }
+    }
     fun onDeleteCancelled() { _showDeleteDialog.value = false }
+
+    fun onShareSucceeded() {
+        entry.value.getOrNull()?.let { currentEntry ->
+            if (currentEntry.isDraft) return
+
+            analyticsTracker.trackSafely(TAG, "entry shared") {
+                // This event measures share intent after the chooser launches for finalized entries.
+                trackEntryShared(AnalyticsEntrySource.Detail)
+            }
+            return
+        }
+
+        viewModelScope.launch {
+            val currentEntry = currentEntryForAnalytics() ?: return@launch
+            if (currentEntry.isDraft) return@launch
+
+            analyticsTracker.trackSafely(TAG, "entry shared") {
+                // This event measures share intent after the chooser launches for finalized entries.
+                trackEntryShared(AnalyticsEntrySource.Detail)
+            }
+        }
+    }
 
     fun confirmDelete(onDeleted: () -> Unit) {
         _showDeleteDialog.value = false
+        val currentEntry = entry.value.getOrNull()
         viewModelScope.launch {
+            val trackedEntry = currentEntry ?: currentEntryForAnalytics()
             try {
                 withContext(ioDispatcher) { entryRepository.deleteEntries(listOf(entryId)) }
+                if (trackedEntry != null) {
+                    analyticsTracker.trackSafely(TAG, "entry deleted") {
+                        trackEntryDeleted(AnalyticsEntrySource.Detail, trackedEntry.isDraft)
+                    }
+                }
                 onDeleted()
             } catch (e: Exception) {
                 Log.e("EntryDetailViewModel", "Failed to delete entry $entryId", e)
             }
         }
+    }
+
+    private fun applyLoadedEntry(currentEntry: Entry) {
+        if (!hasTrackedEntryOpened) {
+            hasTrackedEntryOpened = true
+            analyticsTracker.trackSafely(TAG, "entry detail opened") {
+                trackEntryDetailOpened(currentEntry.isDraft)
+            }
+        }
+        if (_editedText.value == null && !currentEntry.isDraft) {
+            _editedText.value = currentEntry.cleanedText ?: currentEntry.rawTranscript
+        }
+    }
+
+    private suspend fun currentEntryForAnalytics(): Entry? {
+        entry.value.getOrNull()?.let { return it }
+        return entryRepository.getEntryByIdOnce(entryId).getOrNull()
+    }
+
+    private companion object {
+        private const val TAG = "EntryDetailViewModel"
+        private const val STATE_SUBSCRIPTION_TIMEOUT_MS = 5_000L
     }
 }

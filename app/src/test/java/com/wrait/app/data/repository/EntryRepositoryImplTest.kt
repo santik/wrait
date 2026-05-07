@@ -89,6 +89,8 @@ class EntryRepositoryImplTest {
 
         override fun getEntryById(id: Long): Flow<EntryEntity?> = flowOf(entries[id])
 
+        override suspend fun getEntryByIdOnce(id: Long): EntryEntity? = entries[id]
+
         override suspend fun updateEntryLanguage(id: Long, language: String): Int {
             val current = entries[id] ?: return 0
             entries[id] = current.copy(language = language)
