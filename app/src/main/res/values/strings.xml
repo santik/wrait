@@ -47,4 +47,13 @@
     <string name="swipe_delete_action_label">Delete entry</string>
     <string name="swipe_delete_cancel">Cancel</string>
     <string name="status_entries_deleted">%d entries deleted</string>
+    <string name="app_lock_title">Unlock wrait</string>
+    <string name="app_lock_message">Authenticate with your device to view your journal.</string>
+    <string name="app_lock_prompting_message">Waiting for system authentication…</string>
+    <string name="app_lock_temporarily_unavailable">Authentication is temporarily unavailable. Try again.</string>
+    <string name="app_lock_unlock">Unlock</string>
+    <string name="app_lock_use_device_credential">Use device code</string>
+    <string name="app_lock_setup_required_title">Set up device security</string>
+    <string name="app_lock_setup_required_message">Set up a screen lock or biometric in Android settings to unlock wrait.</string>
+    <string name="app_lock_open_security_settings">Open device security settings</string>
 </resources>
