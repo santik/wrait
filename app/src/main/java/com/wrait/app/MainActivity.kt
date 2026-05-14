@@ -6,13 +6,14 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.compose.ui.draw.blur
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -23,9 +24,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -34,24 +40,68 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.fragment.app.FragmentActivity
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.displayNameForLanguage
+import com.wrait.app.lock.AppLockAuthCallback
+import com.wrait.app.lock.AppLockAuthError
+import com.wrait.app.lock.AppLockAuthenticator
+import com.wrait.app.lock.AppLockAuthenticatorFactory
+import com.wrait.app.lock.AppLockViewModel
 import com.wrait.app.ui.entries.EntryDetailScreen
 import com.wrait.app.ui.entries.EntryDetailViewModel
 import com.wrait.app.ui.entries.EntryListScreen
 import com.wrait.app.ui.entries.EntryListViewModel
+import com.wrait.app.ui.lock.AppLockScreen
 import com.wrait.app.ui.main.LanguageSettingsSheet
 import com.wrait.app.ui.main.MainScreen
 import com.wrait.app.ui.theme.WrAItTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
     private val viewModel: MainViewModel by viewModels()
+    private val appLockViewModel: AppLockViewModel by viewModels()
+
+    @Inject
+    lateinit var appLockAuthenticatorFactory: AppLockAuthenticatorFactory
+
+    private var appLockAuthenticator: AppLockAuthenticator? = null
+
+    private val processLifecycleObserver = object : DefaultLifecycleObserver {
+        override fun onStart(owner: LifecycleOwner) {
+            appLockAuthenticator?.availability()?.let(appLockViewModel::onProcessStart)
+        }
+
+        override fun onStop(owner: LifecycleOwner) {
+            appLockViewModel.onProcessStop()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        appLockAuthenticator = appLockAuthenticatorFactory.create(
+            host = this,
+            callback = object : AppLockAuthCallback {
+                override fun onAuthenticationSucceeded(method: com.wrait.app.lock.AppLockAuthMethod) {
+                    appLockViewModel.onUnlockSucceeded()
+                }
+
+                override fun onAuthenticationFailed() = Unit
+
+                override fun onAuthenticationError(error: AppLockAuthError) {
+                    when (error) {
+                        AppLockAuthError.Cancelled -> appLockViewModel.onUnlockCancelled()
+                        AppLockAuthError.SecuritySetupRequired -> appLockViewModel.onSecuritySetupRequired()
+                        AppLockAuthError.TemporarilyUnavailable ->
+                            appLockViewModel.onAuthenticationTemporarilyUnavailable()
+                    }
+                }
+            },
+        )
+        ProcessLifecycleOwner.get().lifecycle.addObserver(processLifecycleObserver)
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE)
         enableEdgeToEdge()
         setContent {
@@ -68,8 +118,23 @@ class MainActivity : ComponentActivity() {
                 val hasEverRecorded by viewModel.hasEverRecorded.collectAsStateWithLifecycle()
                 val showSettingsPanel by viewModel.showSettingsPanel.collectAsStateWithLifecycle()
                 val privacyMode by viewModel.privacyMode.collectAsStateWithLifecycle()
+                val appLockUiState by appLockViewModel.uiState.collectAsStateWithLifecycle()
+                val lifecycleState by lifecycleOwner.lifecycle.currentStateFlow.collectAsState()
                 val languageSummary = remember(selectedLanguage) {
                     displayNameForLanguage(selectedLanguage)
+                }
+                val canLaunchAuthPrompt = lifecycleState == Lifecycle.State.RESUMED
+
+                LaunchedEffect(appLockUiState.promptRequestNonce, appLockUiState.isPromptPending, canLaunchAuthPrompt) {
+                    if (appLockUiState.isPromptPending && canLaunchAuthPrompt) {
+                        runCatching {
+                            appLockViewModel.onPromptShown()
+                            appLockAuthenticator?.authenticate()
+                                ?: appLockViewModel.onAuthenticationTemporarilyUnavailable()
+                        }.onFailure {
+                            appLockViewModel.onAuthenticationTemporarilyUnavailable()
+                        }
+                    }
                 }
 
                 LaunchedEffect(recordingState.isActive) {
@@ -120,25 +185,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                LaunchedEffect(Unit) {
-                    isPermissionGranted.value = ContextCompat.checkSelfPermission(
-                        context,
-                        android.Manifest.permission.RECORD_AUDIO,
-                    ) == PackageManager.PERMISSION_GRANTED
-                }
-
-                DisposableEffect(lifecycleOwner, context) {
-                    val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-                        if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
-                            isPermissionGranted.value = ContextCompat.checkSelfPermission(
-                                context,
-                                android.Manifest.permission.RECORD_AUDIO,
-                            ) == PackageManager.PERMISSION_GRANTED
-                        }
-                    }
-                    lifecycleOwner.lifecycle.addObserver(observer)
-                    onDispose {
-                        lifecycleOwner.lifecycle.removeObserver(observer)
+                LaunchedEffect(canLaunchAuthPrompt, context) {
+                    if (canLaunchAuthPrompt) {
+                        isPermissionGranted.value = ContextCompat.checkSelfPermission(
+                            context,
+                            android.Manifest.permission.RECORD_AUDIO,
+                        ) == PackageManager.PERMISSION_GRANTED
                     }
                 }
 
@@ -233,9 +285,36 @@ class MainActivity : ComponentActivity() {
                             requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
                         }
                     },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(if (appLockUiState.shouldBlockContent) 20.dp else 0.dp),
                 )
+
+                if (appLockUiState.shouldBlockContent) {
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AppLockScreen(
+                            uiState = appLockUiState,
+                            onUnlock = {
+                                appLockViewModel.onUnlockRequested()
+                            },
+                            onOpenSecuritySettings = {
+                                appLockAuthenticator?.openSecuritySettings()
+                                    ?: appLockViewModel.onAuthenticationTemporarilyUnavailable()
+                            },
+                        )
+                    }
+                }
             }
         }
+    }
+
+    override fun onDestroy() {
+        ProcessLifecycleOwner.get().lifecycle.removeObserver(processLifecycleObserver)
+        if (isFinishing) {
+            appLockAuthenticator?.cancel()
+        }
+        appLockAuthenticator = null
+        super.onDestroy()
     }
 }
 
