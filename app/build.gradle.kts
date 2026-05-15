@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.openapi.generator)
 }
 
 val localProperties = Properties()
@@ -30,6 +31,8 @@ val keystorePath: String? = localProperties.getProperty("KEYSTORE_PATH")
 val releaseKeystorePassword: String? = localProperties.getProperty("KEYSTORE_PASSWORD")
 val releaseKeyAlias: String? = localProperties.getProperty("KEY_ALIAS")
 val releaseKeyPassword: String? = localProperties.getProperty("KEY_PASSWORD")
+val generatedOpenApiRoot = layout.buildDirectory.dir("generated/openapi/wrait-backend").get().asFile
+val generatedOpenApiSourcesDir = generatedOpenApiRoot.resolve("src/main/kotlin")
 val hasReleaseSigning: Boolean = !keystorePath.isNullOrBlank() &&
     !releaseKeystorePassword.isNullOrBlank() &&
     !releaseKeyAlias.isNullOrBlank() &&
@@ -98,6 +101,9 @@ android {
         compose = true
         buildConfig = true
     }
+    sourceSets {
+        getByName("main").kotlin.directories.add(generatedOpenApiSourcesDir.path)
+    }
     packaging {
         jniLibs {
             useLegacyPackaging = true
@@ -142,11 +148,12 @@ dependencies {
     implementation(libs.sqlcipher)
     implementation(libs.androidx.sqlite)
 
-    // Ktor
-    implementation(libs.ktor.client.core)
-    implementation(libs.ktor.client.android)
-    implementation(libs.ktor.client.content.negotiation)
-    implementation(libs.ktor.serialization.kotlinx.json)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.scalars)
+    implementation(libs.retrofit.kotlinx.serialization.converter)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.kotlinx.serialization.json)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
@@ -162,7 +169,7 @@ dependencies {
     // Testing
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.ktor.client.mock)
+    testImplementation(libs.mockwebserver)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
@@ -172,6 +179,7 @@ dependencies {
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.hilt.android.testing)
     androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.mockwebserver)
     kspAndroidTest(libs.hilt.compiler)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
@@ -181,6 +189,46 @@ kotlin {
     compilerOptions {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
+}
+
+openApiValidate {
+    inputSpec.set("$rootDir/openapi/wrait-backend.yaml")
+}
+
+openApiGenerate {
+    generatorName.set("kotlin")
+    inputSpec.set("$rootDir/openapi/wrait-backend.yaml")
+    outputDir.set(generatedOpenApiRoot.absolutePath)
+    packageName.set("com.wrait.app.data.api.generated")
+    apiPackage.set("com.wrait.app.data.api.generated.api")
+    modelPackage.set("com.wrait.app.data.api.generated.model")
+    globalProperties.set(
+        mapOf(
+            "apiDocs" to "false",
+            "apiTests" to "false",
+            "modelDocs" to "false",
+            "modelTests" to "false",
+        )
+    )
+    configOptions.set(
+        mapOf(
+            "library" to "jvm-retrofit2",
+            "serializationLibrary" to "kotlinx_serialization",
+            "useCoroutines" to "true",
+            "useResponseAsReturnType" to "true",
+            "withSeparateModelsAndApi" to "true",
+            "mapFileBinaryToByteArray" to "true",
+            "sourceFolder" to "src/main/kotlin",
+        )
+    )
+}
+
+tasks.named("openApiGenerate") {
+    dependsOn("openApiValidate")
+}
+
+tasks.named("preBuild") {
+    dependsOn("openApiGenerate")
 }
 
 ksp {

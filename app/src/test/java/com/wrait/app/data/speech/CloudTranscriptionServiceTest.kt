@@ -1,6 +1,5 @@
 package com.wrait.app.data.speech
 
-import io.ktor.http.HttpStatusCode
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -10,7 +9,7 @@ class CloudTranscriptionServiceTest {
     fun transcriptionFailureReasonForStatus_401_returnsProxyAuthFailed() {
         assertEquals(
             TranscriptionFailureReason.ProxyAuthFailed,
-            transcriptionFailureReasonForStatus(HttpStatusCode.Unauthorized),
+            transcriptionFailureReasonForStatus(401),
         )
     }
 
@@ -18,7 +17,7 @@ class CloudTranscriptionServiceTest {
     fun transcriptionFailureReasonForStatus_403_returnsProxyAuthFailed() {
         assertEquals(
             TranscriptionFailureReason.ProxyAuthFailed,
-            transcriptionFailureReasonForStatus(HttpStatusCode.Forbidden),
+            transcriptionFailureReasonForStatus(403),
         )
     }
 
@@ -26,7 +25,7 @@ class CloudTranscriptionServiceTest {
     fun transcriptionFailureReasonForStatus_503_returnsBackendUnavailable() {
         assertEquals(
             TranscriptionFailureReason.BackendUnavailable,
-            transcriptionFailureReasonForStatus(HttpStatusCode.ServiceUnavailable),
+            transcriptionFailureReasonForStatus(503),
         )
     }
 
@@ -34,7 +33,7 @@ class CloudTranscriptionServiceTest {
     fun transcriptionFailureReasonForStatus_400_returnsApiError() {
         assertEquals(
             TranscriptionFailureReason.ApiError,
-            transcriptionFailureReasonForStatus(HttpStatusCode.BadRequest),
+            transcriptionFailureReasonForStatus(400),
         )
     }
 }
