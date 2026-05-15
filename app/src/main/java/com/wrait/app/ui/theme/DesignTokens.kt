@@ -6,11 +6,9 @@ object DesignTokens {
 
     object Animation {
         const val FadeDuration = 300        // ms — standard fade in/out
-        const val ShakeDuration = 310       // ms — error shake (~310ms total, 5 steps)
         const val PulseDuration = 1800      // ms — recording pulse loop
         const val DeleteFadeDuration = 200  // ms — deleted card fade out in LazyColumn
         const val SwipeDeleteFlingDurationMs = 250 // ms — swipe-to-delete snap animation
-        const val StripColorDuration = 400  // ms — top strip colour transition
         const val ButtonAlphaDuration = 200 // ms — button opacity (Processing fade)
     }
 
@@ -19,16 +17,12 @@ object DesignTokens {
         val sm = 8.dp
         val md = 16.dp
         val lg = 24.dp
-        val xl = 32.dp
         val xxl = 48.dp
     }
 
     object Radius {
         val small  = 4.dp
-        val medium = 8.dp
         val card   = 12.dp
-        val large  = 16.dp
-        val xLarge = 24.dp
     }
 
     object Gesture {
@@ -63,17 +57,19 @@ object DesignTokens {
         const val AlphaFull = 1.0f
     }
 
+    object AppLock {
+        const val ScrimAlpha = 0.18f
+    }
+
     object StatusLine {
         const val ClearDelayMs = 4_000
         val GapAboveDp = 12.dp
-        val MinHeightDp = 24.dp
+        val ReservedHeightDp = 48.dp
     }
 
     object StatsLine {
         val GapAboveDp = 16.dp
+        val ReservedHeightDp = 48.dp
     }
 
-    object LanguageLabel {
-        val GapBelowDp = 20.dp
-    }
 }

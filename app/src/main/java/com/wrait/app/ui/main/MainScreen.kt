@@ -14,12 +14,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
@@ -128,46 +124,44 @@ fun MainScreen(
             )
         }
 
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top,
-        ) {
-            Spacer(Modifier.weight(1f))
-            ButtonArea(
-                recordingState = recordingState,
-                showBlockedMessage = showBlockedMessage,
-                shakeErrorKey = shakeErrorKey,
-                onTap = onButtonTap,
-            )
-            Spacer(Modifier.height(DesignTokens.StatusLine.GapAboveDp))
-            StatusLine(
-                recordingState = recordingState,
-                showBlockedMessage = showBlockedMessage,
-                hasEverRecorded = hasEverRecorded,
-                onTap = statusLineTapAction(
+        ActionButtonStack(
+            actionButton = {
+                ButtonArea(
+                    recordingState = recordingState,
+                    showBlockedMessage = showBlockedMessage,
+                    shakeErrorKey = shakeErrorKey,
+                    onTap = onButtonTap,
+                )
+            },
+            statusContent = {
+                StatusLine(
                     recordingState = recordingState,
                     showBlockedMessage = showBlockedMessage,
                     hasEverRecorded = hasEverRecorded,
-                    onStatusLineTap = onStatusLineTap,
-                    onTapToRead = onTapToRead,
-                    onButtonTap = onButtonTap,
-                ),
-            )
-            Spacer(Modifier.height(DesignTokens.StatsLine.GapAboveDp))
-            StatsLine(
-                stats = stats,
-                onTap = if (recordingState is RecordingState.Listening ||
-                    recordingState is RecordingState.Processing ||
-                    recordingState is RecordingState.Uploading
-                ) {
-                    null
-                } else {
-                    onStatsLineTap
-                },
-            )
-            Spacer(Modifier.weight(1f))
-        }
+                    onTap = statusLineTapAction(
+                        recordingState = recordingState,
+                        showBlockedMessage = showBlockedMessage,
+                        hasEverRecorded = hasEverRecorded,
+                        onStatusLineTap = onStatusLineTap,
+                        onTapToRead = onTapToRead,
+                        onButtonTap = onButtonTap,
+                    ),
+                )
+            },
+            statsContent = {
+                StatsLine(
+                    stats = stats,
+                    onTap = if (recordingState is RecordingState.Listening ||
+                        recordingState is RecordingState.Processing ||
+                        recordingState is RecordingState.Uploading
+                    ) {
+                        null
+                    } else {
+                        onStatsLineTap
+                    },
+                )
+            },
+        )
 
         if (showSettingsPanel) {
             SettingsPanel(
