@@ -7,28 +7,35 @@ import com.wrait.app.data.api.generated.infrastructure.Serializer
 import com.wrait.app.data.api.generated.model.CleanupRequest
 import com.wrait.app.data.api.generated.model.CleanupResponse
 import com.wrait.app.data.api.generated.model.RegisterResponse
+import com.wrait.app.data.api.generated.model.TranscribeResponse
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import retrofit2.Response
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.converter.scalars.ScalarsConverterFactory
+import java.io.File
 import java.io.IOException
 import java.net.SocketTimeoutException
+import com.wrait.app.data.speech.TranscriptionFailureReason
+import com.wrait.app.data.speech.TranscriptionResult
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class WraitBackendClientTest {
 
     private fun TestScope.createClient(
         api: DefaultApi,
-    ): WraitBackendClient = WraitBackendClient(api)
+        deviceId: String = "a".repeat(64),
+    ): WraitBackendClient = WraitBackendClientTestFactory.create(api, deviceId)
 
     @Test
     fun register_201_returnsSuccess() = runTest {
@@ -257,6 +264,270 @@ class WraitBackendClientTest {
         assertEquals("unexpected error", (result as CleanupResult.Failure).reason)
     }
 
+    @Test
+    fun transcribeAudio_200_returnsParsedResponse() = runTest {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("""{"transcript":"hello","detected_language":"en-US"}"""),
+            )
+            val client = createClient(
+                api = createRealApi(server),
+                deviceId = "a".repeat(64),
+            )
+            val audioFile = createAudioFile("hello-audio".toByteArray())
+
+            val response = audioFile.useAndDelete {
+                client.transcribeAudio(audioFile = it)
+            }
+
+            val request = server.takeRequest()
+            val multipartBody = request.body.readUtf8()
+            assertEquals("/api/transcribe", request.path)
+            assertEquals("a".repeat(64), request.getHeader("X-Device-Id"))
+            assertEquals(TEST_PROXY_SECRET, request.getHeader("X-Proxy-Secret"))
+            assertTrue(request.getHeader("Content-Type")!!.startsWith("multipart/form-data; boundary="))
+            assertTrue(multipartBody.contains("name=\"audio\""))
+            assertTrue(multipartBody.contains("filename=\"${audioFile.name}\""))
+            assertTrue(multipartBody.contains("Content-Type: audio/mp4"))
+            assertTrue(multipartBody.contains("hello-audio"))
+            assertEquals(
+                TranscriptionResult.Success(
+                    transcript = "hello",
+                    detectedLanguage = "en-US",
+                ),
+                response,
+            )
+        }
+    }
+
+    @Test
+    fun transcribeAudio_usesMultipartPartNamedAudio() = runTest {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("""{"transcript":"hello","detected_language":"en-US"}"""),
+            )
+            val client = createClient(
+                api = createRealApi(server),
+                deviceId = "b".repeat(64),
+            )
+            val audioFile = createAudioFile("bytes".toByteArray())
+
+            audioFile.useAndDelete {
+                client.transcribeAudio(audioFile = it)
+            }
+
+            val request = server.takeRequest()
+            val contentDispositionLine = request.body.readUtf8()
+                .lineSequence()
+                .firstOrNull { it.startsWith("Content-Disposition:") }
+            assertNotNull(contentDispositionLine)
+            assertTrue(contentDispositionLine!!.contains("name=\"audio\""))
+        }
+    }
+
+    @Test
+    fun transcribeAudio_m4aUsesAudioMp4ContentType() = runTest {
+        assertMultipartContentTypeForExtension(
+            extension = ".m4a",
+            expectedContentType = "Content-Type: audio/mp4",
+        )
+    }
+
+    @Test
+    fun transcribeAudio_wavUsesAudioWavContentType() = runTest {
+        assertMultipartContentTypeForExtension(
+            extension = ".wav",
+            expectedContentType = "Content-Type: audio/wav",
+        )
+    }
+
+    @Test
+    fun transcribeAudio_webmUsesAudioWebmContentType() = runTest {
+        assertMultipartContentTypeForExtension(
+            extension = ".webm",
+            expectedContentType = "Content-Type: audio/webm",
+        )
+    }
+
+    @Test
+    fun transcribeAudio_unknownExtensionFallsBackToAudioMp4() = runTest {
+        assertMultipartContentTypeForExtension(
+            extension = ".bin",
+            expectedContentType = "Content-Type: audio/mp4",
+        )
+    }
+
+    @Test
+    fun transcribeAudio_blankTranscript_returnsNothingCaught() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ ->
+                    Response.success(
+                        TranscribeResponse(
+                            transcript = "   ",
+                            detectedLanguage = "en-US",
+                        ),
+                    )
+                },
+            ),
+            deviceId = "c".repeat(64),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_invalidDetectedLanguage_returnsSuccessWithNullDetectedLanguage() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ ->
+                    Response.success(
+                        TranscribeResponse(
+                            transcript = "hello",
+                            detectedLanguage = "und",
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Success(
+                transcript = "hello",
+                detectedLanguage = null,
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_401_returnsProxyAuthFailed() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ -> errorResponse(401) },
+            ),
+            deviceId = "d".repeat(64),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Failure(TranscriptionFailureReason.ProxyAuthFailed),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_503_returnsBackendUnavailable() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ -> errorResponse(503) },
+            ),
+            deviceId = "e".repeat(64),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Failure(TranscriptionFailureReason.BackendUnavailable),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_retriesNetworkErrorsAndEventuallySucceeds() = runTest {
+        var attempts = 0
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ ->
+                    attempts += 1
+                    if (attempts < 3) {
+                        throw IOException("no route to host")
+                    }
+                    Response.success(
+                        TranscribeResponse(
+                            transcript = "hello",
+                            detectedLanguage = "en-US",
+                        ),
+                    )
+                },
+            ),
+            deviceId = "f".repeat(64),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(3, attempts)
+        assertEquals(
+            TranscriptionResult.Success(
+                transcript = "hello",
+                detectedLanguage = "en-US",
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_timeoutAfterRetries_returnsBackendUnavailable() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ -> throw SocketTimeoutException("timeout") },
+            ),
+            deviceId = "1".repeat(64),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Failure(TranscriptionFailureReason.BackendUnavailable),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_400_returnsApiError() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ -> errorResponse(400) },
+            ),
+            deviceId = "2".repeat(64),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Failure(TranscriptionFailureReason.ApiError),
+            result,
+        )
+    }
+
     private fun createRealApi(server: MockWebServer): DefaultApi {
         return ApiClient(
             baseUrl = server.url("/").toString(),
@@ -281,6 +552,8 @@ class WraitBackendClientTest {
         register: suspend (String) -> Response<RegisterResponse> = { Response.success(RegisterResponse(ok = true)) },
         cleanup: suspend (String, CleanupRequest) -> Response<CleanupResponse> =
             { _, _ -> Response.success(CleanupResponse(cleanedText = "ok", wasTruncated = false)) },
+        transcribe: suspend (String, MultipartBody.Part) -> Response<TranscribeResponse> =
+            { _, _ -> Response.success(TranscribeResponse(transcript = "hello", detectedLanguage = "en-US")) },
     ): DefaultApi {
         return object : DefaultApi {
             override suspend fun cleanupTranscript(
@@ -294,10 +567,8 @@ class WraitBackendClientTest {
 
             override suspend fun transcribeAudio(
                 xDeviceId: String,
-                body: ByteArray,
-            ): Response<com.wrait.app.data.api.generated.model.TranscribeResponse> {
-                error("Transcribe is owned by OkHttpTranscribeUploadClient tests")
-            }
+                audio: MultipartBody.Part,
+            ): Response<TranscribeResponse> = transcribe(xDeviceId, audio)
         }
     }
 
@@ -306,6 +577,52 @@ class WraitBackendClientTest {
             code,
             """{"error":"boom"}""".toResponseBody("application/json".toMediaType()),
         )
+    }
+
+    private fun createAudioFile(bytes: ByteArray): File {
+        return File.createTempFile(
+            "transcribe-test",
+            ".${BackendAudioUploadConfig.RECORDED_AUDIO_FILE_EXTENSION}",
+        ).apply {
+            writeBytes(bytes)
+        }
+    }
+
+    private suspend fun TestScope.assertMultipartContentTypeForExtension(
+        extension: String,
+        expectedContentType: String,
+    ) {
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader("Content-Type", "application/json")
+                    .setBody("""{"transcript":"hello","detected_language":"en-US"}"""),
+            )
+            val client = createClient(
+                api = createRealApi(server),
+                deviceId = "a".repeat(64),
+            )
+            val audioFile = File.createTempFile("transcribe-test", extension).apply {
+                writeBytes("bytes".toByteArray())
+            }
+
+            audioFile.useAndDelete {
+                client.transcribeAudio(it)
+            }
+
+            val request = server.takeRequest()
+            val multipartBody = request.body.readUtf8()
+            assertTrue(multipartBody.contains(expectedContentType))
+        }
+    }
+
+    private inline fun <T> File.useAndDelete(block: (File) -> T): T {
+        return try {
+            block(this)
+        } finally {
+            delete()
+        }
     }
 
     private companion object {
