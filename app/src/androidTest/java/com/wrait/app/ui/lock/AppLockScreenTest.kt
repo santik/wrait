@@ -1,6 +1,8 @@
 package com.wrait.app.ui.lock
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -80,5 +82,22 @@ class AppLockScreenTest {
         }
 
         composeRule.onNodeWithContentDescription("Main action button").assertIsDisplayed()
+    }
+
+    @Test
+    fun unlockButtonAppearsAfterAuthenticationIsCancelled() {
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithTag("app_lock_overlay").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        fakeAppLockAuthenticatorFactory.cancelUnlock()
+
+        composeRule.waitUntil(timeoutMillis = 5_000) {
+            composeRule.onAllNodesWithTag("app_lock_unlock_main").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        composeRule.onNodeWithTag("app_lock_unlock_main").assertIsDisplayed()
+        composeRule.onNodeWithTag("app_lock_unlock_main").assertHasClickAction()
+        composeRule.onNodeWithTag("app_lock_unlock_main").performClick()
     }
 }

@@ -52,6 +52,10 @@ class FakeAppLockAuthenticatorFactory @Inject constructor() : AppLockAuthenticat
     fun succeedUnlock() {
         latestAuthenticator.get()?.succeedUnlock()
     }
+
+    fun cancelUnlock() {
+        latestAuthenticator.get()?.cancelUnlock()
+    }
 }
 
 private class FakeAppLockAuthenticator(
@@ -82,5 +86,9 @@ private class FakeAppLockAuthenticator(
 
     fun succeedUnlock() {
         callback.onAuthenticationSucceeded(AppLockAuthMethod.Biometric)
+    }
+
+    fun cancelUnlock() {
+        callback.onAuthenticationError(AppLockAuthError.Cancelled)
     }
 }
