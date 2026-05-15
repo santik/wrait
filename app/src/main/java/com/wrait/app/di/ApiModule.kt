@@ -1,7 +1,5 @@
 package com.wrait.app.di
 
-import com.wrait.app.data.api.OkHttpTranscribeUploadClient
-import com.wrait.app.data.api.TranscribeUploadClient
 import com.wrait.app.data.api.TranscriptCleanupService
 import com.wrait.app.data.api.TranscriptCleanupServiceImpl
 import dagger.Binds
@@ -17,9 +15,4 @@ abstract class ApiModule {
     @Binds
     @Singleton
     abstract fun bindTranscriptCleanupService(impl: TranscriptCleanupServiceImpl): TranscriptCleanupService
-
-    @Suppress("unused")
-    @Binds
-    @Singleton
-    abstract fun bindTranscribeUploadClient(impl: OkHttpTranscribeUploadClient): TranscribeUploadClient
 }

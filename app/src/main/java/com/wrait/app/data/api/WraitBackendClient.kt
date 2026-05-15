@@ -3,15 +3,40 @@ package com.wrait.app.data.api
 import android.util.Log
 import com.wrait.app.data.api.generated.api.DefaultApi
 import com.wrait.app.data.api.generated.model.CleanupRequest
+import com.wrait.app.data.api.generated.model.TranscribeResponse
+import com.wrait.app.data.device.DeviceIdProvider
+import com.wrait.app.di.IoDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
+import retrofit2.Response
+import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import com.wrait.app.data.speech.TranscriptionFailureReason
+import com.wrait.app.data.speech.TranscriptionResult
+import com.wrait.app.domain.model.normalizeDetectedLanguageCode
+import kotlinx.serialization.SerializationException
 
 @Singleton
-class WraitBackendClient @Inject constructor(
+class WraitBackendClient private constructor(
     private val api: DefaultApi,
+    private val resolveDeviceId: suspend () -> String,
 ) : DeviceRegistrationService {
+
+    @Inject constructor(
+        api: DefaultApi,
+        deviceIdProvider: DeviceIdProvider,
+        @IoDispatcher ioDispatcher: CoroutineDispatcher,
+    ) : this(
+        api = api,
+        resolveDeviceId = {
+            withContext(ioDispatcher) { deviceIdProvider.getOrStore() }
+        },
+    )
 
     override suspend fun register(deviceId: String): RegistrationResult {
         repeat(MAX_REGISTER_RETRIES) { attempt ->
@@ -104,13 +129,125 @@ class WraitBackendClient @Inject constructor(
         }
     }
 
+    suspend fun transcribeAudio(
+        audioFile: File,
+    ): TranscriptionResult {
+        val deviceId = try {
+            resolveDeviceId.invoke()
+        } catch (e: Exception) {
+            Log.e(TAG, "Transcribe upload could not resolve device id", e)
+            return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+        }
+
+        repeat(MAX_TRANSCRIBE_RETRIES) { attempt ->
+            try {
+                val response = api.transcribeAudio(
+                    xDeviceId = deviceId,
+                    audio = createAudioPart(audioFile),
+                )
+                return parseTranscribeResponse(response)
+            } catch (e: IOException) {
+                val isLastAttempt = attempt == MAX_TRANSCRIBE_RETRIES - 1
+                // For transcription, a timeout means the backend never produced a usable
+                // transcript response, so we surface it as backend unavailability rather than
+                // a stringly transport detail like the registration path does.
+                if (e.isNetworkTimeout()) {
+                    Log.w(TAG, "Transcribe request timed out (attempt ${attempt + 1}/$MAX_TRANSCRIBE_RETRIES)")
+                    if (isLastAttempt) {
+                        return TranscriptionResult.Failure(TranscriptionFailureReason.BackendUnavailable)
+                    }
+                } else {
+                    Log.w(TAG, "Transcribe request failed: ${e.javaClass.simpleName}: ${e.message}")
+                    if (isLastAttempt) {
+                        return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
+                    }
+                }
+                val delayMs = transcribeRetryDelayMs(attempt)
+                Log.w(TAG, "Transcribe failed transiently, retrying in ${delayMs}ms")
+                delay(delayMs)
+            } catch (e: SerializationException) {
+                Log.w(TAG, "Transcribe response could not be parsed: ${e.message}")
+                return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+            } catch (e: Exception) {
+                Log.e(TAG, "Transcribe request failed unexpectedly", e)
+                return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+            }
+        }
+
+        return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
+    }
+
     private fun shouldRetryRegisterHttp(code: Int): Boolean = code >= 500
 
     private fun registerRetryDelayMs(attempt: Int): Long = BASE_REGISTER_RETRY_DELAY_MS * (1L shl attempt)
 
-    private companion object {
-        const val TAG = "WraitBackendClient"
-        const val MAX_REGISTER_RETRIES = 3
-        const val BASE_REGISTER_RETRY_DELAY_MS = 1_000L
+    private fun transcribeRetryDelayMs(attempt: Int): Long = BASE_TRANSCRIBE_RETRY_DELAY_MS * (1L shl attempt)
+
+    private fun transcribeFailureReasonForStatus(statusCode: Int): TranscriptionFailureReason {
+        return when {
+            statusCode == 401 || statusCode == 403 -> TranscriptionFailureReason.ProxyAuthFailed
+            statusCode >= 500 -> TranscriptionFailureReason.BackendUnavailable
+            else -> TranscriptionFailureReason.ApiError
+        }
+    }
+
+    private fun createAudioPart(audioFile: File): MultipartBody.Part {
+        val mediaType = BackendAudioUploadConfig.mediaTypeFor(audioFile)
+        return MultipartBody.Part.createFormData(
+            name = "audio",
+            filename = audioFile.name,
+            body = audioFile.asRequestBody(mediaType),
+        )
+    }
+
+    private fun parseTranscribeResponse(response: Response<TranscribeResponse>): TranscriptionResult {
+        if (!response.isSuccessful) {
+            val backendError = BackendErrorParser.parseRaw(response.errorBody()?.string())
+            val reason = transcribeFailureReasonForStatus(response.code())
+            when (reason) {
+                TranscriptionFailureReason.ProxyAuthFailed ->
+                    Log.w(TAG, "Transcribe auth/config error: HTTP ${response.code()}${backendError?.let { ", error=$it" } ?: ""}")
+                TranscriptionFailureReason.BackendUnavailable ->
+                    Log.w(TAG, "Transcribe backend unavailable: HTTP ${response.code()}${backendError?.let { ", error=$it" } ?: ""}")
+                else ->
+                    Log.w(TAG, "Transcribe failed: HTTP ${response.code()}${backendError?.let { ", error=$it" } ?: ""}")
+            }
+            return TranscriptionResult.Failure(reason)
+        }
+
+        val body = response.body()
+        if (body == null) {
+            Log.w(TAG, "Transcribe succeeded but body was missing")
+            return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+        }
+
+        val transcript = body.transcript.trim()
+        if (transcript.isBlank()) {
+            Log.w(TAG, "Transcribe succeeded but transcript was blank")
+            return TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
+        }
+
+        val detected = body.detectedLanguage.takeIf { it.isNotBlank() }?.let { rawDetected ->
+            val normalized = normalizeDetectedLanguageCode(rawDetected)
+            if (normalized == null) {
+                Log.w(TAG, "Ignoring invalid detected language from backend: $rawDetected")
+            }
+            normalized
+        }
+
+        return TranscriptionResult.Success(
+            transcript = transcript,
+            detectedLanguage = detected,
+        )
+    }
+
+    internal companion object {
+        private const val TAG = "WraitBackendClient"
+        // Three attempts keeps transient failures recoverable without stretching the
+        // happy-path UX too far for a single tap-to-record flow.
+        private const val MAX_REGISTER_RETRIES = 3
+        private const val BASE_REGISTER_RETRY_DELAY_MS = 1_000L
+        private const val MAX_TRANSCRIBE_RETRIES = 3
+        private const val BASE_TRANSCRIBE_RETRY_DELAY_MS = 1_000L
     }
 }

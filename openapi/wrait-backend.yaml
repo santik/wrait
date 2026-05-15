@@ -41,8 +41,9 @@ paths:
       operationId: transcribeAudio
       summary: Proxy audio transcription
       description: |
-        Accepts raw audio bytes, applies backend defaults for the upstream
-        Deepgram request, and returns the upstream JSON payload.
+        Accepts an audio upload as multipart form data, applies backend defaults
+        for the upstream Deepgram request, and returns the normalized backend
+        JSON payload.
       security:
         - ProxySecretHeader: []
       parameters:
@@ -50,22 +51,19 @@ paths:
       requestBody:
         required: true
         content:
-          audio/mp4:
+          multipart/form-data:
             schema:
-              type: string
-              format: binary
-          audio/m4a:
-            schema:
-              type: string
-              format: binary
-          audio/wav:
-            schema:
-              type: string
-              format: binary
-          audio/webm:
-            schema:
-              type: string
-              format: binary
+              type: object
+              required:
+                - audio
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Audio recording file to transcribe.
+            encoding:
+              audio:
+                contentType: audio/mp4, audio/m4a, audio/wav, audio/webm
       responses:
         '200':
           description: Transcription completed successfully

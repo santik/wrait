@@ -20,14 +20,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object GeneratedBackendApiModule {
     /**
-     * Wires the build-generated OpenAPI client used for register/cleanup.
+     * Wires the build-generated OpenAPI client used for register, cleanup, and transcribe.
      *
      * To regenerate the client:
      * - update `openapi/wrait-backend.yaml`
      * - run `./gradlew :app:openApiGenerate`
-     *
-     * The transcribe upload path is intentionally not generated because the current
-     * Retrofit byte-array body generation was not reliable for this endpoint.
      */
 
     private const val REQUEST_TIMEOUT_MS = 60_000L
