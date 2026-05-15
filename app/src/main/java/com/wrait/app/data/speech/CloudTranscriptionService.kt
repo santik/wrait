@@ -3,38 +3,36 @@ package com.wrait.app.data.speech
 import android.content.Context
 import android.media.MediaRecorder
 import android.util.Log
-import com.wrait.app.data.api.WraitBackendClient
+import com.wrait.app.data.api.DeviceIdUnavailableException
+import com.wrait.app.data.api.TranscribeUploadClient
+import com.wrait.app.data.api.TranscribeHttpResponse
+import com.wrait.app.data.api.isNetworkTimeout
+import com.wrait.app.data.api.generated.model.TranscribeResponse
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.model.normalizeDetectedLanguageCode
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.ktor.client.plugins.HttpRequestTimeoutException
-import io.ktor.client.statement.HttpResponse
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.isSuccess
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 
 /**
  * Cloud speech-to-text service for Best mode.
  *
  * Audio is recorded locally, then sent to the backend proxy at `/api/transcribe`.
- * The proxy is expected to return a Deepgram-compatible response body so the app can
- * preserve its existing transcript and detected-language parsing behavior.
+ * The proxy returns the normalized OpenAPI contract shared with the backend.
  */
 @Singleton
 class CloudTranscriptionService @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val wraitBackendClient: WraitBackendClient,
+    private val transcribeUploadClient: TranscribeUploadClient,
     @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : TranscriptionService {
 
@@ -142,48 +140,56 @@ class CloudTranscriptionService @Inject constructor(
     private suspend fun upload(file: File): TranscriptionResult {
         repeat(MAX_UPLOAD_RETRIES) { attempt ->
             try {
-                val bytes = withContext(ioDispatcher) { file.readBytes() }
-                Log.d(TAG, "Uploading ${bytes.size} bytes via backend proxy (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES)")
-                val response: HttpResponse = callTranscribeEndpoint(bytes)
+                Log.d(TAG, "Uploading ${file.length()} bytes via backend proxy (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES)")
+                val response = callTranscribeEndpoint(file)
                 return parseResponse(response)
-            } catch (e: HttpRequestTimeoutException) {
-                Log.w(TAG, "Backend proxy timed out (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
-                if (attempt < MAX_UPLOAD_RETRIES - 1) {
-                    delay(RETRY_BASE_DELAY_MS shl attempt)
-                } else {
-                    return TranscriptionResult.Failure(TranscriptionFailureReason.BackendUnavailable)
-                }
             } catch (e: IOException) {
+                if (e.isNetworkTimeout()) {
+                    Log.w(TAG, "Backend proxy timed out (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
+                    if (attempt < MAX_UPLOAD_RETRIES - 1) {
+                        delay(RETRY_BASE_DELAY_MS shl attempt)
+                    } else {
+                        return TranscriptionResult.Failure(TranscriptionFailureReason.BackendUnavailable)
+                    }
+                    return@repeat
+                }
+
                 Log.w(TAG, "Network error (attempt ${attempt + 1}/$MAX_UPLOAD_RETRIES): ${e.message}")
                 if (attempt < MAX_UPLOAD_RETRIES - 1) {
                     delay(RETRY_BASE_DELAY_MS shl attempt) // 1 s, 2 s, 4 s
                 }
+            } catch (e: SerializationException) {
+                Log.w(TAG, "Backend proxy returned an invalid transcript payload: ${e.message}")
+                return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
+            } catch (e: DeviceIdUnavailableException) {
+                Log.e(TAG, "Backend proxy upload could not resolve device id", e)
+                return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
             } catch (e: Exception) {
-                Log.w(TAG, "Backend proxy request failed: ${e.javaClass.simpleName}: ${e.message}")
-                return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
+                Log.e(TAG, "Backend proxy request failed unexpectedly", e)
+                return TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
             }
         }
         return TranscriptionResult.Failure(TranscriptionFailureReason.NetworkError)
     }
 
-    private suspend fun callTranscribeEndpoint(bytes: ByteArray): HttpResponse {
-        return wraitBackendClient.transcribe(bytes)
+    private suspend fun callTranscribeEndpoint(file: File): TranscribeHttpResponse {
+        return transcribeUploadClient.transcribe(file)
     }
 
-    private suspend fun parseResponse(response: HttpResponse): TranscriptionResult {
-        return if (response.status.isSuccess()) {
-            val body = jsonParser.decodeFromString<DeepgramResponse>(response.bodyAsText())
-            if (body.results.channels.isEmpty()) {
-                Log.w(TAG, "Deepgram response has no channels")
-                TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
+    private fun parseResponse(response: TranscribeHttpResponse): TranscriptionResult {
+        return if (response.statusCode in 200..299) {
+            val responseBody = response.body
+            if (responseBody.isNullOrBlank()) {
+                Log.w(TAG, "Backend proxy returned HTTP ${response.statusCode} with an empty body")
+                TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
             } else {
-                val channel = body.results.channels[0]
-                val transcript = channel.alternatives.firstOrNull()?.transcript.orEmpty()
+                val body = jsonParser.decodeFromString<TranscribeResponse>(responseBody)
+                val transcript = body.transcript.trim()
                 if (transcript.isBlank()) {
-                    Log.w(TAG, "Deepgram response contained empty transcript")
+                    Log.w(TAG, "Backend proxy response contained empty transcript")
                     TranscriptionResult.Failure(TranscriptionFailureReason.NothingCaught)
                 } else {
-                    val rawDetected = channel.detected_language?.takeIf { it.isNotBlank() }
+                    val rawDetected = body.detectedLanguage.takeIf { it.isNotBlank() }
                     val detected = normalizeDetectedLanguageCode(rawDetected)
                     if (rawDetected != null && detected == null) {
                         Log.w(TAG, "Ignoring invalid detected language from backend: $rawDetected")
@@ -193,14 +199,14 @@ class CloudTranscriptionService @Inject constructor(
                 }
             }
         } else {
-            val reason = transcriptionFailureReasonForStatus(response.status)
+            val reason = transcriptionFailureReasonForStatus(response.statusCode)
             when (reason) {
                 TranscriptionFailureReason.ProxyAuthFailed ->
-                    Log.w(TAG, "Backend proxy auth/config error: HTTP ${response.status.value}")
+                    Log.w(TAG, "Backend proxy auth/config error: HTTP ${response.statusCode}")
                 TranscriptionFailureReason.BackendUnavailable ->
-                    Log.w(TAG, "Backend proxy unavailable: HTTP ${response.status.value}")
+                    Log.w(TAG, "Backend proxy unavailable: HTTP ${response.statusCode}")
                 else ->
-                    Log.w(TAG, "Backend proxy returned error: HTTP ${response.status.value}")
+                    Log.w(TAG, "Backend proxy returned error: HTTP ${response.statusCode}")
             }
             TranscriptionResult.Failure(reason)
         }
@@ -234,37 +240,27 @@ class CloudTranscriptionService @Inject constructor(
 
     private companion object {
         private const val TAG = "CloudTranscriptionService"
+        // Keeps recording sessions aligned with the product's two-minute cap.
         private const val HARD_CAP_MS = 2 * 60 * 1_000L
+        // Rejects near-empty recordings that only contain container metadata.
         private const val MIN_FILE_SIZE_BYTES = 1_024L
+        // Caps uploads to a size that the backend and device memory budget can tolerate.
         private const val MAX_FILE_SIZE_BYTES = 10 * 1_024 * 1_024L  // 10 MB
+        // Retries transient upload failures without stretching the happy path too long.
         private const val MAX_UPLOAD_RETRIES = 3
+        // Exponential backoff base: 1 s, 2 s, then 4 s.
         private const val RETRY_BASE_DELAY_MS = 1_000L
         private val jsonParser = Json { ignoreUnknownKeys = true }
     }
 }
 
-internal fun transcriptionFailureReasonForStatus(status: HttpStatusCode): TranscriptionFailureReason {
+internal fun transcriptionFailureReasonForStatus(statusCode: Int): TranscriptionFailureReason {
     return when {
-        status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden ->
+        statusCode == 401 || statusCode == 403 ->
             TranscriptionFailureReason.ProxyAuthFailed
-        status.value >= 500 ->
+        statusCode >= 500 ->
             TranscriptionFailureReason.BackendUnavailable
         else ->
             TranscriptionFailureReason.ApiError
     }
 }
-
-@Serializable
-private data class DeepgramResponse(val results: DeepgramResults)
-
-@Serializable
-private data class DeepgramResults(val channels: List<DeepgramChannel>)
-
-@Serializable
-private data class DeepgramChannel(
-    val alternatives: List<DeepgramAlternative>,
-    val detected_language: String? = null,
-)
-
-@Serializable
-private data class DeepgramAlternative(val transcript: String)

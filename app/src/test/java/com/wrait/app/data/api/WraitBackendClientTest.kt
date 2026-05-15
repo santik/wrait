@@ -1,36 +1,42 @@
 package com.wrait.app.data.api
 
-import io.ktor.client.engine.mock.MockEngine
-import io.ktor.client.engine.mock.respond
-import io.ktor.http.Headers
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.Url
-import io.ktor.http.headersOf
+import com.wrait.app.data.api.generated.api.DefaultApi
+import com.wrait.app.data.api.generated.auth.ApiKeyAuth
+import com.wrait.app.data.api.generated.infrastructure.ApiClient
+import com.wrait.app.data.api.generated.infrastructure.Serializer
+import com.wrait.app.data.api.generated.model.CleanupRequest
+import com.wrait.app.data.api.generated.model.CleanupResponse
+import com.wrait.app.data.api.generated.model.RegisterResponse
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.ResponseBody.Companion.toResponseBody
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import retrofit2.Response
+import retrofit2.converter.kotlinx.serialization.asConverterFactory
+import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.io.IOException
+import java.net.SocketTimeoutException
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class WraitBackendClientTest {
 
     private fun TestScope.createClient(
-        engine: MockEngine,
-        overrideDeviceId: String? = null,
-    ): WraitBackendClient = WraitBackendClient(
-        engine = engine,
-        overrideDeviceId = overrideDeviceId,
-        ioDispatcher = UnconfinedTestDispatcher(testScheduler),
-    )
+        api: DefaultApi,
+    ): WraitBackendClient = WraitBackendClient(api)
 
     @Test
     fun register_201_returnsSuccess() = runTest {
-        val engine = MockEngine { respond("", HttpStatusCode.Created, headersOf()) }
-        val client = createClient(engine)
+        val client = createClient(
+            api = fakeApi(
+                register = { Response.success(RegisterResponse(ok = true)) },
+            ),
+        )
 
         val result = client.register("a".repeat(64))
 
@@ -39,8 +45,11 @@ class WraitBackendClientTest {
 
     @Test
     fun register_200_returnsSuccess() = runTest {
-        val engine = MockEngine { respond("", HttpStatusCode.OK, headersOf()) }
-        val client = createClient(engine)
+        val client = createClient(
+            api = fakeApi(
+                register = { Response.success(RegisterResponse(ok = true)) },
+            ),
+        )
 
         val result = client.register("a".repeat(64))
 
@@ -49,8 +58,11 @@ class WraitBackendClientTest {
 
     @Test
     fun register_400_returnsFailure() = runTest {
-        val engine = MockEngine { respond("", HttpStatusCode.BadRequest, headersOf()) }
-        val client = createClient(engine)
+        val client = createClient(
+            api = fakeApi(
+                register = { errorResponse(400) },
+            ),
+        )
 
         val result = client.register("a".repeat(64))
 
@@ -59,31 +71,12 @@ class WraitBackendClientTest {
     }
 
     @Test
-    fun register_429_returnsFailure() = runTest {
-        val engine = MockEngine { respond("", HttpStatusCode.TooManyRequests, headersOf()) }
-        val client = createClient(engine)
-
-        val result = client.register("a".repeat(64))
-
-        assertTrue(result is RegistrationResult.Failure)
-        assertEquals("http 429", (result as RegistrationResult.Failure).reason)
-    }
-
-    @Test
-    fun register_500_returnsFailure() = runTest {
-        val engine = MockEngine { respond("", HttpStatusCode.InternalServerError, headersOf()) }
-        val client = createClient(engine)
-
-        val result = client.register("a".repeat(64))
-
-        assertTrue(result is RegistrationResult.Failure)
-        assertEquals("http 500", (result as RegistrationResult.Failure).reason)
-    }
-
-    @Test
     fun register_networkException_returnsFailure() = runTest {
-        val engine = MockEngine { throw IOException("no route to host") }
-        val client = createClient(engine)
+        val client = createClient(
+            api = fakeApi(
+                register = { throw IOException("no route to host") },
+            ),
+        )
 
         val result = client.register("a".repeat(64))
 
@@ -92,34 +85,78 @@ class WraitBackendClientTest {
     }
 
     @Test
+    fun register_timeout_returnsFailure() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                register = { throw SocketTimeoutException("timeout") },
+            ),
+        )
+
+        val result = client.register("a".repeat(64))
+
+        assertTrue(result is RegistrationResult.Failure)
+        assertEquals("timeout", (result as RegistrationResult.Failure).reason)
+    }
+
+    @Test
+    fun register_retriesTransientHttpFailures() = runTest {
+        var attempts = 0
+        val client = createClient(
+            api = fakeApi(
+                register = {
+                    attempts += 1
+                    if (attempts < 3) errorResponse(503) else Response.success(RegisterResponse(ok = true))
+                },
+            ),
+        )
+
+        val result = client.register("a".repeat(64))
+
+        assertEquals(3, attempts)
+        assertEquals(RegistrationResult.Success, result)
+    }
+
+    @Test
+    fun register_unexpectedException_returnsUnexpectedError() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                register = { throw IllegalStateException("boom") },
+            ),
+        )
+
+        val result = client.register("a".repeat(64))
+
+        assertTrue(result is RegistrationResult.Failure)
+        assertEquals("unexpected error", (result as RegistrationResult.Failure).reason)
+    }
+
+    @Test
     fun register_sendsCorrectHeaders() = runTest {
-        val deviceId = "a".repeat(64)
-        var capturedHeaders: Headers? = null
-        val engine = MockEngine { request ->
-            capturedHeaders = request.headers
-            respond("", HttpStatusCode.Created, headersOf())
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setResponseCode(201).setBody("""{"ok":true}"""))
+            val client = createClient(api = createRealApi(server))
+            val deviceId = "a".repeat(64)
+
+            client.register(deviceId)
+
+            val request = server.takeRequest()
+            assertEquals("/api/register", request.path)
+            assertEquals(deviceId, request.getHeader("X-Device-Id"))
+            assertEquals(TEST_PROXY_SECRET, request.getHeader("X-Proxy-Secret"))
         }
-        val client = createClient(engine)
-
-        client.register(deviceId)
-
-        assertNotNull(capturedHeaders)
-        val headers = requireNotNull(capturedHeaders)
-        assertEquals(deviceId, headers["X-Device-Id"])
-        // PROXY_SECRET is "" in test builds (no local.properties in CI)
-        assertNotNull(headers["X-Proxy-Secret"])
     }
 
     @Test
     fun cleanupTranscript_200_returnsCleanedText() = runTest {
-        val engine = MockEngine {
-            respond(
-                content = """{"cleanedText":"hello world"}""",
-                status = HttpStatusCode.OK,
-                headers = headersOf(),
-            )
-        }
-        val client = createClient(engine)
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, request ->
+                    assertEquals("um hello world", request.transcript)
+                    assertEquals(CleanupRequest.Language.enMinusUS, request.language)
+                    Response.success(CleanupResponse(cleanedText = "hello world", wasTruncated = false))
+                },
+            ),
+        )
 
         val result = client.cleanupTranscript(
             transcript = "um hello world",
@@ -132,9 +169,47 @@ class WraitBackendClientTest {
     }
 
     @Test
+    fun cleanupTranscript_unsupportedLanguage_returnsFailure() = runTest {
+        val client = createClient(api = fakeApi())
+
+        val result = client.cleanupTranscript(
+            transcript = "hello world",
+            language = "eo",
+            deviceId = "a".repeat(64),
+        )
+
+        assertTrue(result is CleanupResult.Failure)
+        assertEquals("unsupported language", (result as CleanupResult.Failure).reason)
+    }
+
+    @Test
+    fun cleanupTranscript_uppercaseNorwegian_mapsToGeneratedEnum() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, request ->
+                    assertEquals(CleanupRequest.Language.no, request.language)
+                    Response.success(CleanupResponse(cleanedText = "hei", wasTruncated = false))
+                },
+            ),
+        )
+
+        val result = client.cleanupTranscript(
+            transcript = "hei verden",
+            language = "NO",
+            deviceId = "a".repeat(64),
+        )
+
+        assertTrue(result is CleanupResult.Success)
+        assertEquals("hei", (result as CleanupResult.Success).cleanedText)
+    }
+
+    @Test
     fun cleanupTranscript_non2xx_returnsFailure() = runTest {
-        val engine = MockEngine { respond("", HttpStatusCode.InternalServerError, headersOf()) }
-        val client = createClient(engine)
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, _ -> errorResponse(500) },
+            ),
+        )
 
         val result = client.cleanupTranscript(
             transcript = "hello world",
@@ -148,8 +223,11 @@ class WraitBackendClientTest {
 
     @Test
     fun cleanupTranscript_networkException_returnsFailure() = runTest {
-        val engine = MockEngine { throw IOException("no route to host") }
-        val client = createClient(engine)
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, _ -> throw IOException("no route to host") },
+            ),
+        )
 
         val result = client.cleanupTranscript(
             transcript = "hello world",
@@ -162,29 +240,75 @@ class WraitBackendClientTest {
     }
 
     @Test
-    fun transcribe_usesLanguageDetectionParams_withoutLanguageOrPunctuate() = runTest {
-        var capturedUrl: Url? = null
-        var capturedHeaders: Headers? = null
-        val engine = MockEngine { request ->
-            capturedUrl = request.url
-            capturedHeaders = request.headers
-            respond("{}", HttpStatusCode.OK, headersOf())
+    fun cleanupTranscript_unexpectedException_returnsUnexpectedError() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, _ -> throw IllegalStateException("boom") },
+            ),
+        )
+
+        val result = client.cleanupTranscript(
+            transcript = "hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertTrue(result is CleanupResult.Failure)
+        assertEquals("unexpected error", (result as CleanupResult.Failure).reason)
+    }
+
+    private fun createRealApi(server: MockWebServer): DefaultApi {
+        return ApiClient(
+            baseUrl = server.url("/").toString(),
+            okHttpClientBuilder = OkHttpClient.Builder(),
+            converterFactories = listOf(
+                ScalarsConverterFactory.create(),
+                Serializer.kotlinxSerializationJson.asConverterFactory("application/json".toMediaType()),
+            ),
+        ).apply {
+            addAuthorization(
+                authName = "ProxySecretHeader",
+                authorization = ApiKeyAuth(
+                    location = "header",
+                    paramName = "X-Proxy-Secret",
+                    apiKey = TEST_PROXY_SECRET,
+                ),
+            )
+        }.createService(DefaultApi::class.java)
+    }
+
+    private fun fakeApi(
+        register: suspend (String) -> Response<RegisterResponse> = { Response.success(RegisterResponse(ok = true)) },
+        cleanup: suspend (String, CleanupRequest) -> Response<CleanupResponse> =
+            { _, _ -> Response.success(CleanupResponse(cleanedText = "ok", wasTruncated = false)) },
+    ): DefaultApi {
+        return object : DefaultApi {
+            override suspend fun cleanupTranscript(
+                xDeviceId: String,
+                cleanupRequest: CleanupRequest,
+            ): Response<CleanupResponse> = cleanup(xDeviceId, cleanupRequest)
+
+            override suspend fun registerDevice(
+                xDeviceId: String,
+            ): Response<RegisterResponse> = register(xDeviceId)
+
+            override suspend fun transcribeAudio(
+                xDeviceId: String,
+                body: ByteArray,
+            ): Response<com.wrait.app.data.api.generated.model.TranscribeResponse> {
+                error("Transcribe is owned by OkHttpTranscribeUploadClient tests")
+            }
         }
-        val client = createClient(engine, overrideDeviceId = "device-123")
+    }
 
-        client.transcribe(audioBytes = byteArrayOf(1, 2, 3))
+    private fun <T> errorResponse(code: Int): Response<T> {
+        return Response.error(
+            code,
+            """{"error":"boom"}""".toResponseBody("application/json".toMediaType()),
+        )
+    }
 
-        val url = requireNotNull(capturedUrl)
-        assertEquals("/api/transcribe", url.encodedPath)
-        assertEquals("nova-3-general", url.parameters["model"])
-        assertEquals("true", url.parameters["smart_format"])
-        assertEquals("true", url.parameters["detect_language"])
-        assertEquals("false", url.parameters["utterances"])
-        assertEquals("true", url.parameters["filler_words"])
-        assertNull(url.parameters["language"])
-        assertNull(url.parameters["punctuate"])
-
-        val headers = requireNotNull(capturedHeaders)
-        assertEquals("device-123", headers["X-Device-Id"])
+    private companion object {
+        const val TEST_PROXY_SECRET = "proxy-secret"
     }
 }
