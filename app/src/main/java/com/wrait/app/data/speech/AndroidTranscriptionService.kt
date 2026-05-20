@@ -16,6 +16,12 @@ class AndroidTranscriptionService @Inject constructor(
 
         speechRecognizerManager.listen(languageCode, preferOffline = true).collect { event ->
             when (event) {
+                is RecognitionResult.RecordingStarted ->
+                    onStatus(
+                        TranscriptionStatus.RecordingStarted(
+                            event.hardCapDeadlineElapsedRealtime,
+                        ),
+                    )
                 RecognitionResult.ListeningEnded -> onStatus(TranscriptionStatus.RecordingEnded)
                 is RecognitionResult.Final       -> result = TranscriptionResult.Success(event.text)
                 is RecognitionResult.Error       -> result = TranscriptionResult.Failure(event.error.toFailureReason())

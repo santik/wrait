@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.wrait.app.R
+import com.wrait.app.RecordingCountdownState
 import com.wrait.app.RecordingState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.EntryStats
@@ -51,6 +52,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun MainScreen(
     recordingState: RecordingState,
+    recordingCountdown: RecordingCountdownState?,
     showBlockedMessage: Boolean,
     shakeErrorKey: Int,
     stats: EntryStats,
@@ -128,6 +130,7 @@ fun MainScreen(
             actionButton = {
                 ButtonArea(
                     recordingState = recordingState,
+                    recordingCountdown = recordingCountdown,
                     showBlockedMessage = showBlockedMessage,
                     shakeErrorKey = shakeErrorKey,
                     onTap = onButtonTap,

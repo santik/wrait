@@ -33,11 +33,17 @@ interface TranscriptionService {
     fun stopRecording()
 }
 
-enum class TranscriptionStatus {
+sealed interface TranscriptionStatus {
+    /** Recording has actually started and will hard-stop at the provided deadline. */
+    data class RecordingStarted(
+        val hardCapDeadlineElapsedRealtime: Long,
+    ) : TranscriptionStatus
+
     /** Android backend: recording phase ended (after ListeningEnded). */
-    RecordingEnded,
-    /** Whisper backend: audio file is being uploaded. */
-    Uploading
+    data object RecordingEnded : TranscriptionStatus
+
+    /** Whisper/backend mode: audio file is being uploaded. */
+    data object Uploading : TranscriptionStatus
 }
 
 sealed class TranscriptionResult {

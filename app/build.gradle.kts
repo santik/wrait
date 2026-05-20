@@ -17,6 +17,7 @@ if (localPropertiesFile.exists()) {
 val privacyMode: String = localProperties.getProperty("PRIVACY_MODE", "MODE_BEST")
 val backendUrl: String = localProperties.getProperty("BACKEND_URL", "https://wrait-backend.vercel.app")
 val proxySecret: String = localProperties.getProperty("PROXY_SECRET", "")
+val recordingHardCapMsRaw: String = localProperties.getProperty("RECORDING_HARD_CAP_MS", "120000").trim()
 val devRaw: String = localProperties.getProperty("DEV", "false").trim().lowercase()
 val posthogApiKey: String = localProperties.getProperty("POSTHOG_API_KEY", "")
 val posthogHost: String = localProperties.getProperty("POSTHOG_HOST", "https://us.i.posthog.com")
@@ -26,6 +27,10 @@ require(devRaw == "true" || devRaw == "false") {
 }
 require(posthogEnabledRaw == "true" || posthogEnabledRaw == "false") {
     "POSTHOG_ENABLED in local.properties must be true or false, got: \"$posthogEnabledRaw\""
+}
+val recordingHardCapMs = recordingHardCapMsRaw.toLongOrNull()
+require(recordingHardCapMs != null && recordingHardCapMs > 0L) {
+    "RECORDING_HARD_CAP_MS in local.properties must be a positive integer, got: \"$recordingHardCapMsRaw\""
 }
 val keystorePath: String? = localProperties.getProperty("KEYSTORE_PATH")
 val releaseKeystorePassword: String? = localProperties.getProperty("KEYSTORE_PASSWORD")
@@ -54,6 +59,7 @@ android {
         buildConfigField("String", "PRIVACY_MODE", "\"$privacyMode\"")
         buildConfigField("String", "BACKEND_URL", "\"$backendUrl\"")
         buildConfigField("String", "PROXY_SECRET", "\"$proxySecret\"")
+        buildConfigField("long", "RECORDING_HARD_CAP_MS", "${recordingHardCapMs}L")
         buildConfigField("boolean", "DEV", devRaw)
         buildConfigField("String", "POSTHOG_API_KEY", "\"$posthogApiKey\"")
         buildConfigField("String", "POSTHOG_HOST", "\"$posthogHost\"")

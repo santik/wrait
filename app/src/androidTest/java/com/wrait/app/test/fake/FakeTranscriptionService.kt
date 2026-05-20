@@ -26,12 +26,14 @@ class FakeTranscriptionService : TranscriptionService {
         TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
     var transcribeGate: CompletableDeferred<Unit>? = null
     var transcribeCallCount: Int = 0
+    var recordingStartDeadlineElapsedRealtime: Long? = null
 
     fun reset() {
         nextResult = FakeResult.FinalTranscript("one two three four five")
         nextAudioDraftResult = TranscriptionResult.Failure(TranscriptionFailureReason.ApiError)
         transcribeGate = null
         transcribeCallCount = 0
+        recordingStartDeadlineElapsedRealtime = null
     }
 
     override suspend fun transcribe(
@@ -39,6 +41,13 @@ class FakeTranscriptionService : TranscriptionService {
         onStatus: (TranscriptionStatus) -> Unit
     ): TranscriptionResult {
         transcribeCallCount += 1
+        recordingStartDeadlineElapsedRealtime?.let { deadline ->
+            onStatus(
+                TranscriptionStatus.RecordingStarted(
+                    hardCapDeadlineElapsedRealtime = deadline,
+                ),
+            )
+        }
         transcribeGate?.await()
         onStatus(TranscriptionStatus.RecordingEnded)
         return when (val r = nextResult) {

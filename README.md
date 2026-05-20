@@ -119,8 +119,10 @@ By default, the app uses `https://wrait-backend.vercel.app` as `BACKEND_URL`. If
    PRIVACY_MODE=MODE_BEST
    BACKEND_URL=https://wrait-backend.vercel.app
    PROXY_SECRET=...
+   RECORDING_HARD_CAP_MS=120000
    ```
    Set `PRIVACY_MODE=MODE_OFFLINE` to default to on-device-only mode.
+   Set `RECORDING_HARD_CAP_MS` to change the build-time recording cap in milliseconds.
 
 3. Open in Android Studio and sync Gradle.
 

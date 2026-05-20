@@ -122,6 +122,77 @@ class MainRecordingControllerTest {
     }
 
     @Test
+    fun recordingStarted_exposesCountdownWhileListening() = runTest(testDispatcher) {
+        fakeTranscription.recordingStartDeadlineElapsedRealtime = 123_456L
+        fakeTranscription.transcribeGate = CompletableDeferred()
+        val controller = buildController()
+
+        try {
+            controller.onMainButtonTapped()
+
+            assertEquals(
+                RecordingCountdownState(hardCapDeadlineElapsedRealtime = 123_456L),
+                controller.recordingCountdown.value,
+            )
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun manualStop_clearsCountdownImmediately() = runTest(testDispatcher) {
+        fakeTranscription.recordingStartDeadlineElapsedRealtime = 123_456L
+        fakeTranscription.transcribeGate = CompletableDeferred()
+        val controller = buildController()
+
+        try {
+            controller.onMainButtonTapped()
+            assertNotNull(controller.recordingCountdown.value)
+
+            controller.onMainButtonTapped()
+
+            assertNull(controller.recordingCountdown.value)
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun permissionRevoked_clearsCountdownImmediately() = runTest(testDispatcher) {
+        fakeTranscription.recordingStartDeadlineElapsedRealtime = 123_456L
+        fakeTranscription.transcribeGate = CompletableDeferred()
+        val controller = buildController()
+
+        try {
+            controller.onMainButtonTapped()
+            assertNotNull(controller.recordingCountdown.value)
+
+            controller.onPermissionRevoked()
+
+            assertNull(controller.recordingCountdown.value)
+            assertEquals(RecordingState.Idle, controller.recordingState.value)
+        } finally {
+            fakeTranscription.transcribeGate?.complete(Unit)
+        }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun recordingCompletion_clearsCountdown() = runTest(testDispatcher) {
+        fakeTranscription.recordingStartDeadlineElapsedRealtime = 123_456L
+        fakeTranscription.nextResult =
+            FakeTranscriptionService.FakeResult.FinalTranscript("one two three four five")
+        val controller = buildController()
+
+        controller.onMainButtonTapped()
+        advanceUntilIdle()
+
+        assertNull(controller.recordingCountdown.value)
+    }
+
+    @Test
     fun bestMode_offline_emitsImmediateError_withoutStartingRecording() = runTest(testDispatcher) {
         fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
         fakeNetworkAvailability.isAvailable = false
