@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import android.content.Intent
 import android.os.CountDownTimer
+import android.os.SystemClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -132,11 +133,18 @@ open class SpeechRecognizerManager @Inject constructor(
                         if (!timerStarted) {
                             timerStarted = true
                             sessionStartTime = System.currentTimeMillis()
+                            val hardCapDeadlineElapsedRealtime =
+                                SystemClock.elapsedRealtime() + RecognitionConfig.HardCapMs
                             timer?.cancel()
                             timer = object : CountDownTimer(RecognitionConfig.HardCapMs, 1000) {
                                 override fun onTick(millisUntilFinished: Long) = Unit
                                 override fun onFinish() { stopListening() }
                             }.start()
+                            trySend(
+                                RecognitionResult.RecordingStarted(
+                                    hardCapDeadlineElapsedRealtime = hardCapDeadlineElapsedRealtime,
+                                ),
+                            )
                         }
                     }
                 }
@@ -302,6 +310,9 @@ open class SpeechRecognizerManager @Inject constructor(
 }
 
 sealed class RecognitionResult {
+    data class RecordingStarted(
+        val hardCapDeadlineElapsedRealtime: Long,
+    ) : RecognitionResult()
     data class Partial(val text: String) : RecognitionResult()
     data class Final(val text: String) : RecognitionResult()
     data class Error(val error: RecognizerError) : RecognitionResult()

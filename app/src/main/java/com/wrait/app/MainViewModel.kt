@@ -92,6 +92,7 @@ class MainViewModel @Inject constructor(
     )
 
     val recordingState: StateFlow<RecordingState> = recordingController.recordingState
+    val recordingCountdown: StateFlow<RecordingCountdownState?> = recordingController.recordingCountdown
 
     // Incremented on each NoMatch / TooShort error so ButtonArea can fire a shake
     // even when two identical error states are emitted in succession.

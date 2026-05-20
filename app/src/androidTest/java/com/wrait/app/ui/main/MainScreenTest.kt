@@ -1,5 +1,4 @@
 package com.wrait.app.ui.main
-
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected

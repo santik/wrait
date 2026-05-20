@@ -2,6 +2,7 @@ package com.wrait.app.data.speech
 
 import android.content.Context
 import android.media.MediaRecorder
+import android.os.SystemClock
 import android.util.Log
 import com.wrait.app.data.api.WraitBackendClient
 import com.wrait.app.di.IoDispatcher
@@ -38,7 +39,13 @@ class CloudTranscriptionService @Inject constructor(
         var keepFileAsDraft = false
         var draftPath: String? = null
         return try {
-            record(tempFile)
+            record(tempFile) { hardCapDeadlineElapsedRealtime ->
+                onStatus(
+                    TranscriptionStatus.RecordingStarted(
+                        hardCapDeadlineElapsedRealtime = hardCapDeadlineElapsedRealtime,
+                    ),
+                )
+            }
             val sizeFailure = CloudTranscriptionFilePolicy.failureReasonForRecordedFileSize(tempFile.length())
             if (sizeFailure != null) {
                 Log.w(TAG, "Recording rejected after capture: size=${tempFile.length()} bytes, reason=$sizeFailure")
@@ -92,7 +99,10 @@ class CloudTranscriptionService @Inject constructor(
         return upload(file)
     }
 
-    private suspend fun record(file: File) = withContext(ioDispatcher) {
+    private suspend fun record(
+        file: File,
+        onRecordingStarted: (Long) -> Unit,
+    ) = withContext(ioDispatcher) {
         @Suppress("DEPRECATION")
         val recorder = MediaRecorder()
         recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
@@ -106,6 +116,7 @@ class CloudTranscriptionService @Inject constructor(
         try {
             recorder.prepare()
             recorder.start()
+            onRecordingStarted(SystemClock.elapsedRealtime() + RecognitionConfig.HardCapMs)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start recorder: ${e.message}")
             recorder.release()
@@ -114,7 +125,7 @@ class CloudTranscriptionService @Inject constructor(
 
         Log.d(TAG, "Recording started: ${file.name}")
 
-        withTimeoutOrNull(HARD_CAP_MS) {
+        withTimeoutOrNull(RecognitionConfig.HardCapMs) {
             stopSignal.await()
         }
 
@@ -132,10 +143,7 @@ class CloudTranscriptionService @Inject constructor(
         Log.d(TAG, "Uploading ${file.length()} bytes via backend proxy")
         return wraitBackendClient.transcribeAudio(file)
     }
-
     private companion object {
         private const val TAG = "CloudTranscriptionService"
-        // Keeps recording sessions aligned with the product's two-minute cap.
-        private const val HARD_CAP_MS = 2 * 60 * 1_000L
     }
 }

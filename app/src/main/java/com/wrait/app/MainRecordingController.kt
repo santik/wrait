@@ -44,6 +44,9 @@ class MainRecordingController @Inject constructor(
     private val _recordingState = MutableStateFlow<RecordingState>(RecordingState.Idle)
     val recordingState: StateFlow<RecordingState> = _recordingState.asStateFlow()
 
+    private val _recordingCountdown = MutableStateFlow<RecordingCountdownState?>(null)
+    val recordingCountdown: StateFlow<RecordingCountdownState?> = _recordingCountdown.asStateFlow()
+
     private val _shakeErrorKey = MutableStateFlow(0)
     val shakeErrorKey: StateFlow<Int> = _shakeErrorKey.asStateFlow()
 
@@ -73,6 +76,7 @@ class MainRecordingController @Inject constructor(
 
     /** Resets the state to [RecordingState.Idle] without starting a new recording. */
     fun resetToIdle() {
+        clearRecordingCountdown()
         _recordingState.value = RecordingState.Idle
     }
 
@@ -94,6 +98,7 @@ class MainRecordingController @Inject constructor(
     private fun startListening() {
         resetJob?.cancel()
         listenJob?.cancel()
+        clearRecordingCountdown()
 
         scope.launch {
             val privacyMode = preferencesRepository.privacyMode.first()
@@ -124,12 +129,22 @@ class MainRecordingController @Inject constructor(
                 val selectedLanguage = selectedLanguageState.value
                 val result = transcriptionService.transcribe(selectedLanguage) { status ->
                     when (status) {
-                        TranscriptionStatus.RecordingEnded ->
+                        is TranscriptionStatus.RecordingStarted -> {
+                            _recordingCountdown.value = RecordingCountdownState(
+                                hardCapDeadlineElapsedRealtime = status.hardCapDeadlineElapsedRealtime,
+                            )
+                        }
+                        TranscriptionStatus.RecordingEnded -> {
+                            clearRecordingCountdown()
                             _recordingState.value = RecordingState.Processing
-                        TranscriptionStatus.Uploading ->
+                        }
+                        TranscriptionStatus.Uploading -> {
+                            clearRecordingCountdown()
                             _recordingState.value = RecordingState.Uploading
+                        }
                     }
                 }
+                clearRecordingCountdown()
                 _recordingState.value = RecordingState.Processing
                 when (result) {
                     is TranscriptionResult.Success ->
@@ -155,15 +170,23 @@ class MainRecordingController @Inject constructor(
             val elapsed = System.currentTimeMillis() - listeningStartedAt
             if (elapsed < MIN_RECORDING_MS) {
                 transcriptionService.stopRecording()
+                clearRecordingCountdown()
                 listenJob?.cancel()
                 scope.launch { emitError(RecognizerError.TooShort, lastKnownPrivacyMode) }
                 return
             }
         }
         transcriptionService.stopRecording()
+        clearRecordingCountdown()
         if (forceIdle) {
             listenJob?.cancel()
             _recordingState.value = RecordingState.Idle
+        }
+    }
+
+    private fun clearRecordingCountdown() {
+        if (_recordingCountdown.value != null) {
+            _recordingCountdown.value = null
         }
     }
 
@@ -310,6 +333,11 @@ class MainRecordingController @Inject constructor(
     }
 
 }
+
+/** Monotonic `SystemClock.elapsedRealtime()` deadline for the current recording hard cap. */
+data class RecordingCountdownState(
+    val hardCapDeadlineElapsedRealtime: Long,
+)
 
 private fun TranscriptionFailureReason.toRecognizerError(
     language: String = "",

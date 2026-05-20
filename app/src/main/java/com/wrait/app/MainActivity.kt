@@ -112,6 +112,7 @@ class MainActivity : FragmentActivity() {
                 var showBlockedMessage by remember { mutableStateOf(false) }
                 var hasRequestedPermission by remember { mutableStateOf(false) }
                 val recordingState by viewModel.recordingState.collectAsState()
+                val recordingCountdown by viewModel.recordingCountdown.collectAsStateWithLifecycle()
                 val shakeErrorKey by viewModel.shakeErrorKey.collectAsStateWithLifecycle()
                 val stats by viewModel.entryStats.collectAsStateWithLifecycle()
                 val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
@@ -228,6 +229,7 @@ class MainActivity : FragmentActivity() {
                 AppNavHost(
                     navController = navController,
                     recordingState = recordingState,
+                    recordingCountdown = recordingCountdown,
                     showBlockedMessage = showBlockedMessage,
                     shakeErrorKey = shakeErrorKey,
                     stats = stats,
@@ -344,6 +346,7 @@ internal fun isMicrophonePermissionPermanentlyDenied(
 private fun AppNavHost(
     navController: NavHostController,
     recordingState: RecordingState,
+    recordingCountdown: RecordingCountdownState?,
     showBlockedMessage: Boolean,
     shakeErrorKey: Int,
     stats: com.wrait.app.domain.model.EntryStats,
@@ -383,6 +386,7 @@ private fun AppNavHost(
 
             MainScreen(
                 recordingState = recordingState,
+                recordingCountdown = recordingCountdown,
                 showBlockedMessage = showBlockedMessage,
                 shakeErrorKey = shakeErrorKey,
                 stats = stats,

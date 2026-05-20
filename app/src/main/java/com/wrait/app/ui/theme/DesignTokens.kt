@@ -55,6 +55,7 @@ object DesignTokens {
         const val AlphaDisabled = 0.3f
         const val AlphaReduced = 0.5f
         const val AlphaFull = 1.0f
+        val CountdownStrokeWidth = 3.dp
     }
 
     object AppLock {
