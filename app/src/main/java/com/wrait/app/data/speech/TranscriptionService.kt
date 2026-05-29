@@ -1,5 +1,7 @@
 package com.wrait.app.data.speech
 
+import com.wrait.app.data.api.RecordQuotaState
+
 interface TranscriptionService {
     /**
      * Suspends until transcription is complete.
@@ -51,11 +53,13 @@ sealed class TranscriptionResult {
         val transcript: String,
         /** Language code detected by the backend (e.g. "fr"), or null if not available. */
         val detectedLanguage: String? = null,
+        val quota: RecordQuotaState? = null,
     ) : TranscriptionResult()
     data class Failure(
         val reason: TranscriptionFailureReason,
         /** Non-null when an audio file was persisted as a draft (Whisper backend). */
         val audioDraftPath: String? = null,
+        val quota: RecordQuotaState? = null,
     ) : TranscriptionResult()
 }
 

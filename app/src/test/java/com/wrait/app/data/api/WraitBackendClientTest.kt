@@ -6,6 +6,7 @@ import com.wrait.app.data.api.generated.infrastructure.ApiClient
 import com.wrait.app.data.api.generated.infrastructure.Serializer
 import com.wrait.app.data.api.generated.model.CleanupRequest
 import com.wrait.app.data.api.generated.model.CleanupResponse
+import com.wrait.app.data.api.generated.model.RecordQuota
 import com.wrait.app.data.api.generated.model.RegisterResponse
 import com.wrait.app.data.api.generated.model.TranscribeResponse
 import kotlinx.coroutines.test.TestScope
@@ -26,6 +27,7 @@ import retrofit2.converter.scalars.ScalarsConverterFactory
 import java.io.File
 import java.io.IOException
 import java.net.SocketTimeoutException
+import java.time.OffsetDateTime
 import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.data.speech.TranscriptionResult
 
@@ -47,7 +49,7 @@ class WraitBackendClientTest {
 
         val result = client.register("a".repeat(64))
 
-        assertEquals(RegistrationResult.Success, result)
+        assertEquals(RegistrationResult.Success(), result)
     }
 
     @Test
@@ -60,7 +62,7 @@ class WraitBackendClientTest {
 
         val result = client.register("a".repeat(64))
 
-        assertEquals(RegistrationResult.Success, result)
+        assertEquals(RegistrationResult.Success(), result)
     }
 
     @Test
@@ -120,7 +122,57 @@ class WraitBackendClientTest {
         val result = client.register("a".repeat(64))
 
         assertEquals(3, attempts)
-        assertEquals(RegistrationResult.Success, result)
+        assertEquals(RegistrationResult.Success(), result)
+    }
+
+    @Test
+    fun register_successWithQuota_returnsMappedQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                register = {
+                    Response.success(
+                        RegisterResponse(
+                            ok = true,
+                            quota = createGeneratedQuota(limit = 10, count = 3, remaining = 7),
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = client.register("a".repeat(64))
+
+        assertEquals(
+            RegistrationResult.Success(
+                quota = RecordQuotaState(
+                    limit = 10,
+                    count = 3,
+                    remaining = 7,
+                    resetAt = OffsetDateTime.parse(TEST_RESET_AT),
+                ),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun register_successWithInvalidQuota_ignoresQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                register = {
+                    Response.success(
+                        RegisterResponse(
+                            ok = true,
+                            quota = createGeneratedQuota(limit = 10, count = 11, remaining = 7),
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = client.register("a".repeat(64))
+
+        assertEquals(RegistrationResult.Success(quota = null), result)
     }
 
     @Test
@@ -176,6 +228,109 @@ class WraitBackendClientTest {
     }
 
     @Test
+    fun cleanupTranscript_successWithQuota_returnsMappedQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, _ ->
+                    Response.success(
+                        CleanupResponse(
+                            cleanedText = "hello world",
+                            wasTruncated = false,
+                            quota = createGeneratedQuota(limit = 10, count = 4, remaining = 6),
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = client.cleanupTranscript(
+            transcript = "um hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertEquals(
+            CleanupResult.Success(
+                cleanedText = "hello world",
+                quota = RecordQuotaState(
+                    limit = 10,
+                    count = 4,
+                    remaining = 6,
+                    resetAt = OffsetDateTime.parse(TEST_RESET_AT),
+                ),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun cleanupTranscript_successWithZeroRemaining_keepsQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, _ ->
+                    Response.success(
+                        CleanupResponse(
+                            cleanedText = "hello world",
+                            wasTruncated = false,
+                            quota = createGeneratedQuota(limit = 10, count = 10, remaining = 0),
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = client.cleanupTranscript(
+            transcript = "um hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertEquals(
+            CleanupResult.Success(
+                cleanedText = "hello world",
+                quota = RecordQuotaState(
+                    limit = 10,
+                    count = 10,
+                    remaining = 0,
+                    resetAt = OffsetDateTime.parse(TEST_RESET_AT),
+                ),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun cleanupTranscript_successWithInvalidQuota_ignoresQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, _ ->
+                    Response.success(
+                        CleanupResponse(
+                            cleanedText = "hello world",
+                            wasTruncated = false,
+                            quota = createGeneratedQuota(limit = 10, count = 4, remaining = 12),
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = client.cleanupTranscript(
+            transcript = "um hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertEquals(
+            CleanupResult.Success(
+                cleanedText = "hello world",
+                quota = null,
+            ),
+            result,
+        )
+    }
+
+    @Test
     fun cleanupTranscript_unsupportedLanguage_returnsFailure() = runTest {
         val client = createClient(api = fakeApi())
 
@@ -226,6 +381,71 @@ class WraitBackendClientTest {
 
         assertTrue(result is CleanupResult.Failure)
         assertEquals("http 500", (result as CleanupResult.Failure).reason)
+    }
+
+    @Test
+    fun cleanupTranscript_429_returnsFailureWithQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, _ ->
+                    errorResponse(
+                        code = 429,
+                        body = """
+                            {"error":"Daily record limit exceeded","quota":{"limit":10,"count":10,"remaining":0,"resetAt":"$TEST_RESET_AT"}}
+                        """.trimIndent(),
+                    )
+                },
+            ),
+        )
+
+        val result = client.cleanupTranscript(
+            transcript = "hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertEquals(
+            CleanupResult.Failure(
+                reason = "http 429",
+                quota = RecordQuotaState(
+                    limit = 10,
+                    count = 10,
+                    remaining = 0,
+                    resetAt = OffsetDateTime.parse(TEST_RESET_AT),
+                ),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun cleanupTranscript_429_withInvalidQuota_ignoresQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                cleanup = { _, _ ->
+                    errorResponse(
+                        code = 429,
+                        body = """
+                            {"error":"Daily record limit exceeded","quota":{"limit":10,"count":10,"remaining":11,"resetAt":"$TEST_RESET_AT"}}
+                        """.trimIndent(),
+                    )
+                },
+            ),
+        )
+
+        val result = client.cleanupTranscript(
+            transcript = "hello world",
+            language = "en-US",
+            deviceId = "a".repeat(64),
+        )
+
+        assertEquals(
+            CleanupResult.Failure(
+                reason = "http 429",
+                quota = null,
+            ),
+            result,
+        )
     }
 
     @Test
@@ -297,6 +517,7 @@ class WraitBackendClientTest {
                 TranscriptionResult.Success(
                     transcript = "hello",
                     detectedLanguage = "en-US",
+                    quota = null,
                 ),
                 response,
             )
@@ -390,6 +611,106 @@ class WraitBackendClientTest {
     }
 
     @Test
+    fun transcribeAudio_successWithQuota_returnsMappedQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ ->
+                    Response.success(
+                        TranscribeResponse(
+                            transcript = "hello",
+                            detectedLanguage = "en-US",
+                            quota = createGeneratedQuota(limit = 10, count = 2, remaining = 8),
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Success(
+                transcript = "hello",
+                detectedLanguage = "en-US",
+                quota = RecordQuotaState(
+                    limit = 10,
+                    count = 2,
+                    remaining = 8,
+                    resetAt = OffsetDateTime.parse(TEST_RESET_AT),
+                ),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_successWithZeroRemaining_keepsQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ ->
+                    Response.success(
+                        TranscribeResponse(
+                            transcript = "hello",
+                            detectedLanguage = "en-US",
+                            quota = createGeneratedQuota(limit = 10, count = 10, remaining = 0),
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Success(
+                transcript = "hello",
+                detectedLanguage = "en-US",
+                quota = RecordQuotaState(
+                    limit = 10,
+                    count = 10,
+                    remaining = 0,
+                    resetAt = OffsetDateTime.parse(TEST_RESET_AT),
+                ),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_successWithInvalidQuota_ignoresQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ ->
+                    Response.success(
+                        TranscribeResponse(
+                            transcript = "hello",
+                            detectedLanguage = "en-US",
+                            quota = createGeneratedQuota(limit = -1, count = 0, remaining = 0),
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Success(
+                transcript = "hello",
+                detectedLanguage = "en-US",
+                quota = null,
+            ),
+            result,
+        )
+    }
+
+    @Test
     fun transcribeAudio_invalidDetectedLanguage_returnsSuccessWithNullDetectedLanguage() = runTest {
         val client = createClient(
             api = fakeApi(
@@ -412,6 +733,7 @@ class WraitBackendClientTest {
             TranscriptionResult.Success(
                 transcript = "hello",
                 detectedLanguage = null,
+                quota = null,
             ),
             result,
         )
@@ -456,6 +778,67 @@ class WraitBackendClientTest {
     }
 
     @Test
+    fun transcribeAudio_429_returnsFailureWithQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ ->
+                    errorResponse(
+                        code = 429,
+                        body = """
+                            {"error":"Daily record limit exceeded","quota":{"limit":10,"count":10,"remaining":0,"resetAt":"$TEST_RESET_AT"}}
+                        """.trimIndent(),
+                    )
+                },
+            ),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Failure(
+                reason = TranscriptionFailureReason.ApiError,
+                quota = RecordQuotaState(
+                    limit = 10,
+                    count = 10,
+                    remaining = 0,
+                    resetAt = OffsetDateTime.parse(TEST_RESET_AT),
+                ),
+            ),
+            result,
+        )
+    }
+
+    @Test
+    fun transcribeAudio_429_withInvalidQuota_ignoresQuota() = runTest {
+        val client = createClient(
+            api = fakeApi(
+                transcribe = { _, _ ->
+                    errorResponse(
+                        code = 429,
+                        body = """
+                            {"error":"Daily record limit exceeded","quota":{"limit":10,"count":12,"remaining":0,"resetAt":"$TEST_RESET_AT"}}
+                        """.trimIndent(),
+                    )
+                },
+            ),
+        )
+
+        val result = createAudioFile("bytes".toByteArray()).useAndDelete {
+            client.transcribeAudio(it)
+        }
+
+        assertEquals(
+            TranscriptionResult.Failure(
+                reason = TranscriptionFailureReason.ApiError,
+                quota = null,
+            ),
+            result,
+        )
+    }
+
+    @Test
     fun transcribeAudio_retriesNetworkErrorsAndEventuallySucceeds() = runTest {
         var attempts = 0
         val client = createClient(
@@ -485,6 +868,7 @@ class WraitBackendClientTest {
             TranscriptionResult.Success(
                 transcript = "hello",
                 detectedLanguage = "en-US",
+                quota = null,
             ),
             result,
         )
@@ -572,10 +956,27 @@ class WraitBackendClientTest {
         }
     }
 
-    private fun <T> errorResponse(code: Int): Response<T> {
+    private fun <T> errorResponse(
+        code: Int,
+        body: String = """{"error":"boom"}""",
+    ): Response<T> {
         return Response.error(
             code,
-            """{"error":"boom"}""".toResponseBody("application/json".toMediaType()),
+            body.toResponseBody("application/json".toMediaType()),
+        )
+    }
+
+    private fun createGeneratedQuota(
+        limit: Int,
+        count: Int,
+        remaining: Int,
+        resetAt: String = TEST_RESET_AT,
+    ): RecordQuota {
+        return RecordQuota(
+            limit = limit,
+            count = count,
+            remaining = remaining,
+            resetAt = OffsetDateTime.parse(resetAt),
         )
     }
 
@@ -627,5 +1028,6 @@ class WraitBackendClientTest {
 
     private companion object {
         const val TEST_PROXY_SECRET = "proxy-secret"
+        const val TEST_RESET_AT = "2026-05-28T00:00:00Z"
     }
 }

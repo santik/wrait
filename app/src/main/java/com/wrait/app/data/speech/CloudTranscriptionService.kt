@@ -63,7 +63,11 @@ class CloudTranscriptionService @Inject constructor(
                         )
                         keepFileAsDraft = draftPath != null
                     }
-                    TranscriptionResult.Failure(result.reason, audioDraftPath = draftPath)
+                    TranscriptionResult.Failure(
+                        reason = result.reason,
+                        audioDraftPath = draftPath,
+                        quota = result.quota,
+                    )
                 }
             }
         } finally {

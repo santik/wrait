@@ -5,6 +5,8 @@ interface DeviceRegistrationService {
 }
 
 sealed class RegistrationResult {
-    data object Success : RegistrationResult()
+    data class Success(
+        val quota: RecordQuotaState? = null,
+    ) : RegistrationResult()
     data class Failure(val reason: String) : RegistrationResult()
 }

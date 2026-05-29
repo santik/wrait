@@ -1,5 +1,6 @@
 package com.wrait.app.test.fake
 
+import com.wrait.app.data.api.RecordQuotaState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.data.speech.TranscriptionResult
@@ -13,11 +14,13 @@ class FakeTranscriptionService : TranscriptionService {
         data class FinalTranscript(
             val text: String,
             val detectedLanguage: String? = null,
+            val quota: RecordQuotaState? = null,
         ) : FakeResult()
         data class SpeechError(val error: RecognizerError) : FakeResult()
         data class FailureWithAudioDraft(
             val reason: TranscriptionFailureReason,
             val audioPath: String,
+            val quota: RecordQuotaState? = null,
         ) : FakeResult()
     }
 
@@ -51,10 +54,11 @@ class FakeTranscriptionService : TranscriptionService {
         transcribeGate?.await()
         onStatus(TranscriptionStatus.RecordingEnded)
         return when (val r = nextResult) {
-            is FakeResult.FinalTranscript -> TranscriptionResult.Success(r.text, r.detectedLanguage)
+            is FakeResult.FinalTranscript ->
+                TranscriptionResult.Success(r.text, r.detectedLanguage, r.quota)
             is FakeResult.SpeechError -> TranscriptionResult.Failure(r.error.toFailureReason())
             is FakeResult.FailureWithAudioDraft ->
-                TranscriptionResult.Failure(r.reason, r.audioPath)
+                TranscriptionResult.Failure(r.reason, r.audioPath, r.quota)
         }
     }
 

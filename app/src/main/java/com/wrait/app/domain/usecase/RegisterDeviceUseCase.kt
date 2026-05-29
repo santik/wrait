@@ -16,13 +16,14 @@ class RegisterDeviceUseCase @Inject constructor(
     private val registrationService: DeviceRegistrationService,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) {
-    suspend operator fun invoke() {
-        if (preferencesRepository.deviceRegistered.first()) return
+    suspend operator fun invoke(): RegistrationResult {
+        if (preferencesRepository.deviceRegistered.first()) return RegistrationResult.Success()
         val deviceId = withContext(ioDispatcher) { deviceIdProvider.getOrStore() }
         val result = registrationService.register(deviceId)
         if (result is RegistrationResult.Success) {
             //TODO enable marking device as registered and enable test
 //            preferencesRepository.setDeviceRegistered(true)
         }
+        return result
     }
 }

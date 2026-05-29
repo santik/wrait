@@ -68,6 +68,11 @@ object DesignTokens {
         val ReservedHeightDp = 48.dp
     }
 
+    object QuotaLine {
+        val GapBelowDp = 16.dp
+        val ReservedHeightDp = 48.dp
+    }
+
     object StatsLine {
         val GapAboveDp = 16.dp
         val ReservedHeightDp = 48.dp

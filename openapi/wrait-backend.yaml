@@ -79,6 +79,8 @@ paths:
           $ref: '#/components/responses/MethodNotAllowed'
         '413':
           $ref: '#/components/responses/RequestTooLarge'
+        '429':
+          $ref: '#/components/responses/DailyRecordLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '502':
@@ -121,6 +123,8 @@ paths:
           $ref: '#/components/responses/MethodNotAllowed'
         '413':
           $ref: '#/components/responses/RequestTooLarge'
+        '429':
+          $ref: '#/components/responses/DailyRecordLimitExceeded'
         '500':
           $ref: '#/components/responses/InternalServerError'
         '502':
@@ -171,6 +175,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    DailyRecordLimitExceeded:
+      description: Device has reached its daily completed-record limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DailyRecordLimitExceededResponse'
     InternalServerError:
       description: Internal backend error
       content:
@@ -191,6 +201,42 @@ components:
       properties:
         error:
           type: string
+    DailyRecordLimitExceededResponse:
+      type: object
+      required:
+        - error
+        - quota
+      properties:
+        error:
+          type: string
+          enum:
+            - Daily record limit exceeded
+        quota:
+          $ref: '#/components/schemas/RecordQuota'
+    RecordQuota:
+      type: object
+      required:
+        - limit
+        - count
+        - remaining
+        - resetAt
+      properties:
+        limit:
+          type: integer
+          minimum: 0
+          description: Effective completed-record limit for the current UTC day.
+        count:
+          type: integer
+          minimum: 0
+          description: Completed records already counted for the current UTC day.
+        remaining:
+          type: integer
+          minimum: 0
+          description: Remaining completed records available before the next UTC reset.
+        resetAt:
+          type: string
+          format: date-time
+          description: Next UTC midnight when the daily record quota resets.
     RegisterResponse:
       type: object
       required:
@@ -199,6 +245,10 @@ components:
         ok:
           type: boolean
           enum: [true]
+        quota:
+          allOf:
+            - $ref: '#/components/schemas/RecordQuota'
+          description: Current cleanup quota for the device on the active UTC day. Omitted if quota lookup fails after registration succeeds.
     CleanupRequest:
       type: object
       required:
@@ -307,6 +357,10 @@ components:
           type: string
         wasTruncated:
           type: boolean
+        quota:
+          allOf:
+            - $ref: '#/components/schemas/RecordQuota'
+          description: Updated cleanup quota after the successful cleanup is counted. Omitted if quota persistence fails after cleanup succeeds.
     TranscribeResponse:
       type: object
       required:
@@ -317,6 +371,10 @@ components:
           type: string
         detected_language:
           type: string
+        quota:
+          allOf:
+            - $ref: '#/components/schemas/RecordQuota'
+          description: Current cleanup quota for the device on the active UTC day. Omitted if quota lookup fails after transcription succeeds.
     UpstreamErrorResponse:
       type: object
       additionalProperties: true
