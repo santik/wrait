@@ -44,10 +44,15 @@ class WraitBackendClient private constructor(
                 val response = api.registerDevice(deviceId)
                 if (response.isSuccessful) {
                     Log.d(TAG, "Device registration succeeded")
-                    return RegistrationResult.Success
+                    return RegistrationResult.Success(
+                        quota = response.body()?.quota?.toRecordQuotaStateOrNull(
+                            source = "register success response",
+                        ),
+                    )
                 }
 
-                val backendError = BackendErrorParser.parseRaw(response.errorBody()?.string())
+                val errorBody = response.errorBody()?.string()
+                val backendError = BackendErrorParser.parseRaw(errorBody)
                 Log.w(TAG, "Device registration failed: HTTP ${response.code()}${backendError?.let { ", error=$it" } ?: ""}")
                 val result = RegistrationResult.Failure("http ${response.code()}")
                 if (!shouldRetryRegisterHttp(response.code()) || attempt == MAX_REGISTER_RETRIES - 1) {
@@ -99,9 +104,15 @@ class WraitBackendClient private constructor(
             )
 
             if (!response.isSuccessful) {
-                val backendError = BackendErrorParser.parseRaw(response.errorBody()?.string())
+                val errorBody = response.errorBody()?.string()
+                val backendError = BackendErrorParser.parseRaw(errorBody)
+                val quota = if (response.code() == 429) {
+                    BackendErrorParser.parseQuotaExceeded(errorBody)
+                } else {
+                    null
+                }
                 Log.w(TAG, "Cleanup failed: HTTP ${response.code()}${backendError?.let { ", error=$it" } ?: ""}")
-                return CleanupResult.Failure("http ${response.code()}")
+                return CleanupResult.Failure("http ${response.code()}", quota = quota)
             }
 
             val body = response.body()
@@ -113,7 +124,12 @@ class WraitBackendClient private constructor(
                 if (body.wasTruncated) {
                     Log.i(TAG, "Cleanup response indicates the transcript was truncated server-side")
                 }
-                CleanupResult.Success(cleanedText)
+                CleanupResult.Success(
+                    cleanedText = cleanedText,
+                    quota = body.quota?.toRecordQuotaStateOrNull(
+                        source = "cleanup success response",
+                    ),
+                )
             }
         } catch (e: IOException) {
             if (e.isNetworkTimeout()) {
@@ -202,7 +218,13 @@ class WraitBackendClient private constructor(
 
     private fun parseTranscribeResponse(response: Response<TranscribeResponse>): TranscriptionResult {
         if (!response.isSuccessful) {
-            val backendError = BackendErrorParser.parseRaw(response.errorBody()?.string())
+            val errorBody = response.errorBody()?.string()
+            val backendError = BackendErrorParser.parseRaw(errorBody)
+            val quota = if (response.code() == 429) {
+                BackendErrorParser.parseQuotaExceeded(errorBody)
+            } else {
+                null
+            }
             val reason = transcribeFailureReasonForStatus(response.code())
             when (reason) {
                 TranscriptionFailureReason.ProxyAuthFailed ->
@@ -212,7 +234,7 @@ class WraitBackendClient private constructor(
                 else ->
                     Log.w(TAG, "Transcribe failed: HTTP ${response.code()}${backendError?.let { ", error=$it" } ?: ""}")
             }
-            return TranscriptionResult.Failure(reason)
+            return TranscriptionResult.Failure(reason, quota = quota)
         }
 
         val body = response.body()
@@ -238,6 +260,9 @@ class WraitBackendClient private constructor(
         return TranscriptionResult.Success(
             transcript = transcript,
             detectedLanguage = detected,
+            quota = body.quota?.toRecordQuotaStateOrNull(
+                source = "transcribe success response",
+            ),
         )
     }
 

@@ -35,6 +35,7 @@ internal fun rememberAdaptiveActionButtonSize(): Dp {
 @Composable
 internal fun ActionButtonStack(
     actionButton: @Composable () -> Unit,
+    quotaContent: (@Composable () -> Unit)? = null,
     statusContent: (@Composable () -> Unit)? = null,
     statsContent: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
@@ -45,6 +46,12 @@ internal fun ActionButtonStack(
         verticalArrangement = Arrangement.Top,
     ) {
         Spacer(Modifier.weight(1f))
+        if (quotaContent != null) {
+            quotaContent()
+        } else {
+            Spacer(Modifier.height(DesignTokens.QuotaLine.ReservedHeightDp))
+        }
+        Spacer(Modifier.height(DesignTokens.QuotaLine.GapBelowDp))
         actionButton()
         Spacer(Modifier.height(DesignTokens.StatusLine.GapAboveDp))
         if (statusContent != null) {

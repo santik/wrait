@@ -42,6 +42,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.wrait.app.R
 import com.wrait.app.RecordingCountdownState
 import com.wrait.app.RecordingState
+import com.wrait.app.data.api.RecordQuotaState
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
@@ -56,6 +57,7 @@ fun MainScreen(
     showBlockedMessage: Boolean,
     shakeErrorKey: Int,
     stats: EntryStats,
+    recordQuota: RecordQuotaState?,
     languageSummary: String,
     hasEverRecorded: Boolean,
     showSettingsPanel: Boolean,
@@ -127,6 +129,14 @@ fun MainScreen(
         }
 
         ActionButtonStack(
+            quotaContent = {
+                QuotaLine(
+                    text = quotaTextFor(
+                        privacyMode = privacyMode,
+                        quota = recordQuota,
+                    ),
+                )
+            },
             actionButton = {
                 ButtonArea(
                     recordingState = recordingState,
@@ -173,6 +183,25 @@ fun MainScreen(
                 privacyMode = privacyMode,
                 onModeToggle = onPrivacyModeToggle,
                 onDismiss = onSettingsPanelDismiss,
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuotaLine(
+    text: String,
+    modifier: Modifier = Modifier,
+) {
+    Box(
+        modifier = modifier.minimumInteractiveComponentSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (text.isNotEmpty()) {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onBackground,
             )
         }
     }
@@ -337,4 +366,13 @@ internal fun statusTextFor(
             else -> "saved as draft · will retry"
         }
     }
+}
+
+internal fun quotaTextFor(
+    privacyMode: PrivacyMode,
+    quota: RecordQuotaState?,
+): String {
+    if (privacyMode != PrivacyMode.MODE_BEST) return ""
+    if (quota == null) return ""
+    return "${quota.limit} total · ${quota.remaining} left"
 }

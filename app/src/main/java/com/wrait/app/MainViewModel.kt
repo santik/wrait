@@ -9,6 +9,8 @@ import com.wrait.app.analytics.AnalyticsSavePath
 import com.wrait.app.analytics.AnalyticsTracker
 import com.wrait.app.analytics.trackSafely
 import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.api.RecordQuotaState
+import com.wrait.app.data.api.RegistrationResult
 import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.di.IoDispatcher
@@ -79,6 +81,9 @@ class MainViewModel @Inject constructor(
     private val _userMessage = MutableSharedFlow<String>()
     val userMessage = _userMessage.asSharedFlow()
 
+    private val _recordQuota = MutableStateFlow<RecordQuotaState?>(null)
+    val recordQuota: StateFlow<RecordQuotaState?> = _recordQuota.asStateFlow()
+
     private val recordingController = MainRecordingController(
         selectedLanguageState = selectedLanguage,
         entryRepository = entryRepository,
@@ -89,6 +94,7 @@ class MainViewModel @Inject constructor(
         analyticsTracker = analyticsTracker,
         ioDispatcher = ioDispatcher,
         scope = viewModelScope,
+        onQuotaUpdated = ::updateQuota,
     )
 
     val recordingState: StateFlow<RecordingState> = recordingController.recordingState
@@ -116,7 +122,10 @@ class MainViewModel @Inject constructor(
 
     internal val initJob: Job = viewModelScope.launch {
         try {
-            registerDeviceUseCase()
+            val registrationResult = registerDeviceUseCase()
+            if (registrationResult is RegistrationResult.Success) {
+                updateQuota(registrationResult.quota)
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Device registration skipped: ${e.javaClass.simpleName}: ${e.message}")
         }
@@ -258,6 +267,17 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    // Quota is an in-memory cache of the last valid backend value we received.
+    // We only replace it when a newer valid quota arrives; missing or invalid
+    // quota leaves the previous value intact. Switching to Offline hides quota
+    // in the UI but does not clear it, and we intentionally do not expire it
+    // locally based on resetAt.
+    private fun updateQuota(quota: RecordQuotaState?) {
+        if (quota != null) {
+            _recordQuota.value = quota
+        }
+    }
+
     private suspend fun trackAppOpened(privacyMode: PrivacyMode) {
         val entryCount = try {
             entryRepository.getAllEntries().first().size
@@ -278,6 +298,7 @@ class MainViewModel @Inject constructor(
         }
         when (val result = cleanupTranscriptUseCase(entry.rawTranscript, entry.language)) {
             is CleanupResult.Success -> {
+                updateQuota(result.quota)
                 val cleaned = result.cleanedText
                 val wordCount = cleaned.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
                 entryRepository.updateWithCleanedText(entry.id, cleaned, wordCount)
@@ -288,6 +309,7 @@ class MainViewModel @Inject constructor(
                 }
             }
             is CleanupResult.Failure -> {
+                updateQuota(result.quota)
                 analyticsTracker.trackSafely(TAG, "cleanup failed (retry text draft)") {
                     trackCleanupFailed(privacyMode, AnalyticsSavePath.Retry, result.reason)
                     trackDraftRetryFailed(
@@ -312,6 +334,7 @@ class MainViewModel @Inject constructor(
 
         when (transcription) {
             is com.wrait.app.data.speech.TranscriptionResult.Success -> {
+                updateQuota(transcription.quota)
                 analyticsTracker.trackSafely(TAG, "transcription succeeded (retry audio draft)") {
                     trackTranscriptionSucceeded(
                         privacyMode = privacyMode,
@@ -342,6 +365,7 @@ class MainViewModel @Inject constructor(
 
                 when (val cleanup = cleanupTranscriptUseCase(rawTranscript, effectiveLanguage)) {
                     is CleanupResult.Success -> {
+                        updateQuota(cleanup.quota)
                         val cleaned = cleanup.cleanedText
                         val cleanedWordCount = cleaned.trim().split(Regex("\\s+")).count { it.isNotEmpty() }
                         entryRepository.finalizeDraftWithCleanedText(
@@ -357,6 +381,7 @@ class MainViewModel @Inject constructor(
                         }
                     }
                     is CleanupResult.Failure -> {
+                        updateQuota(cleanup.quota)
                         // Still valuable: convert audio-only draft into a text draft.
                         entryRepository.updateDraftTranscript(entry.id, rawTranscript, rawWordCount)
                         analyticsTracker.trackSafely(TAG, "cleanup failed (retry audio draft)") {
@@ -378,6 +403,7 @@ class MainViewModel @Inject constructor(
                 }
             }
             is com.wrait.app.data.speech.TranscriptionResult.Failure -> {
+                updateQuota(transcription.quota)
                 analyticsTracker.trackSafely(TAG, "transcription failed (retry audio draft)") {
                     trackDraftRetryFailed(
                         draftType = AnalyticsDraftType.Audio,

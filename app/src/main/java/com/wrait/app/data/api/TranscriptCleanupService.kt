@@ -5,6 +5,12 @@ interface TranscriptCleanupService {
 }
 
 sealed class CleanupResult {
-    data class Success(val cleanedText: String) : CleanupResult()
-    data class Failure(val reason: String) : CleanupResult()
+    data class Success(
+        val cleanedText: String,
+        val quota: RecordQuotaState? = null,
+    ) : CleanupResult()
+    data class Failure(
+        val reason: String,
+        val quota: RecordQuotaState? = null,
+    ) : CleanupResult()
 }

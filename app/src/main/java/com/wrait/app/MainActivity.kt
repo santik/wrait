@@ -44,6 +44,7 @@ import androidx.fragment.app.FragmentActivity
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.displayNameForLanguage
+import com.wrait.app.data.api.RecordQuotaState
 import com.wrait.app.lock.AppLockAuthCallback
 import com.wrait.app.lock.AppLockAuthError
 import com.wrait.app.lock.AppLockAuthenticator
@@ -115,6 +116,7 @@ class MainActivity : FragmentActivity() {
                 val recordingCountdown by viewModel.recordingCountdown.collectAsStateWithLifecycle()
                 val shakeErrorKey by viewModel.shakeErrorKey.collectAsStateWithLifecycle()
                 val stats by viewModel.entryStats.collectAsStateWithLifecycle()
+                val recordQuota by viewModel.recordQuota.collectAsStateWithLifecycle()
                 val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
                 val hasEverRecorded by viewModel.hasEverRecorded.collectAsStateWithLifecycle()
                 val showSettingsPanel by viewModel.showSettingsPanel.collectAsStateWithLifecycle()
@@ -233,6 +235,7 @@ class MainActivity : FragmentActivity() {
                     showBlockedMessage = showBlockedMessage,
                     shakeErrorKey = shakeErrorKey,
                     stats = stats,
+                    recordQuota = recordQuota,
                     selectedLanguage = selectedLanguage,
                     languageSummary = languageSummary,
                     hasEverRecorded = hasEverRecorded,
@@ -350,6 +353,7 @@ private fun AppNavHost(
     showBlockedMessage: Boolean,
     shakeErrorKey: Int,
     stats: com.wrait.app.domain.model.EntryStats,
+    recordQuota: RecordQuotaState?,
     selectedLanguage: String,
     languageSummary: String,
     hasEverRecorded: Boolean,
@@ -390,6 +394,7 @@ private fun AppNavHost(
                 showBlockedMessage = showBlockedMessage,
                 shakeErrorKey = shakeErrorKey,
                 stats = stats,
+                recordQuota = recordQuota,
                 languageSummary = languageSummary,
                 hasEverRecorded = hasEverRecorded,
                 showSettingsPanel = showSettingsPanel,

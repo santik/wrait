@@ -11,6 +11,8 @@ import com.wrait.app.data.EntryDao
 import com.wrait.app.data.EntryEntity
 import com.wrait.app.data.WraitDatabase
 import com.wrait.app.data.api.CleanupResult
+import com.wrait.app.data.api.RecordQuotaState
+import com.wrait.app.data.api.RegistrationResult
 import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.device.DeviceIdProvider
 import com.wrait.app.test.fake.FakeAnalyticsTracker
@@ -50,6 +52,7 @@ import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.time.OffsetDateTime
 import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
@@ -202,6 +205,134 @@ class MainViewModelTest {
         )
     }
 
+    @Test
+    fun init_registrationQuota_populatesRecordQuota() = runTest(testDispatcher) {
+        val fakeRegistration = FakeDeviceRegistrationService().apply {
+            result = RegistrationResult.Success(createQuota(limit = 10, count = 2, remaining = 8))
+        }
+
+        val vm = createViewModel(fakeRegistration = fakeRegistration)
+        vm.initJob.join()
+
+        assertEquals(createQuota(limit = 10, count = 2, remaining = 8), vm.recordQuota.value)
+    }
+
+    @Test
+    fun successfulCleanupWithoutQuota_keepsLastKnownQuota() = runTest(testDispatcher) {
+        val fakeRegistration = FakeDeviceRegistrationService().apply {
+            result = RegistrationResult.Success(createQuota(limit = 10, count = 1, remaining = 9))
+        }
+        fakeApi.result = CleanupResult.Success("This is cleaned text.", quota = null)
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "one two three four five",
+            quota = null,
+        )
+        val vm = createViewModel(fakeRegistration = fakeRegistration)
+        vm.initJob.join()
+
+        vm.onMainButtonTapped()
+        vm.recordingState.first { it is RecordingState.Saved || it is RecordingState.Error }
+
+        assertEquals(createQuota(limit = 10, count = 1, remaining = 9), vm.recordQuota.value)
+    }
+
+    @Test
+    fun cleanupFailureWithQuota_updatesRecordQuota() = runTest(testDispatcher) {
+        fakeApi.result = CleanupResult.Failure(
+            reason = "http 429",
+            quota = createQuota(limit = 10, count = 10, remaining = 0),
+        )
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "one two three four five",
+        )
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        vm.onMainButtonTapped()
+        vm.recordingState.first { it is RecordingState.Saved || it is RecordingState.Error }
+
+        assertEquals(createQuota(limit = 10, count = 10, remaining = 0), vm.recordQuota.value)
+    }
+
+    @Test
+    fun transcriptionQuota_survivesCleanupOmission() = runTest(testDispatcher) {
+        val fakeRegistration = FakeDeviceRegistrationService().apply {
+            result = RegistrationResult.Success(createQuota(limit = 10, count = 1, remaining = 9))
+        }
+        fakeApi.result = CleanupResult.Success("This is cleaned text.", quota = null)
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "one two three four five",
+            quota = createQuota(limit = 10, count = 2, remaining = 8),
+        )
+        val vm = createViewModel(fakeRegistration = fakeRegistration)
+        vm.initJob.join()
+
+        vm.onMainButtonTapped()
+        vm.recordingState.first { it is RecordingState.Saved || it is RecordingState.Error }
+
+        assertEquals(createQuota(limit = 10, count = 2, remaining = 8), vm.recordQuota.value)
+    }
+
+    @Test
+    fun quotaState_survivesBestOfflineBestToggle() = runTest(testDispatcher) {
+        val fakeRegistration = FakeDeviceRegistrationService().apply {
+            result = RegistrationResult.Success(createQuota(limit = 10, count = 2, remaining = 8))
+        }
+        val fakePrefs = FakePreferencesRepository(initialPrivacyMode = PrivacyMode.MODE_BEST)
+        fakePrefs.savePrivacyMode(PrivacyMode.MODE_BEST)
+        val vm = createViewModel(fakePrefs = fakePrefs, fakeRegistration = fakeRegistration)
+        vm.initJob.join()
+
+        assertEquals(createQuota(limit = 10, count = 2, remaining = 8), vm.recordQuota.value)
+
+        fakePrefs.savePrivacyMode(PrivacyMode.MODE_OFFLINE)
+        advanceUntilIdle()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        assertEquals(
+            PrivacyMode.MODE_OFFLINE,
+            fakePrefs.currentPrivacyMode(),
+        )
+        assertEquals(createQuota(limit = 10, count = 2, remaining = 8), vm.recordQuota.value)
+
+        fakePrefs.savePrivacyMode(PrivacyMode.MODE_BEST)
+        advanceUntilIdle()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        assertEquals(
+            PrivacyMode.MODE_BEST,
+            fakePrefs.currentPrivacyMode(),
+        )
+        assertEquals(createQuota(limit = 10, count = 2, remaining = 8), vm.recordQuota.value)
+    }
+
+    @Test
+    fun multipleRecordings_missingLaterQuota_keepsLastKnownQuota() = runTest(testDispatcher) {
+        fakeApi.result = CleanupResult.Success(
+            cleanedText = "This is cleaned text.",
+            quota = createQuota(limit = 10, count = 3, remaining = 7),
+        )
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "one two three four five",
+            quota = createQuota(limit = 10, count = 2, remaining = 8),
+        )
+        val vm = createViewModel()
+        vm.initJob.join()
+
+        vm.onMainButtonTapped()
+        vm.recordingState.first { it is RecordingState.Saved || it is RecordingState.Error }
+        assertEquals(createQuota(limit = 10, count = 3, remaining = 7), vm.recordQuota.value)
+
+        fakeApi.result = CleanupResult.Success("This is cleaned text.", quota = null)
+        fakeTranscription.nextResult = FakeTranscriptionService.FakeResult.FinalTranscript(
+            text = "six seven eight nine ten",
+            quota = null,
+        )
+
+        vm.onMainButtonTapped()
+        vm.recordingState.first { it is RecordingState.Saved || it is RecordingState.Error }
+
+        assertEquals(createQuota(limit = 10, count = 3, remaining = 7), vm.recordQuota.value)
+    }
+
     // 2 — API failure path
     @Test
     fun apiFailure_entryRemainsAsDraft_uiStateShowsError() = runTest(testDispatcher) {
@@ -220,6 +351,18 @@ class MainViewModelTest {
         assertTrue(drafts.first().isDraft)
         assertNull(drafts.first().cleanedText)
     }
+
+    private fun createQuota(
+        limit: Int,
+        count: Int,
+        remaining: Int,
+        resetAt: String = "2026-05-28T00:00:00Z",
+    ) = RecordQuotaState(
+        limit = limit,
+        count = count,
+        remaining = remaining,
+        resetAt = OffsetDateTime.parse(resetAt),
+    )
 
     // 3 — Draft retry on init
     @Test

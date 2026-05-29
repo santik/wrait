@@ -4,7 +4,7 @@ import com.wrait.app.data.api.DeviceRegistrationService
 import com.wrait.app.data.api.RegistrationResult
 
 class FakeDeviceRegistrationService : DeviceRegistrationService {
-    var result: RegistrationResult = RegistrationResult.Success
+    var result: RegistrationResult = RegistrationResult.Success()
     var callCount: Int = 0
     var lastDeviceId: String? = null
     var shouldThrow: Boolean = false

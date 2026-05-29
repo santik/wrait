@@ -138,7 +138,7 @@ class DeviceRegistrationTest {
     fun registrationSuccess_setsFlagTrue() = runTest(testDispatcher) {
         val fakePrefs = FakePreferencesRepository(initialDeviceRegistered = false)
         val fakeReg = FakeDeviceRegistrationService().apply {
-            result = RegistrationResult.Success
+            result = RegistrationResult.Success()
         }
         val (vm, _) = createViewModel(fakePrefs = fakePrefs, fakeRegistration = fakeReg)
 

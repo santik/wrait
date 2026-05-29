@@ -58,4 +58,6 @@ class FakePreferencesRepository(
     }
 
     fun currentSelectedLanguage(): String = _selectedLanguage.value
+
+    fun currentPrivacyMode(): PrivacyMode = _privacyMode.value
 }

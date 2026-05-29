@@ -5,6 +5,7 @@ import com.wrait.app.analytics.AnalyticsSavePath
 import com.wrait.app.analytics.AnalyticsTracker
 import com.wrait.app.analytics.trackSafely
 import com.wrait.app.data.device.NetworkAvailability
+import com.wrait.app.data.api.RecordQuotaState
 import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.speech.RecognizerError
 import com.wrait.app.data.speech.TranscriptionFailureReason
@@ -40,6 +41,7 @@ class MainRecordingController @Inject constructor(
     private val analyticsTracker: AnalyticsTracker,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val scope: CoroutineScope,
+    private val onQuotaUpdated: (RecordQuotaState?) -> Unit = {},
 ) {
     private val _recordingState = MutableStateFlow<RecordingState>(RecordingState.Idle)
     val recordingState: StateFlow<RecordingState> = _recordingState.asStateFlow()
@@ -147,9 +149,12 @@ class MainRecordingController @Inject constructor(
                 clearRecordingCountdown()
                 _recordingState.value = RecordingState.Processing
                 when (result) {
-                    is TranscriptionResult.Success ->
+                    is TranscriptionResult.Success -> {
+                        onQuotaUpdated(result.quota)
                         saveTranscript(result.transcript, result.detectedLanguage)
+                    }
                     is TranscriptionResult.Failure -> {
+                        onQuotaUpdated(result.quota)
                         if (result.audioDraftPath != null) {
                             withContext(ioDispatcher) {
                                 entryRepository.saveAudioDraft(
@@ -264,6 +269,7 @@ class MainRecordingController @Inject constructor(
 
         when (val result = cleanupTranscriptUseCase(safeText, effectiveLanguage)) {
             is CleanupResult.Success -> {
+                onQuotaUpdated(result.quota)
                 val wordCount = result.cleanedText.trim()
                     .split(Regex("\\s+")).count { it.isNotEmpty() }
                 withContext(ioDispatcher) {
@@ -280,6 +286,7 @@ class MainRecordingController @Inject constructor(
                 )
             }
             is CleanupResult.Failure -> {
+                onQuotaUpdated(result.quota)
                 val isNetworkFailure = result.reason == "network error" ||
                     result.reason == "timeout"
                 Log.w(TAG, "Cleanup failed for entry $entryId: ${result.reason} (draft kept)")
