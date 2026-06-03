@@ -2,6 +2,7 @@ package com.wrait.app.ui.main
 
 import android.os.SystemClock
 import android.provider.Settings
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.*
@@ -40,8 +41,9 @@ import kotlin.math.ceil
 import kotlinx.coroutines.delay
 
 private const val CountdownDeadlineToleranceMs = 1_000L
-private const val CountdownPreWindowPollIntervalMs = 250L
 private const val CountdownReducedMotionPollIntervalMs = 100L
+private const val CountdownReducedMotionStepMillis = 1_000f
+private const val ButtonAreaTag = "ButtonArea"
 
 @Composable
 internal fun ButtonArea(
@@ -200,25 +202,35 @@ private fun rememberCountdownRingProgress(
         key2 = animationsEnabled,
         key3 = recordingState,
     ) {
+        var loggedOutOfRangeDeadline = false
         while (true) {
             val remainingMillis = deadline - SystemClock.elapsedRealtime()
             if (!isCountdownDeadlinePlausible(remainingMillis)) {
+                Log.w(
+                    ButtonAreaTag,
+                    "Ignoring implausible countdown deadline: remainingMillis=$remainingMillis hardCapMs=${RecognitionConfig.HardCapMs}",
+                )
                 value = null
                 break
             }
-            value = countdownProgressForRemainingMillis(
+            val progress = countdownProgressForRemainingMillis(
                 remainingMillis = remainingMillis,
                 animationsEnabled = animationsEnabled,
             )
-            if (remainingMillis <= 0L) break
-            if (remainingMillis > RecognitionConfig.CountdownWindowMs) {
-                delay(
-                    minOf(
-                        remainingMillis - RecognitionConfig.CountdownWindowMs,
-                        CountdownPreWindowPollIntervalMs,
-                    ),
+            if (progress == null &&
+                remainingMillis > RecognitionConfig.HardCapMs &&
+                !loggedOutOfRangeDeadline
+            ) {
+                loggedOutOfRangeDeadline = true
+                Log.w(
+                    ButtonAreaTag,
+                    "Countdown deadline exceeds hard cap; hiding ring until remainingMillis falls within hardCapMs " +
+                        "(remainingMillis=$remainingMillis hardCapMs=${RecognitionConfig.HardCapMs})",
                 )
-            } else if (animationsEnabled) {
+            }
+            value = progress
+            if (remainingMillis <= 0L) break
+            if (animationsEnabled) {
                 withFrameNanos { }
             } else {
                 delay(CountdownReducedMotionPollIntervalMs)
@@ -235,16 +247,16 @@ internal fun countdownProgressForRemainingMillis(
     if (!isCountdownDeadlinePlausible(remainingMillis)) {
         return null
     }
-    if (remainingMillis <= 0L || remainingMillis > RecognitionConfig.CountdownWindowMs) {
+    if (remainingMillis <= 0L || remainingMillis > RecognitionConfig.HardCapMs) {
         return null
     }
 
     return if (animationsEnabled) {
-        remainingMillis.toFloat() / RecognitionConfig.CountdownWindowMs.toFloat()
+        remainingMillis.toFloat() / RecognitionConfig.HardCapMs.toFloat()
     } else {
-        ceil(remainingMillis / 1_000f)
-            .coerceIn(1f, RecognitionConfig.CountdownWindowMs / 1_000f) /
-            (RecognitionConfig.CountdownWindowMs / 1_000f)
+        ceil(remainingMillis / CountdownReducedMotionStepMillis)
+            .coerceIn(1f, RecognitionConfig.HardCapMs / CountdownReducedMotionStepMillis) /
+            (RecognitionConfig.HardCapMs / CountdownReducedMotionStepMillis)
     }
 }
 

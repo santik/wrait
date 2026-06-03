@@ -8,13 +8,13 @@ import org.junit.Test
 class ButtonAreaCountdownTest {
 
     @Test
-    fun countdownProgress_hiddenBeforeFinalTenSeconds() {
-        assertNull(
-            countdownProgressForRemainingMillis(
-                remainingMillis = RecognitionConfig.CountdownWindowMs + 1L,
-                animationsEnabled = true,
-            ),
+    fun countdownProgress_visibleAtFullSessionStart() {
+        val progress = countdownProgressForRemainingMillis(
+            remainingMillis = RecognitionConfig.HardCapMs,
+            animationsEnabled = true,
         )
+
+        assertEquals(1.0f, progress ?: -1f, 0.0001f)
     }
 
     @Test
@@ -34,25 +34,39 @@ class ButtonAreaCountdownTest {
     }
 
     @Test
-    fun countdownProgress_fullAtCountdownWindowBoundary() {
-        val progress = countdownProgressForRemainingMillis(
-            remainingMillis = RecognitionConfig.CountdownWindowMs,
-            animationsEnabled = true,
+    fun countdownProgress_hiddenPastFullSessionLimit() {
+        assertNull(
+            countdownProgressForRemainingMillis(
+                remainingMillis = RecognitionConfig.HardCapMs + 1L,
+                animationsEnabled = true,
+            ),
         )
+    }
 
-        assertEquals(1.0f, progress ?: -1f, 0.0001f)
+    @Test
+    fun countdownProgress_hiddenAtPlausibilityToleranceBoundaryUntilWithinHardCap() {
+        assertEquals(
+            true,
+            isCountdownDeadlinePlausible(RecognitionConfig.HardCapMs + 1_000L),
+        )
+        assertNull(
+            countdownProgressForRemainingMillis(
+                remainingMillis = RecognitionConfig.HardCapMs + 1_000L,
+                animationsEnabled = true,
+            ),
+        )
     }
 
     @Test
     fun countdownProgress_smoothWhenAnimationsEnabled() {
-        val remainingMillis = RecognitionConfig.CountdownWindowMs / 2L
+        val remainingMillis = RecognitionConfig.HardCapMs / 2L
         val progress = countdownProgressForRemainingMillis(
             remainingMillis = remainingMillis,
             animationsEnabled = true,
         )
 
         assertEquals(
-            remainingMillis.toFloat() / RecognitionConfig.CountdownWindowMs.toFloat(),
+            remainingMillis.toFloat() / RecognitionConfig.HardCapMs.toFloat(),
             progress ?: -1f,
             0.0001f,
         )
@@ -60,9 +74,9 @@ class ButtonAreaCountdownTest {
 
     @Test
     fun countdownProgress_stepsWhenAnimationsDisabled() {
-        if (RecognitionConfig.CountdownWindowMs <= 1_000L) {
+        if (RecognitionConfig.HardCapMs <= 1_000L) {
             val progress = countdownProgressForRemainingMillis(
-                remainingMillis = RecognitionConfig.CountdownWindowMs / 2L,
+                remainingMillis = RecognitionConfig.HardCapMs / 2L,
                 animationsEnabled = false,
             )
             assertEquals(1.0f, progress ?: -1f, 0.0001f)
@@ -70,7 +84,7 @@ class ButtonAreaCountdownTest {
         }
 
         val progressAtOnePointOneSeconds = countdownProgressForRemainingMillis(
-            remainingMillis = minOf(RecognitionConfig.CountdownWindowMs, 1_100L),
+            remainingMillis = minOf(RecognitionConfig.HardCapMs, 1_100L),
             animationsEnabled = false,
         )
         val progressAtZeroPointNineSeconds = countdownProgressForRemainingMillis(
@@ -79,12 +93,12 @@ class ButtonAreaCountdownTest {
         )
 
         assertEquals(
-            2f / (RecognitionConfig.CountdownWindowMs / 1_000f),
+            2f / (RecognitionConfig.HardCapMs / 1_000f),
             progressAtOnePointOneSeconds ?: -1f,
             0.0001f,
         )
         assertEquals(
-            1f / (RecognitionConfig.CountdownWindowMs / 1_000f),
+            1f / (RecognitionConfig.HardCapMs / 1_000f),
             progressAtZeroPointNineSeconds ?: -1f,
             0.0001f,
         )
