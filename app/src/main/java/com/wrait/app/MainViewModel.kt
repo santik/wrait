@@ -14,6 +14,9 @@ import com.wrait.app.data.api.RegistrationResult
 import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.speech.TranscriptionService
 import com.wrait.app.di.IoDispatcher
+import com.wrait.app.domain.config.DevModeProvider
+import com.wrait.app.domain.export.EntriesExportResult
+import com.wrait.app.domain.export.EntriesExportService
 import com.wrait.app.domain.model.Entry
 import com.wrait.app.domain.model.EntryStats
 import com.wrait.app.domain.model.PrivacyMode
@@ -55,6 +58,8 @@ class MainViewModel @Inject constructor(
     private val networkAvailability: NetworkAvailability,
     private val cleanupTranscriptUseCase: CleanupTranscriptUseCase,
     private val registerDeviceUseCase: RegisterDeviceUseCase,
+    private val entriesExportService: EntriesExportService,
+    private val devModeProvider: DevModeProvider,
     private val analyticsTracker: AnalyticsTracker,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : ViewModel() {
@@ -219,6 +224,32 @@ class MainViewModel @Inject constructor(
             analyticsTracker.trackSafely(TAG, "privacy mode toggled") {
                 trackPrivacyModeToggled(from, to)
             }
+        }
+    }
+
+    fun onExportEntriesTapped() {
+        viewModelScope.launch {
+            val message = exportEntriesMessage() ?: return@launch
+            _userMessage.emit(message)
+        }
+    }
+
+    internal suspend fun exportEntriesMessage(): String? {
+        if (!devModeProvider.isDevMode) return null
+
+        return when (
+            withContext(ioDispatcher) {
+                entriesExportService.exportFinalizedEntries()
+            }
+        ) {
+            is EntriesExportResult.Success -> "Exported entries to Downloads"
+            is EntriesExportResult.Failure -> "Couldn't export entries"
+        }
+    }
+
+    fun onExportEntriesPermissionDenied() {
+        viewModelScope.launch {
+            _userMessage.emit("Couldn't export entries")
         }
     }
 

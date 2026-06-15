@@ -56,4 +56,6 @@
     <string name="app_lock_setup_required_title">Set up device security</string>
     <string name="app_lock_setup_required_message">Set up a screen lock or biometric in Android settings to unlock wrait.</string>
     <string name="app_lock_open_security_settings">Open device security settings</string>
+    <string name="settings_dev_export_entries">Export entries</string>
+    <string name="settings_dev_export_entries_summary">Save finalized entries to Downloads as CSV</string>
 </resources>

@@ -16,6 +16,8 @@ import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.test.fake.FakeAnalyticsTracker
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
+import com.wrait.app.test.fake.FakeDevModeProvider
+import com.wrait.app.test.fake.FakeEntriesExportService
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeNetworkAvailability
@@ -89,6 +91,8 @@ class DeviceRegistrationTest {
                 registrationService = fakeRegistration,
                 ioDispatcher = testDispatcher,
             ),
+            entriesExportService = FakeEntriesExportService(),
+            devModeProvider = FakeDevModeProvider(),
             analyticsTracker = FakeAnalyticsTracker(),
             ioDispatcher = testDispatcher,
         ).also { createdVms.add(it) }

@@ -20,9 +20,11 @@ import com.wrait.app.data.api.CleanupResult
 import com.wrait.app.data.api.TranscriptCleanupService
 import com.wrait.app.data.device.NetworkAvailability
 import com.wrait.app.data.speech.TranscriptionService
+import com.wrait.app.domain.export.EntriesExportService
 import com.wrait.app.domain.model.PrivacyMode
 import com.wrait.app.domain.model.displayNameForLanguage
 import com.wrait.app.domain.repository.PreferencesRepository
+import com.wrait.app.test.fake.FakeEntriesExportService
 import com.wrait.app.test.fake.FakeNetworkAvailability
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakeTranscriptionService
@@ -55,10 +57,12 @@ class MainScreenTest {
     @Inject lateinit var transcriptCleanupService: TranscriptCleanupService
     @Inject lateinit var transcriptionService: TranscriptionService
     @Inject lateinit var networkAvailability: NetworkAvailability
+    @Inject lateinit var entriesExportService: EntriesExportService
 
     private val fakeApi get() = transcriptCleanupService as FakeTranscriptCleanupService
     private val fakeTranscription get() = transcriptionService as FakeTranscriptionService
     private val fakeNetworkAvailability get() = networkAvailability as FakeNetworkAvailability
+    private val fakeEntriesExportService get() = entriesExportService as FakeEntriesExportService
 
     @Before
     fun setUp() {
@@ -66,6 +70,7 @@ class MainScreenTest {
         fakeApi.reset()
         fakeTranscription.reset()
         fakeNetworkAvailability.reset(isAvailable = true)
+        fakeEntriesExportService.reset()
         runBlocking {
             preferencesRepository.setHasEverRecorded(false)
             preferencesRepository.setLanguage("en-US")
@@ -102,6 +107,39 @@ class MainScreenTest {
         }
 
         composeRule.onNodeWithText("Offline mode").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsPanel_showsDevExportAction() {
+        composeRule.onNodeWithContentDescription("Open settings").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("Export entries").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("Export entries").assertIsDisplayed()
+        composeRule.onNodeWithText("Save finalized entries to Downloads as CSV").assertIsDisplayed()
+    }
+
+    @Test
+    fun settingsPanel_exportAction_invokesExporter() {
+        composeRule.onNodeWithContentDescription("Open settings").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            runCatching {
+                composeRule.onNodeWithText("Export entries").assertIsDisplayed()
+                true
+            }.getOrDefault(false)
+        }
+
+        composeRule.onNodeWithText("Export entries").performClick()
+
+        composeRule.waitUntil(timeoutMillis = 3_000) {
+            fakeEntriesExportService.exportCallCount == 1
+        }
     }
 
     @Test

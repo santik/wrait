@@ -67,6 +67,8 @@ fun MainScreen(
     onSwipeUp: () -> Unit,
     onOpenSettings: () -> Unit,
     onPrivacyModeToggle: (Boolean) -> Unit,
+    showDevExport: Boolean = false,
+    onExportEntries: () -> Unit = {},
     onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
     onTapToRead: (entryId: Long) -> Unit,
@@ -182,6 +184,8 @@ fun MainScreen(
                 onLanguagesTap = onLanguagesTap,
                 privacyMode = privacyMode,
                 onModeToggle = onPrivacyModeToggle,
+                showDevExport = showDevExport,
+                onExportEntries = onExportEntries,
                 onDismiss = onSettingsPanelDismiss,
             )
         }

@@ -25,11 +25,14 @@ import com.wrait.app.data.speech.TranscriptionFailureReason
 import com.wrait.app.domain.usecase.RegisterDeviceUseCase
 import com.wrait.app.domain.repository.EntryRepository
 import com.wrait.app.test.fake.FakeDeviceRegistrationService
+import com.wrait.app.test.fake.FakeDevModeProvider
+import com.wrait.app.test.fake.FakeEntriesExportService
 import com.wrait.app.test.fake.FakeTranscriptCleanupService
 import com.wrait.app.test.fake.FakePreferencesRepository
 import com.wrait.app.test.fake.FakeNetworkAvailability
 import com.wrait.app.test.fake.FakeTranscriptionService
 import com.wrait.app.test.util.FakeTimeProvider
+import com.wrait.app.domain.export.EntriesExportResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
@@ -69,6 +72,7 @@ class MainViewModelTest {
     private lateinit var fakeNetworkAvailability: FakeNetworkAvailability
     private lateinit var fakeTime: FakeTimeProvider
     private lateinit var fakeAnalytics: FakeAnalyticsTracker
+    private lateinit var fakeEntriesExportService: FakeEntriesExportService
     private val createdVms = mutableListOf<MainViewModel>()
 
     @Before
@@ -85,6 +89,7 @@ class MainViewModelTest {
         fakeTranscription = FakeTranscriptionService()
         fakeNetworkAvailability = FakeNetworkAvailability()
         fakeAnalytics = FakeAnalyticsTracker()
+        fakeEntriesExportService = FakeEntriesExportService()
     }
 
     @After
@@ -104,6 +109,8 @@ class MainViewModelTest {
         fakeRegistration: FakeDeviceRegistrationService = FakeDeviceRegistrationService(),
         networkAvailability: NetworkAvailability = fakeNetworkAvailability,
         entryRepo: EntryRepository = entryRepository,
+        entriesExportService: FakeEntriesExportService = fakeEntriesExportService,
+        devModeProvider: FakeDevModeProvider = FakeDevModeProvider(isDevMode = true),
         analytics: FakeAnalyticsTracker = fakeAnalytics,
     ): MainViewModel {
         val deviceIdProvider = DeviceIdProvider(
@@ -123,6 +130,8 @@ class MainViewModelTest {
                 registrationService = fakeRegistration,
                 ioDispatcher = testDispatcher,
             ),
+            entriesExportService = entriesExportService,
+            devModeProvider = devModeProvider,
             analyticsTracker = analytics,
             ioDispatcher = testDispatcher
         ).also { createdVms.add(it) }
@@ -742,6 +751,45 @@ class MainViewModelTest {
 
         assertFalse(vm.showSettingsPanel.first())
         fakeTranscription.transcribeGate?.complete(Unit)
+    }
+
+    @Test
+    fun exportEntries_success_emitsSuccessMessage() = runTest(testDispatcher) {
+        val exportService = FakeEntriesExportService()
+        val vm = createViewModel(entriesExportService = exportService)
+        vm.initJob.join()
+
+        val message = vm.exportEntriesMessage()
+
+        assertEquals(1, exportService.exportCallCount)
+        assertEquals("Exported entries to Downloads", message)
+    }
+
+    @Test
+    fun exportEntries_failure_emitsFailureMessage() = runTest(testDispatcher) {
+        val exportService = FakeEntriesExportService().apply {
+            result = EntriesExportResult.Failure("forced")
+        }
+        val vm = createViewModel(entriesExportService = exportService)
+        vm.initJob.join()
+
+        val message = vm.exportEntriesMessage()
+
+        assertEquals(1, exportService.exportCallCount)
+        assertEquals("Couldn't export entries", message)
+    }
+
+    @Test
+    fun exportEntries_nonDevMode_doesNotExport() = runTest(testDispatcher) {
+        val vm = createViewModel(
+            devModeProvider = FakeDevModeProvider(isDevMode = false),
+        )
+        vm.initJob.join()
+
+        val message = vm.exportEntriesMessage()
+
+        assertEquals(null, message)
+        assertEquals(0, fakeEntriesExportService.exportCallCount)
     }
 
     private class CountingEntryRepository(

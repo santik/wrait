@@ -3,6 +3,7 @@ package com.wrait.app
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -188,6 +189,16 @@ class MainActivity : FragmentActivity() {
                     }
                 }
 
+                val requestExportPermissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission(),
+                ) { granted ->
+                    if (granted) {
+                        viewModel.onExportEntriesTapped()
+                    } else {
+                        viewModel.onExportEntriesPermissionDenied()
+                    }
+                }
+
                 LaunchedEffect(canLaunchAuthPrompt, context) {
                     if (canLaunchAuthPrompt) {
                         isPermissionGranted.value = ContextCompat.checkSelfPermission(
@@ -226,6 +237,14 @@ class MainActivity : FragmentActivity() {
                     context.startActivity(intent)
                 }
 
+                val onExportEntries: () -> Unit = {
+                    if (hasDownloadsWriteAccess(context)) {
+                        viewModel.onExportEntriesTapped()
+                    } else {
+                        requestExportPermissionLauncher.launch(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    }
+                }
+
                 val navController = rememberNavController()
 
                 AppNavHost(
@@ -245,6 +264,8 @@ class MainActivity : FragmentActivity() {
                     onPrivacyModeToggle = viewModel::onPrivacyModeToggle,
                     onSettingsPanelDismiss = viewModel::onSettingsPanelDismiss,
                     onStatusCleared = { viewModel.resetToIdle() },
+                    showDevExport = BuildConfig.DEV,
+                    onExportEntries = onExportEntries,
                     onStatusLineTap = onStatusLineTap,
                     onTapToRead = { id ->
                         viewModel.resetToIdle()
@@ -345,6 +366,14 @@ internal fun isMicrophonePermissionPermanentlyDenied(
     shouldShowRationale: Boolean,
 ): Boolean = hasRequestedPermission && !shouldShowRationale
 
+internal fun hasDownloadsWriteAccess(context: android.content.Context): Boolean {
+    return Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ||
+        ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+        ) == PackageManager.PERMISSION_GRANTED
+}
+
 @Composable
 private fun AppNavHost(
     navController: NavHostController,
@@ -363,6 +392,8 @@ private fun AppNavHost(
     onPrivacyModeToggle: (Boolean) -> Unit,
     onSettingsPanelDismiss: () -> Unit,
     onStatusCleared: () -> Unit,
+    showDevExport: Boolean,
+    onExportEntries: () -> Unit,
     onStatusLineTap: () -> Unit,
     onTapToRead: (Long) -> Unit,
     onMainButtonTapped: () -> Unit,
@@ -408,6 +439,8 @@ private fun AppNavHost(
                 onSwipeUp = onStatsLineTap,
                 onOpenSettings = onOpenSettings,
                 onPrivacyModeToggle = onPrivacyModeToggle,
+                showDevExport = showDevExport,
+                onExportEntries = onExportEntries,
                 onSettingsPanelDismiss = onSettingsPanelDismiss,
                 onStatusCleared = onStatusCleared,
                 onTapToRead = onTapToRead,
