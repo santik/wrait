@@ -44,7 +44,7 @@ import org.junit.runner.RunWith
 class MainRecordingControllerTest {
 
     private val testDispatcher = UnconfinedTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    private lateinit var testScope: TestScope
 
     private lateinit var db: WraitDatabase
     private lateinit var entryDao: EntryDao
@@ -57,6 +57,7 @@ class MainRecordingControllerTest {
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
+        testScope = TestScope(testDispatcher)
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         db = Room.inMemoryDatabaseBuilder(context, WraitDatabase::class.java)
             .allowMainThreadQueries()

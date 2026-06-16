@@ -176,10 +176,13 @@ class EntryDetailViewModelTest {
         val firstVm = createVm(entryId = id)
         val firstLoaded = firstVm.entry.first { it.getOrNull()?.id == id }
         assertEquals(id, firstLoaded.getOrNull()!!.id)
+        firstVm.viewModelScope.coroutineContext.job.cancelAndJoin()
+        createdVms.remove(firstVm)
 
         val secondVm = createVm(entryId = id)
         val secondLoaded = secondVm.entry.first { it.getOrNull()?.id == id }
         assertEquals(id, secondLoaded.getOrNull()!!.id)
+        advanceUntilIdle()
 
         assertEquals(
             2,

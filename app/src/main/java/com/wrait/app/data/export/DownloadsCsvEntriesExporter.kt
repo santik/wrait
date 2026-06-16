@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import androidx.annotation.RequiresApi
 import com.wrait.app.di.IoDispatcher
 import com.wrait.app.domain.export.EntriesExportResult
 import com.wrait.app.domain.export.EntriesExportService
@@ -69,6 +70,7 @@ class AndroidDownloadsCsvWriter @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun ContentResolver.writeCsvWithMediaStore(fileName: String, csv: String) {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
@@ -91,6 +93,7 @@ class AndroidDownloadsCsvWriter @Inject constructor(
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     private fun ContentResolver.markDownloadReady(uri: Uri) {
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.IS_PENDING, 0)
