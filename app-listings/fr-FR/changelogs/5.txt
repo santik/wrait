@@ -1,0 +1,5 @@
+• Choisissez votre langue d'enregistrement parmi 61 langues prises en charge, ou laissez Wrait la détecter automatiquement
+• Indicateur de langue sur l'écran principal pour accéder rapidement aux réglages de langue
+• Localisation complète de l'interface : l'app parle désormais anglais et russe
+• Statistiques des entrées améliorées, avec gestion correcte du pluriel
+• Les réglages sont désormais verrouillés pendant un enregistrement en cours afin d'éviter les modifications accidentelles

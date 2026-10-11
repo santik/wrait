@@ -225,7 +225,9 @@ class MainActivity : FlutterFragmentActivity() {
     }
 
     private fun enableCaptureProtection() {
-        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE == 0) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
     }
 
     private fun pickCsvImport(result: MethodChannel.Result) {

@@ -1,0 +1,42 @@
+Wrait trasforma la tua voce in un diario privato in cui puoi cercare. Basta parlare: la trascrizione con IA converte le tue parole in voci di testo ordinate. I tuoi pensieri restano cifrati sul tuo dispositivo e non vengono mai caricati nel cloud.
+
+FUNZIONALITÀ PRINCIPALI
+
+• Diario da voce a testo: registra i tuoi pensieri e ottieni subito una trascrizione con IA basata su Deepgram e OpenAI. Le tue parole diventano voci di diario pulite e leggibili.
+
+• Cifratura locale avanzata: ogni voce viene cifrata con SQLCipher prima di essere salvata. La chiave di cifratura viene generata sul tuo dispositivo e non lo lascia mai.
+
+• Oltre 60 lingue: registra e trascrivi in più di 60 lingue, tra cui inglese, spagnolo, tedesco, francese, portoghese, giapponese, coreano, arabo, hindi, cinese, russo e molte altre. In modalità cloud la lingua viene rilevata automaticamente.
+
+• Blocco app: proteggi il tuo diario con impronta digitale, sblocco facciale o PIN del dispositivo. Nessuno legge il tuo diario senza il tuo permesso.
+
+• Esporta i tuoi dati: scarica tutte le tue voci in formato CSV. I tuoi dati appartengono a te.
+
+• Design pulito e moderno: realizzata con Material Design per un'esperienza Android fluida e nativa. Nessun elemento superfluo, niente pubblicità.
+
+COME FUNZIONA
+
+1. Tocca il pulsante e racconta i tuoi pensieri
+2. L'IA trascrive automaticamente la tua voce in testo
+3. Rivedi, modifica e salva la tua voce di diario cifrata
+
+Nessun account richiesto. Nessuna registrazione. Apri l'app e inizia a parlare.
+
+LA TUA PRIVACY VIENE PRIMA DI TUTTO
+
+A differenza di altre app di diario, Wrait è stata progettata fin dall'inizio per la privacy:
+• Tutte le voci vengono cifrate prima di essere salvate
+• La chiave di cifratura viene generata sul dispositivo e non viene mai condivisa
+• Nessun backup nel cloud: il tuo diario esiste solo sul tuo telefono
+• La protezione degli screenshot impedisce di catturare le schermate delle tue voci
+• Niente pubblicità, nessun tracciamento
+
+PER CHI È WRAIT?
+
+• Chi tiene un diario ogni giorno e preferisce parlare invece di scrivere
+• Chi vuole un diario privato e sicuro, senza archiviazione nel cloud
+• Chi viaggia ogni giorno e vuole catturare i pensieri a mani libere
+• Chi parla più lingue e tiene un diario in lingue diverse
+• Chiunque dia valore alla vera privacy in un diario personale
+
+Scarica Wrait e inizia oggi il tuo diario vocale privato.
