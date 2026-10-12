@@ -66,6 +66,13 @@
   "settingsAppLockSaveFailed": "Не удалось сохранить настройку блокировки. Попробуйте снова.",
   "settingsAppLockSettingsFailed": "Не удалось открыть настройки безопасности устройства.",
   "settingsOpenDeviceSettings": "Открыть настройки устройства",
+  "settingsAppearance": "Оформление",
+  "settingsTheme": "Тема",
+  "settingsThemeSystem": "Системная",
+  "settingsThemeLight": "Светлая",
+  "settingsThemeDark": "Тёмная",
+  "settingsThemeSaveFailed": "Не удалось сохранить тему. Попробуйте снова.",
+
   "settingsTranscriptionLanguage": "Язык транскрипции",
   "settingsTranscriptionLanguageDescription": "Выберите язык, на котором вы говорите, чтобы улучшить транскрипцию. Автоматическое определение используется, когда язык не выбран.",
   "settingsAutomaticDetection": "Автоматическое определение",

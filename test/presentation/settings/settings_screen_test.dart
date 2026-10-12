@@ -7,6 +7,7 @@ import 'package:wrait/data/auth/app_lock_providers.dart';
 import 'package:wrait/data/preferences/preferences_providers.dart';
 import 'package:wrait/domain/repository/app_lock_preferences_repository.dart';
 import 'package:wrait/domain/repository/preferences_repository.dart';
+import 'package:wrait/domain/repository/theme_preferences_repository.dart';
 import 'package:wrait/domain/repository/transcription_language_preferences_repository.dart';
 import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
@@ -281,6 +282,72 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('theme segmented button defaults to system and switches modes', (
+    tester,
+  ) async {
+    final repository = _PreferencesRepository();
+    await tester.pumpWidget(
+      _app(repository: repository, authenticator: _Authenticator()),
+    );
+    await tester.pumpAndSettle();
+
+    final segmented = tester.widget<SegmentedButton<ThemeMode>>(
+      find.byKey(themeSegmentedButtonKey),
+    );
+    expect(segmented.selected, {ThemeMode.system});
+
+    await tester.tap(find.byKey(themeDarkSegmentKey));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<SegmentedButton<ThemeMode>>(
+        find.byKey(themeSegmentedButtonKey),
+      ).selected,
+      {ThemeMode.dark},
+    );
+    expect(repository.themeMode, 'dark');
+
+    await tester.tap(find.byKey(themeLightSegmentKey));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<SegmentedButton<ThemeMode>>(
+        find.byKey(themeSegmentedButtonKey),
+      ).selected,
+      {ThemeMode.light},
+    );
+    expect(repository.themeMode, 'light');
+  });
+
+  testWidgets('theme save failure shows error message', (tester) async {
+    final repository = _PreferencesRepository()..failThemeSave = true;
+    await tester.pumpWidget(
+      _app(repository: repository, authenticator: _Authenticator()),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(themeDarkSegmentKey));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(themeSaveFailedKey), findsOneWidget);
+  });
+
+  testWidgets('recording disables theme segmented button', (tester) async {
+    await tester.pumpWidget(
+      _app(
+        repository: _PreferencesRepository(),
+        authenticator: _Authenticator(),
+        recordingController: _RecordingController.new,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final segmented = tester.widget<SegmentedButton<ThemeMode>>(
+      find.byKey(themeSegmentedButtonKey),
+    );
+    expect(segmented.onSelectionChanged, isNull);
+  });
+
   testWidgets('recording disables changes until recording stops', (
     tester,
   ) async {
@@ -398,10 +465,13 @@ class _PreferencesRepository
     implements
         PreferencesRepository,
         AppLockPreferencesRepository,
+        ThemePreferencesRepository,
         TranscriptionLanguagePreferencesRepository {
   bool enabled = false;
   String? language;
+  String? themeMode;
   bool failSave = false;
+  bool failThemeSave = false;
 
   @override
   Future<bool> getAppLockEnabled() async => enabled;
@@ -429,6 +499,17 @@ class _PreferencesRepository
       throw StateError('save failed');
     }
     language = value;
+  }
+
+  @override
+  Future<String?> getThemeMode() async => themeMode;
+
+  @override
+  Future<void> setThemeMode(String value) async {
+    if (failThemeSave) {
+      throw StateError('save failed');
+    }
+    themeMode = value;
   }
 }
 

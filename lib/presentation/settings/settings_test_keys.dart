@@ -25,6 +25,12 @@ const transcriptionLanguageRetryKey = ValueKey<String>(
 
 ValueKey<String> transcriptionLanguageOptionKey(String code) =>
     ValueKey<String>('transcriptionLanguageOption:$code');
+const themeSegmentedButtonKey = ValueKey<String>('themeSegmentedButton');
+const themeSystemSegmentKey = ValueKey<String>('themeSegment:system');
+const themeLightSegmentKey = ValueKey<String>('themeSegment:light');
+const themeDarkSegmentKey = ValueKey<String>('themeSegment:dark');
+const themeSaveFailedKey = ValueKey<String>('themeSaveFailed');
+
 const appLockSwitchKey = ValueKey<String>('appLockSwitch');
 const appLockSavingKey = ValueKey<String>('appLockSaving');
 const appLockPreferenceErrorKey = ValueKey<String>('appLockPreferenceError');
