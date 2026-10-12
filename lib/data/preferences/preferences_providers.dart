@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/repository/app_lock_preferences_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
+import '../../domain/repository/theme_preferences_repository.dart';
 import '../../domain/repository/transcription_language_preferences_repository.dart';
 import 'platform_device_id_provider.dart';
 import 'preferences_repository_impl.dart';
@@ -34,6 +35,15 @@ final transcriptionLanguagePreferencesRepositoryProvider =
       };
     });
 
+final themePreferencesRepositoryProvider =
+    Provider<ThemePreferencesRepository>((ref) {
+      final repository = ref.watch(preferencesRepositoryProvider);
+      return switch (repository) {
+        ThemePreferencesRepository themeRepository => themeRepository,
+        _ => const _SystemThemePreferencesRepository(),
+      };
+    });
+
 final appLockPreferencesRepositoryProvider =
     Provider<AppLockPreferencesRepository>((ref) {
       final repository = ref.watch(preferencesRepositoryProvider);
@@ -53,6 +63,18 @@ class _DisabledAppLockPreferencesRepository
   @override
   Future<void> setAppLockEnabled(bool value) async {
     throw UnsupportedError('App-lock preferences are not writable.');
+  }
+}
+
+class _SystemThemePreferencesRepository implements ThemePreferencesRepository {
+  const _SystemThemePreferencesRepository();
+
+  @override
+  Future<String?> getThemeMode() async => null;
+
+  @override
+  Future<void> setThemeMode(String value) async {
+    throw UnsupportedError('Theme preferences are not writable.');
   }
 }
 

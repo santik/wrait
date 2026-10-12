@@ -57,6 +57,56 @@ void main() {
     );
   });
 
+  test('theme mode defaults to null (system) when unset', () async {
+    expect(await repository.getThemeMode(), isNull);
+  });
+
+  test('theme mode persists valid values and survives recreation', () async {
+    await repository.setThemeMode('dark');
+    expect(await repository.getThemeMode(), 'dark');
+
+    await repository.setThemeMode('light');
+    expect(await repository.getThemeMode(), 'light');
+
+    await repository.setThemeMode('system');
+    final recreated = PreferencesRepositoryImpl(
+      preferencesStore: preferencesStore,
+      deviceIdProvider: _FakePlatformDeviceIdProvider(null),
+    );
+    expect(await recreated.getThemeMode(), 'system');
+  });
+
+  test('invalid stored theme mode resolves to null', () async {
+    preferencesStore.stringValues[PreferencesRepositoryImpl.themeModeKey] =
+        'neon';
+    expect(await repository.getThemeMode(), isNull);
+  });
+
+  test('rejects unsupported theme mode without writing', () async {
+    await expectLater(
+      repository.setThemeMode('neon'),
+      throwsArgumentError,
+    );
+    expect(
+      preferencesStore.stringValues[PreferencesRepositoryImpl.themeModeKey],
+      isNull,
+    );
+  });
+
+  test('failed theme mode write throws StateError', () async {
+    preferencesStore.failStringWrites = true;
+    await expectLater(
+      repository.setThemeMode('dark'),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'Failed to persist themeMode',
+        ),
+      ),
+    );
+  });
+
   test('app lock defaults to false when unset', () async {
     await expectLater(repository.getAppLockEnabled(), completion(isFalse));
   });

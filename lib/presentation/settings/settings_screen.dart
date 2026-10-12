@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/auth/app_lock_providers.dart';
 import '../../data/preferences/app_lock_preference_controller.dart';
+import '../../data/preferences/theme_mode_controller.dart';
 import '../../data/preferences/transcription_language_controller.dart';
 import '../../data/transcription/transcription_providers.dart';
 import '../../domain/model/supported_language.dart';
@@ -220,6 +221,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             else if (preference.issue != null)
               _PreferenceIssue(issue: preference.issue!),
             const SizedBox(height: WraitSpacingTokens.lg),
+            const _ThemeSection(),
+            const SizedBox(height: WraitSpacingTokens.lg),
             KeyedSubtree(
               key: _languageSectionKey,
               child: const SizedBox(
@@ -424,6 +427,70 @@ class _PreferenceIssue extends ConsumerWidget {
             child: Text(l10n.settingsOpenDeviceSettings),
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _ThemeSection extends ConsumerWidget {
+  const _ThemeSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final themeState = ref.watch(themeModeControllerProvider);
+    final transcriptionActive = ref.watch(transcriptionActivityProvider);
+    final recordingActive = ref.watch(
+      mainRecordingControllerProvider.select((state) => state.isActive),
+    );
+    final activityActive = recordingActive || transcriptionActive;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.settingsAppearance,
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
+        const SizedBox(height: WraitSpacingTokens.sm),
+        SizedBox(
+          width: double.infinity,
+          child: SegmentedButton<ThemeMode>(
+            key: themeSegmentedButtonKey,
+            segments: [
+              ButtonSegment(
+                value: ThemeMode.system,
+                label: Text(l10n.settingsThemeSystem,
+                    key: themeSystemSegmentKey),
+                icon: const Icon(Icons.brightness_auto_outlined),
+              ),
+              ButtonSegment(
+                value: ThemeMode.light,
+                label: Text(l10n.settingsThemeLight,
+                    key: themeLightSegmentKey),
+                icon: const Icon(Icons.light_mode_outlined),
+              ),
+              ButtonSegment(
+                value: ThemeMode.dark,
+                label: Text(l10n.settingsThemeDark,
+                    key: themeDarkSegmentKey),
+                icon: const Icon(Icons.dark_mode_outlined),
+              ),
+            ],
+            selected: {themeState.themeMode},
+            onSelectionChanged: themeState.isSaving || activityActive
+                ? null
+                : (selected) {
+                    unawaited(
+                      ref
+                          .read(themeModeControllerProvider.notifier)
+                          .setThemeMode(selected.first),
+                    );
+                  },
+          ),
+        ),
+        if (themeState.saveFailed)
+          _Message(key: themeSaveFailedKey, text: l10n.settingsThemeSaveFailed),
       ],
     );
   }

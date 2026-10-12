@@ -243,6 +243,25 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsOpenDeviceSettings => 'Открыть настройки устройства';
 
   @override
+  String get settingsAppearance => 'Оформление';
+
+  @override
+  String get settingsTheme => 'Тема';
+
+  @override
+  String get settingsThemeSystem => 'Системная';
+
+  @override
+  String get settingsThemeLight => 'Светлая';
+
+  @override
+  String get settingsThemeDark => 'Тёмная';
+
+  @override
+  String get settingsThemeSaveFailed =>
+      'Не удалось сохранить тему. Попробуйте снова.';
+
+  @override
   String get settingsTranscriptionLanguage => 'Язык транскрипции';
 
   @override

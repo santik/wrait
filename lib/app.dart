@@ -5,6 +5,7 @@ import 'package:wiredash/wiredash.dart';
 
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
+import 'data/preferences/theme_mode_controller.dart';
 import 'l10n/app_localizations.dart';
 import 'presentation/app_lock/app_lock_gate.dart';
 import 'presentation/locale/app_localizations_fallback.dart';
@@ -24,13 +25,16 @@ class WraitApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     final appConfig = ref.watch(appConfigProvider);
+    final themeMode = ref.watch(
+      themeModeControllerProvider.select((s) => s.themeMode),
+    );
 
     return MaterialApp.router(
       title: 'Wrait',
       debugShowCheckedModeBanner: false,
       theme: wraitLightTheme,
       darkTheme: wraitDarkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       localizationsDelegates: appLocalizationsDelegates,
       supportedLocales: _buildSupportedLocales(),
       routerConfig: router,
