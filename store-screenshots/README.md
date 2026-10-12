@@ -17,8 +17,8 @@ SCREENS=main,entries npm run screenshots
 npm run compare                   # replicas vs real screenshots -> out/compare/*.png
 ```
 
-Output: `out/<device>/<theme>/<locale>/0N-<screen>.png`, phone 1080x1920,
-tablet 1600x2560.
+Output: `out/<device>/<theme>/<locale>/<locale>_<device>_<theme>_0N-<screen>.png`
+(e.g. `de-DE_phone_dark_01-main.png`), phone 1080x1920, tablet 1600x2560.
 
 ## Layout
 

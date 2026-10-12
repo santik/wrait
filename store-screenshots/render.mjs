@@ -7,7 +7,7 @@
 //   SCREENS=main,entries node render.mjs
 //
 // Flags: --phone --tablet (devices), --dark --light (themes); none = all.
-// Output: out/<device>/<theme>/<locale>/0N-<screen>.png
+// Output: out/<device>/<theme>/<locale>/<locale>_<device>_<theme>_0N-<screen>.png
 //         phone 1080x1920, tablet 1600x2560
 import { readdir, readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -113,7 +113,10 @@ for (const deviceName of deviceNames) for (const themeName of themeNames) {
       const frame = page.frames().find((f) => f !== page.mainFrame());
       await frame.waitForLoadState('load');
       await frame.evaluate(() => document.fonts.ready);
-      const file = path.join(outDir, `${String(i + 1).padStart(2, '0')}-${screen.id}.png`);
+      const file = path.join(
+        outDir,
+        `${tag}_${deviceName}_${themeName}_${String(i + 1).padStart(2, '0')}-${screen.id}.png`,
+      );
       await page.screenshot({ path: file });
       console.log(path.relative(root, file));
     }
