@@ -1,0 +1,5 @@
+• Escolha o idioma de gravação entre 61 idiomas ou deixe o Wrait detectar automaticamente
+• Indicador de idioma na tela principal para acesso rápido às configurações
+• Localização completa da interface — o app agora fala inglês e russo
+• Estatísticas de entradas melhoradas com pluralização correta
+• Configurações bloqueadas durante gravação ativa para evitar alterações acidentais

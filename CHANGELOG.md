@@ -2,6 +2,26 @@
 
 All notable changes to wrait are documented here.
 
+## [1.0.4] - 2026-10-10
+
+### Added
+
+- Transcription language selection: choose the recording language from 61
+  supported languages or let the app detect it automatically.
+- Language indicator on the main screen with quick access to language settings.
+- Full UI localization for English and Russian using Flutter Gen-L10n.
+- Localized app store descriptions for German, Spanish, Japanese, Korean, and
+  Portuguese Brazilian regions.
+- Playwright-based tooling for generating localized app store screenshots.
+
+### Changed
+
+- Backend API client now sends the selected language as a query parameter so
+  the transcription service uses the correct model.
+- Improved pluralization for entry statistics using ICU plural forms.
+- Settings screen guards against changes during an active recording or
+  transcription.
+
 ## [1.0.3] - 2026-09-30
 
 ### Added

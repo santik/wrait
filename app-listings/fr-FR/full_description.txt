@@ -1,0 +1,42 @@
+Wrait transforme votre voix en journal intime privé et consultable. Il suffit de parler : la transcription par IA convertit vos mots en entrées de texte bien organisées. Vos pensées restent chiffrées sur votre appareil et ne sont jamais envoyées dans le cloud.
+
+FONCTIONNALITÉS CLÉS
+
+• Journal voix-texte : enregistrez vos pensées et obtenez instantanément une transcription par IA, propulsée par Deepgram et OpenAI. Vos paroles deviennent des entrées de journal claires et lisibles.
+
+• Chiffrement local robuste : chaque entrée est chiffrée avec SQLCipher avant d'être stockée. Votre clé de chiffrement est générée sur votre appareil et ne le quitte jamais.
+
+• Plus de 60 langues : enregistrez et transcrivez dans plus de 60 langues, dont l'anglais, l'espagnol, l'allemand, le français, le portugais, le japonais, le coréen, l'arabe, l'hindi, le chinois, le russe et bien d'autres. Le mode cloud détecte automatiquement votre langue.
+
+• Verrouillage de l'app : protégez votre journal par empreinte digitale, déverrouillage facial ou code PIN de l'appareil. Personne ne lit votre journal sans votre autorisation.
+
+• Export de vos données : téléchargez toutes vos entrées au format CSV. Vos données vous appartiennent.
+
+• Design épuré et moderne : conçue avec Material Design pour une expérience Android fluide et native. Pas de fouillis, pas de publicité.
+
+COMMENT ÇA MARCHE
+
+1. Appuyez sur le bouton et dites ce que vous pensez
+2. L'IA transcrit automatiquement votre voix en texte
+3. Relisez, modifiez et enregistrez votre entrée de journal chiffrée
+
+Aucun compte requis. Aucune inscription. Ouvrez l'app et commencez à parler.
+
+VOTRE VIE PRIVÉE AVANT TOUT
+
+Contrairement à d'autres applications de journal, Wrait a été conçue dès le départ pour protéger votre vie privée :
+• Toutes les entrées sont chiffrées avant d'être stockées
+• Votre clé de chiffrement est générée sur l'appareil et jamais partagée
+• Aucune sauvegarde dans le cloud : votre journal n'existe que sur votre téléphone
+• La protection contre les captures d'écran empêche de capturer vos entrées
+• Aucune publicité, aucun suivi
+
+À QUI S'ADRESSE WRAIT ?
+
+• Aux personnes qui tiennent un journal au quotidien et préfèrent parler plutôt qu'écrire
+• À celles et ceux qui veulent un journal privé et sécurisé, sans stockage dans le cloud
+• Aux voyageurs du quotidien qui capturent leurs idées sans les mains
+• Aux utilisateurs multilingues qui écrivent leur journal dans plusieurs langues
+• À toute personne qui accorde une vraie importance à la confidentialité de son journal intime
+
+Téléchargez Wrait et commencez dès aujourd'hui votre journal vocal privé.

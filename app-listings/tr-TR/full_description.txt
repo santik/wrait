@@ -1,0 +1,42 @@
+Wrait, sesini özel ve aranabilir bir günlüğe dönüştürür. Sadece konuş — yapay zekâ ile yazıya dökme, söylediklerini düzenli metin kayıtlarına çevirir. Düşüncelerin cihazında şifreli kalır, asla buluta yüklenmez.
+
+ÖNE ÇIKAN ÖZELLİKLER
+
+• Sesten Metne Günlük: Düşüncelerini kaydet, Deepgram ve OpenAI destekli yapay zekâ ile anında yazıya dök. Söylediklerin temiz ve okunaklı günlük kayıtlarına dönüşür.
+
+• Güçlü Yerel Şifreleme: Her kayıt, depolamaya yazılmadan önce SQLCipher ile şifrelenir. Şifreleme anahtarın cihazında oluşturulur ve cihazından asla çıkmaz.
+
+• 60'tan Fazla Dil: Türkçe, İngilizce, İspanyolca, Almanca, Fransızca, Portekizce, Japonca, Korece, Arapça, Hintçe, Çince, Rusça ve daha birçok dahil 60'tan fazla dilde kayıt yap ve yazıya dök. Bulut modu dilini otomatik olarak algılar.
+
+• Uygulama Kilidi: Günlüğünü parmak izi, yüz tanıma veya cihaz PIN'in ile koru. İznin olmadan kimse günlüğünü okuyamaz.
+
+• Verilerini Dışa Aktar: Tüm kayıtlarını CSV olarak indir. Verilerin sana aittir.
+
+• Sade, Modern Tasarım: Akıcı ve yerel bir Android deneyimi için Material Design ile geliştirildi. Karmaşa yok, reklam yok.
+
+NASIL ÇALIŞIR?
+
+1. Düğmeye dokun ve düşüncelerini söyle
+2. Yapay zekâ sesini otomatik olarak yazıya döker
+3. Şifreli günlük kaydını gözden geçir, düzenle ve kaydet
+
+Hesap gerekmez. Üye olmak gerekmez. Uygulamayı aç ve konuşmaya başla.
+
+GİZLİLİĞİN ÖNCELİĞİMİZ
+
+Diğer günlük uygulamalarının aksine Wrait, en baştan gizlilik gözetilerek geliştirildi:
+• Tüm kayıtlar saklanmadan önce şifrelenir
+• Şifreleme anahtarın cihazında oluşturulur ve asla paylaşılmaz
+• Bulut yedekleme yok — günlüğün yalnızca telefonunda durur
+• Ekran görüntüsü koruması, kayıtlarının ekran görüntüsünün alınmasını engeller
+• Reklam yok, izleme yok
+
+WRAIT KİMLER İÇİN?
+
+• Yazmak yerine konuşmayı tercih eden günlük tutanlar
+• Bulut depolama olmadan özel ve güvenli bir günlük isteyenler
+• Yolda düşüncelerini eller serbest not alanlar
+• Farklı dillerde günlük tutan çok dilli kullanıcılar
+• Kişisel günlüğünde gerçek gizliliğe önem veren herkes
+
+Wrait'i indir ve özel sesli günlüğünü bugün başlat.

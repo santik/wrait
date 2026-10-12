@@ -1,0 +1,5 @@
+• Kayıt dilini desteklenen 61 dil arasından seç veya Wrait'in otomatik algılamasına bırak
+• Dil ayarlarına hızlı erişim için ana ekranda dil göstergesi
+• Tam arayüz yerelleştirmesi — uygulama artık İngilizce ve Rusça konuşuyor
+• Doğru çoğul biçimleriyle geliştirilmiş kayıt istatistikleri
+• Yanlışlıkla değişiklik yapılmasını önlemek için etkin kayıt sırasında ayarlar artık kilitleniyor
