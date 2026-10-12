@@ -239,6 +239,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get settingsOpenDeviceSettings => 'Abrir ajustes do dispositivo';
 
   @override
+  String get settingsAppearance => 'Aparência';
+
+  @override
+  String get settingsTheme => 'Tema';
+
+  @override
+  String get settingsThemeSystem => 'Sistema';
+
+  @override
+  String get settingsThemeLight => 'Claro';
+
+  @override
+  String get settingsThemeDark => 'Escuro';
+
+  @override
+  String get settingsThemeSaveFailed =>
+      'Não foi possível salvar o tema. Tente novamente.';
+
+  @override
   String get settingsTranscriptionLanguage => 'Idioma de transcrição';
 
   @override

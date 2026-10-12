@@ -223,6 +223,24 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsOpenDeviceSettings => '기기 설정 열기';
 
   @override
+  String get settingsAppearance => '화면';
+
+  @override
+  String get settingsTheme => '테마';
+
+  @override
+  String get settingsThemeSystem => '시스템';
+
+  @override
+  String get settingsThemeLight => '라이트';
+
+  @override
+  String get settingsThemeDark => '다크';
+
+  @override
+  String get settingsThemeSaveFailed => '테마를 저장할 수 없습니다. 다시 시도해 주세요.';
+
+  @override
   String get settingsTranscriptionLanguage => '음성 인식 언어';
 
   @override

@@ -239,6 +239,24 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsOpenDeviceSettings => 'Cihaz ayarlarını aç';
 
   @override
+  String get settingsAppearance => 'Görünüm';
+
+  @override
+  String get settingsTheme => 'Tema';
+
+  @override
+  String get settingsThemeSystem => 'Sistem';
+
+  @override
+  String get settingsThemeLight => 'Açık';
+
+  @override
+  String get settingsThemeDark => 'Koyu';
+
+  @override
+  String get settingsThemeSaveFailed => 'Tema kaydedilemedi. Tekrar deneyin.';
+
+  @override
   String get settingsTranscriptionLanguage => 'Yazıya dökme dili';
 
   @override

@@ -222,6 +222,24 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsOpenDeviceSettings => '端末の設定を開く';
 
   @override
+  String get settingsAppearance => '外観';
+
+  @override
+  String get settingsTheme => 'テーマ';
+
+  @override
+  String get settingsThemeSystem => 'システム';
+
+  @override
+  String get settingsThemeLight => 'ライト';
+
+  @override
+  String get settingsThemeDark => 'ダーク';
+
+  @override
+  String get settingsThemeSaveFailed => 'テーマを保存できませんでした。もう一度お試しください。';
+
+  @override
   String get settingsTranscriptionLanguage => '文字起こし言語';
 
   @override

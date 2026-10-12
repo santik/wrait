@@ -221,6 +221,24 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsOpenDeviceSettings => '打开设备设置';
 
   @override
+  String get settingsAppearance => '外观';
+
+  @override
+  String get settingsTheme => '主题';
+
+  @override
+  String get settingsThemeSystem => '跟随系统';
+
+  @override
+  String get settingsThemeLight => '浅色';
+
+  @override
+  String get settingsThemeDark => '深色';
+
+  @override
+  String get settingsThemeSaveFailed => '无法保存主题，请重试。';
+
+  @override
   String get settingsTranscriptionLanguage => '转写语言';
 
   @override

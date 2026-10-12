@@ -240,6 +240,25 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsOpenDeviceSettings => 'Abrir ajustes del dispositivo';
 
   @override
+  String get settingsAppearance => 'Apariencia';
+
+  @override
+  String get settingsTheme => 'Tema';
+
+  @override
+  String get settingsThemeSystem => 'Sistema';
+
+  @override
+  String get settingsThemeLight => 'Claro';
+
+  @override
+  String get settingsThemeDark => 'Oscuro';
+
+  @override
+  String get settingsThemeSaveFailed =>
+      'No se pudo guardar el tema. Inténtalo de nuevo.';
+
+  @override
   String get settingsTranscriptionLanguage => 'Idioma de transcripción';
 
   @override
@@ -806,6 +825,25 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
 
   @override
   String get settingsOpenDeviceSettings => 'Abrir ajustes del dispositivo';
+
+  @override
+  String get settingsAppearance => 'Apariencia';
+
+  @override
+  String get settingsTheme => 'Tema';
+
+  @override
+  String get settingsThemeSystem => 'Sistema';
+
+  @override
+  String get settingsThemeLight => 'Claro';
+
+  @override
+  String get settingsThemeDark => 'Oscuro';
+
+  @override
+  String get settingsThemeSaveFailed =>
+      'No se pudo guardar el tema. Inténtalo de nuevo.';
 
   @override
   String get settingsTranscriptionLanguage => 'Idioma de transcripción';
