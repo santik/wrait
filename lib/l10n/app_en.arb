@@ -114,6 +114,13 @@
   "settingsAppLockSaveFailed": "Could not save the app-lock setting. Try again.",
   "settingsAppLockSettingsFailed": "Could not open device security settings.",
   "settingsOpenDeviceSettings": "Open device settings",
+  "settingsAppearance": "Appearance",
+  "settingsTheme": "Theme",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsThemeSaveFailed": "Could not save theme. Try again.",
+
   "settingsTranscriptionLanguage": "Transcription language",
   "settingsTranscriptionLanguageDescription": "Choose the language you speak to improve transcription. Automatic detection is used when no language is selected.",
   "settingsAutomaticDetection": "Automatic detection",

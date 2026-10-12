@@ -237,6 +237,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOpenDeviceSettings => 'Open device settings';
 
   @override
+  String get settingsAppearance => 'Appearance';
+
+  @override
+  String get settingsTheme => 'Theme';
+
+  @override
+  String get settingsThemeSystem => 'System';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsThemeSaveFailed => 'Could not save theme. Try again.';
+
+  @override
   String get settingsTranscriptionLanguage => 'Transcription language';
 
   @override

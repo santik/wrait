@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/repository/app_lock_preferences_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
+import '../../domain/repository/theme_preferences_repository.dart';
 import '../../domain/repository/transcription_language_preferences_repository.dart';
 import '../../domain/model/supported_language.dart';
 import 'platform_device_id_provider.dart';
@@ -55,6 +56,7 @@ class PreferencesRepositoryImpl
     implements
         PreferencesRepository,
         AppLockPreferencesRepository,
+        ThemePreferencesRepository,
         TranscriptionLanguagePreferencesRepository {
   PreferencesRepositoryImpl({
     SharedPreferences? sharedPreferences,
@@ -73,13 +75,36 @@ class PreferencesRepositoryImpl
   static const appLockEnabledKey = 'app_lock_enabled';
   static const deviceIdKey = 'app_device_id';
   static const transcriptionLanguageKey = 'transcription_language';
+  static const themeModeKey = 'theme_mode';
   static const deviceIdSalt = 'wrait-v1';
+
+  static const validThemeModes = {'system', 'light', 'dark'};
 
   final PlatformDeviceIdProvider deviceIdProvider;
   final PreferencesStore _preferencesStore;
   final Random _random;
   String? _cachedDeviceId;
   bool? _confirmedAppLockEnabled;
+
+  @override
+  Future<String?> getThemeMode() async {
+    final stored = _preferencesStore.get(themeModeKey);
+    if (stored is! String || !validThemeModes.contains(stored)) {
+      return null;
+    }
+    return stored;
+  }
+
+  @override
+  Future<void> setThemeMode(String value) async {
+    if (!validThemeModes.contains(value)) {
+      throw ArgumentError.value(value, 'value', 'must be system, light, or dark');
+    }
+    final persisted = await _preferencesStore.setString(themeModeKey, value);
+    if (!persisted) {
+      throw StateError('Failed to persist themeMode');
+    }
+  }
 
   @override
   Future<String?> getTranscriptionLanguage() async {
