@@ -2,15 +2,23 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz_core;
 
 import 'app.dart';
 import 'core/config/app_config.dart';
+import 'data/api/backend_providers.dart';
 import 'data/entries/entry_providers.dart';
 import 'data/launch/app_launch_providers.dart';
 import 'data/entries/local_entry_database.dart';
 import 'data/preferences/preferences_providers.dart';
+import 'data/preferences/reminders_enabled_controller.dart';
+import 'data/reminders/notification_scheduler.dart';
+import 'data/reminders/reminder_providers.dart';
 import 'presentation/theme/wrait_theme.dart';
 
 const _captureValidationMode = bool.fromEnvironment(
@@ -52,14 +60,32 @@ Future<AppBootstrapRuntime> bootstrapAppRuntime(AppConfig appConfig) async {
   final sharedPreferences = await SharedPreferences.getInstance();
   developer.log('Shared preferences ready.', name: 'AppBootstrap');
 
+  developer.log('Initializing notifications.', name: 'AppBootstrap');
+  tz.initializeTimeZones();
+  final timeZoneName = await FlutterTimezone.getLocalTimezone();
+  tz_core.setLocalLocation(tz_core.getLocation(timeZoneName));
+
+  final notificationsPlugin = FlutterLocalNotificationsPlugin();
+  const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const darwinSettings = DarwinInitializationSettings();
+  const initSettings = InitializationSettings(
+    android: androidSettings,
+    iOS: darwinSettings,
+  );
+  await notificationsPlugin.initialize(initSettings);
+  developer.log('Notifications ready.', name: 'AppBootstrap');
+
   final appContainer = createAppContainer(
     appConfig: appConfig,
     entryDatabase: entryDatabase,
     sharedPreferences: sharedPreferences,
+    notificationsPlugin: notificationsPlugin,
   );
   developer.log('Provider container ready.', name: 'AppBootstrap');
   startAppLaunchWork(appContainer);
   developer.log('Launch registration started.', name: 'AppBootstrap');
+  _scheduleRemindersOnLaunch(appContainer);
+  startQuotaReminderSync(appContainer);
 
   return AppBootstrapRuntime(
     container: appContainer,
@@ -302,6 +328,7 @@ ProviderContainer createAppContainer({
   required AppConfig appConfig,
   SharedPreferences? sharedPreferences,
   LocalEntryDatabase? entryDatabase,
+  FlutterLocalNotificationsPlugin? notificationsPlugin,
   Iterable overrides = const [],
 }) {
   return ProviderContainer(
@@ -311,6 +338,10 @@ ProviderContainer createAppContainer({
         localEntryDatabaseProvider.overrideWithValue(entryDatabase),
       if (sharedPreferences != null)
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+      if (notificationsPlugin != null)
+        notificationSchedulerProvider.overrideWithValue(
+          PluginNotificationScheduler(notificationsPlugin),
+        ),
       ...overrides,
     ],
   );
@@ -318,6 +349,30 @@ ProviderContainer createAppContainer({
 
 void startAppLaunchWork(ProviderContainer appContainer) {
   unawaited(appContainer.read(appLaunchWorkUseCaseProvider).call());
+}
+
+void _scheduleRemindersOnLaunch(ProviderContainer container) {
+  unawaited(() async {
+    try {
+      final controller = container.read(
+        remindersEnabledControllerProvider.notifier,
+      );
+      await controller.load();
+      final state = container.read(remindersEnabledControllerProvider);
+      if (state.enabled) {
+        final scheduler = container.read(reminderSchedulerProvider);
+        final quotaState = container.read(sessionRecordQuotaStateProvider);
+        await scheduler.updateSchedule(enabled: true, quotaState: quotaState);
+      }
+    } catch (error, stackTrace) {
+      developer.log(
+        'Failed to schedule reminders on launch.',
+        name: 'AppBootstrap',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }());
 }
 
 class _CaptureValidationApp extends StatelessWidget {

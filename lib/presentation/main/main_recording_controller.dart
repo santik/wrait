@@ -13,6 +13,7 @@ import '../../data/audio/audio_recording_service.dart';
 import '../../data/audio/microphone_permission_service.dart';
 import '../../data/entries/entry_providers.dart';
 import '../../data/preferences/preferences_providers.dart';
+import '../../data/reminders/reminder_providers.dart';
 import '../../data/transcription/transcription_providers.dart';
 import '../../data/transcription/transcription_service.dart';
 import '../../domain/repository/entry_repository.dart';
@@ -397,6 +398,7 @@ class MainRecordingController extends Notifier<RecordingControllerState> {
           return;
         }
         await _markHasEverRecorded();
+        notifyEntryCreatedFromRef(ref);
         state = state.copyWith(
           recordingState: RecordingSaved(
             entryId: entryId,

@@ -173,5 +173,13 @@
   "feedbackCategoryBug": "Error",
   "feedbackCategoryIdea": "Idea",
   "feedbackCategoryConfusing": "Confuso",
-  "feedbackCategoryPraise": "Elogio"
+  "feedbackCategoryPraise": "Elogio",
+  "settingsReminders": "Recordatorios",
+  "settingsRemindersToggle": "Recordatorios diarios",
+  "settingsRemindersDescription": "Recibe recordatorios para escribir en tu diario por la mañana y por la noche",
+  "settingsRemindersPermissionDenied": "Se necesita permiso de notificaciones para los recordatorios. Actívalo en los ajustes del dispositivo.",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "Comienza tu día con una reflexión",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "Aún te quedan grabaciones hoy"
 }

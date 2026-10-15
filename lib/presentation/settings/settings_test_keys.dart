@@ -32,6 +32,11 @@ const themeDarkSegmentKey = ValueKey<String>('themeSegment:dark');
 const themeSaveFailedKey = ValueKey<String>('themeSaveFailed');
 
 const appLockSwitchKey = ValueKey<String>('appLockSwitch');
-const appLockSavingKey = ValueKey<String>('appLockSaving');
 const appLockPreferenceErrorKey = ValueKey<String>('appLockPreferenceError');
 const appLockDeviceSettingsKey = ValueKey<String>('appLockDeviceSettings');
+
+const remindersToggleKey = ValueKey<String>('remindersToggle');
+const remindersPermissionDeniedKey = ValueKey<String>(
+  'remindersPermissionDenied',
+);
+const remindersOpenSettingsKey = ValueKey<String>('remindersOpenSettings');

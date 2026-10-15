@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/repository/app_lock_preferences_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
+import '../../domain/repository/reminders_preferences_repository.dart';
 import '../../domain/repository/theme_preferences_repository.dart';
 import '../../domain/repository/transcription_language_preferences_repository.dart';
 import '../../domain/model/supported_language.dart';
@@ -56,6 +57,7 @@ class PreferencesRepositoryImpl
     implements
         PreferencesRepository,
         AppLockPreferencesRepository,
+        RemindersPreferencesRepository,
         ThemePreferencesRepository,
         TranscriptionLanguagePreferencesRepository {
   PreferencesRepositoryImpl({
@@ -76,6 +78,7 @@ class PreferencesRepositoryImpl
   static const deviceIdKey = 'app_device_id';
   static const transcriptionLanguageKey = 'transcription_language';
   static const themeModeKey = 'theme_mode';
+  static const remindersEnabledKey = 'reminders_enabled';
   static const deviceIdSalt = 'wrait-v1';
 
   static const validThemeModes = {'system', 'light', 'dark'};
@@ -171,6 +174,22 @@ class PreferencesRepositoryImpl
     }
 
     _confirmedAppLockEnabled = value;
+  }
+
+  @override
+  Future<bool> getRemindersEnabled() async {
+    return _preferencesStore.getBool(remindersEnabledKey) ?? false;
+  }
+
+  @override
+  Future<void> setRemindersEnabled(bool value) async {
+    final persisted = await _preferencesStore.setBool(
+      remindersEnabledKey,
+      value,
+    );
+    if (!persisted) {
+      throw StateError('Failed to persist remindersEnabled');
+    }
   }
 
   @override

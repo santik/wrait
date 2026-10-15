@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../data/auth/app_lock_providers.dart';
 import '../../data/preferences/app_lock_preference_controller.dart';
+import '../../data/preferences/reminders_enabled_controller.dart';
 import '../../data/preferences/theme_mode_controller.dart';
 import '../../data/preferences/transcription_language_controller.dart';
 import '../../data/transcription/transcription_providers.dart';
@@ -33,17 +35,21 @@ class SettingsScreen extends ConsumerStatefulWidget {
   ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen>
+    with WidgetsBindingObserver {
   final _languageSectionKey = GlobalKey();
   final _languageFocusNode = FocusNode();
   final _languageMenuController = MenuController();
   final _languageTextController = TextEditingController();
   bool _focusScheduled = false;
   bool _languageTextSyncScheduled = false;
+  bool _remindersPermissionDenied = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(ref.read(remindersEnabledControllerProvider.notifier).load());
     _scheduleLanguageFocusIfNeeded();
   }
 
@@ -58,10 +64,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   @override
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _languageFocusNode.dispose();
     _languageTextController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _remindersPermissionDenied) {
+      Permission.notification.status.then((status) {
+        if (mounted && status.isGranted) {
+          setState(() {
+            _remindersPermissionDenied = false;
+          });
+        }
+      });
+    }
   }
 
   /// DropdownMenu writes the picked label into its text controller before
@@ -91,6 +112,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         );
       }
     });
+  }
+
+  Future<void> _handleRemindersToggle(bool value) async {
+    var permissionDenied = false;
+    if (value) {
+      try {
+        var status = await Permission.notification.status;
+        if (!status.isGranted) {
+          status = await Permission.notification.request();
+        }
+        permissionDenied = !status.isGranted;
+      } catch (_) {
+        // Permission lookup failed; the preference is still saved below.
+        permissionDenied = false;
+      }
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _remindersPermissionDenied = permissionDenied;
+    });
+    // The preference is saved regardless of permission status.
+    await ref
+        .read(remindersEnabledControllerProvider.notifier)
+        .setEnabled(value);
   }
 
   String _languageLabel(TranscriptionLanguageState state) {
@@ -148,6 +195,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final languagePreference = ref.watch(
       transcriptionLanguageControllerProvider,
     );
+    final remindersState = ref.watch(remindersEnabledControllerProvider);
     final transcriptionActive = ref.watch(transcriptionActivityProvider);
     final recordingActive = ref.watch(
       mainRecordingControllerProvider.select((state) => state.isActive),
@@ -209,10 +257,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     }
                   : null,
             ),
-            if (preference.isSaving) ...[
-              const SizedBox(height: WraitSpacingTokens.sm),
-              const LinearProgressIndicator(key: appLockSavingKey),
-            ],
             if (!buildAllowsLock)
               _Message(
                 key: appLockPreferenceErrorKey,
@@ -220,6 +264,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               )
             else if (preference.issue != null)
               _PreferenceIssue(issue: preference.issue!),
+            const SizedBox(height: WraitSpacingTokens.lg),
+            Text(
+              l10n.settingsReminders,
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: WraitSpacingTokens.sm),
+            SwitchListTile.adaptive(
+              key: remindersToggleKey,
+              contentPadding: EdgeInsets.zero,
+              title: Text(l10n.settingsRemindersToggle),
+              subtitle: Text(l10n.settingsRemindersDescription),
+              value: remindersState.isReady && remindersState.enabled,
+              onChanged:
+                  remindersState.isReady &&
+                      !remindersState.isSaving &&
+                      !activityActive
+                  ? (value) {
+                      unawaited(_handleRemindersToggle(value));
+                    }
+                  : null,
+            ),
+            if (_remindersPermissionDenied && remindersState.enabled) ...[
+              _Message(
+                key: remindersPermissionDeniedKey,
+                text: l10n.settingsRemindersPermissionDenied,
+              ),
+              const SizedBox(height: WraitSpacingTokens.sm),
+              OutlinedButton(
+                key: remindersOpenSettingsKey,
+                onPressed: () {
+                  unawaited(openAppSettings());
+                },
+                child: Text(l10n.settingsOpenDeviceSettings),
+              ),
+            ],
             const SizedBox(height: WraitSpacingTokens.lg),
             const _ThemeSection(),
             const SizedBox(height: WraitSpacingTokens.lg),

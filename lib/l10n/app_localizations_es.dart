@@ -259,6 +259,32 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo guardar el tema. Inténtalo de nuevo.';
 
   @override
+  String get settingsReminders => 'Recordatorios';
+
+  @override
+  String get settingsRemindersToggle => 'Recordatorios diarios';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Recibe recordatorios para escribir en tu diario por la mañana y por la noche';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'Se necesita permiso de notificaciones para los recordatorios. Actívalo en los ajustes del dispositivo.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Comienza tu día con una reflexión';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => 'Aún te quedan grabaciones hoy';
+
+  @override
   String get settingsTranscriptionLanguage => 'Idioma de transcripción';
 
   @override
@@ -844,6 +870,32 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
   @override
   String get settingsThemeSaveFailed =>
       'No se pudo guardar el tema. Inténtalo de nuevo.';
+
+  @override
+  String get settingsReminders => 'Recordatorios';
+
+  @override
+  String get settingsRemindersToggle => 'Recordatorios diarios';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Recibe recordatorios para escribir en tu diario por la mañana y por la noche';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'Se necesita permiso de notificaciones para los recordatorios. Actívalo en los ajustes del dispositivo.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Comienza tu día con una reflexión';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => 'Aún te quedan grabaciones hoy';
 
   @override
   String get settingsTranscriptionLanguage => 'Idioma de transcripción';

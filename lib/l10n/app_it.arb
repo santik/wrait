@@ -161,5 +161,13 @@
   "feedbackCategoryBug": "Bug",
   "feedbackCategoryIdea": "Idea",
   "feedbackCategoryConfusing": "Poco chiaro",
-  "feedbackCategoryPraise": "Complimenti"
+  "feedbackCategoryPraise": "Complimenti",
+  "settingsReminders": "Promemoria",
+  "settingsRemindersToggle": "Promemoria giornalieri",
+  "settingsRemindersDescription": "Ricevi un promemoria per scrivere il diario al mattino e alla sera",
+  "settingsRemindersPermissionDenied": "Per i promemoria è necessario il permesso per le notifiche. Abilitalo nelle impostazioni del dispositivo.",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "Inizia la giornata con una riflessione",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "Hai ancora registrazioni disponibili oggi"
 }

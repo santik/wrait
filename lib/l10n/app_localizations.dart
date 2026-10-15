@@ -519,6 +519,54 @@ abstract class AppLocalizations {
   /// **'Could not save theme. Try again.'**
   String get settingsThemeSaveFailed;
 
+  /// No description provided for @settingsReminders.
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get settingsReminders;
+
+  /// No description provided for @settingsRemindersToggle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily reminders'**
+  String get settingsRemindersToggle;
+
+  /// No description provided for @settingsRemindersDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Get reminded to journal in the morning and evening'**
+  String get settingsRemindersDescription;
+
+  /// No description provided for @settingsRemindersPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification permission is required for reminders. Please enable it in your device settings.'**
+  String get settingsRemindersPermissionDenied;
+
+  /// No description provided for @reminderMorningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'wrait'**
+  String get reminderMorningTitle;
+
+  /// No description provided for @reminderMorningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Start your day with a reflection'**
+  String get reminderMorningBody;
+
+  /// No description provided for @reminderEveningTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'wrait'**
+  String get reminderEveningTitle;
+
+  /// No description provided for @reminderEveningBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You still have recordings left today'**
+  String get reminderEveningBody;
+
   /// No description provided for @settingsTranscriptionLanguage.
   ///
   /// In en, this message translates to:

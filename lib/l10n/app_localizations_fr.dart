@@ -260,6 +260,33 @@ class AppLocalizationsFr extends AppLocalizations {
       'Impossible d’enregistrer le thème. Réessayez.';
 
   @override
+  String get settingsReminders => 'Rappels';
+
+  @override
+  String get settingsRemindersToggle => 'Rappels quotidiens';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Reçois des rappels pour écrire dans ton journal le matin et le soir';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'L\'autorisation de notifications est nécessaire pour les rappels. Active-la dans les paramètres de l\'appareil.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Commence ta journée par une réflexion';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody =>
+      'Il te reste encore des enregistrements aujourd\'hui';
+
+  @override
   String get settingsTranscriptionLanguage => 'Langue de transcription';
 
   @override

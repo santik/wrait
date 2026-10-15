@@ -257,6 +257,32 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsThemeSaveFailed => 'Impossibile salvare il tema. Riprova.';
 
   @override
+  String get settingsReminders => 'Promemoria';
+
+  @override
+  String get settingsRemindersToggle => 'Promemoria giornalieri';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Ricevi un promemoria per scrivere il diario al mattino e alla sera';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'Per i promemoria è necessario il permesso per le notifiche. Abilitalo nelle impostazioni del dispositivo.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Inizia la giornata con una riflessione';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => 'Hai ancora registrazioni disponibili oggi';
+
+  @override
   String get settingsTranscriptionLanguage => 'Lingua di trascrizione';
 
   @override

@@ -260,6 +260,32 @@ class AppLocalizationsDe extends AppLocalizations {
       'Design konnte nicht gespeichert werden. Versuchen Sie es erneut.';
 
   @override
+  String get settingsReminders => 'Erinnerungen';
+
+  @override
+  String get settingsRemindersToggle => 'Tägliche Erinnerungen';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Lass dich morgens und abends ans Tagebuchschreiben erinnern';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'Für Erinnerungen wird die Benachrichtigungsberechtigung benötigt. Bitte aktiviere sie in den Geräteeinstellungen.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Starte deinen Tag mit einer Reflexion';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => 'Du hast heute noch Aufnahmen übrig';
+
+  @override
   String get settingsTranscriptionLanguage => 'Transkriptionssprache';
 
   @override

@@ -174,5 +174,13 @@
   "feedbackCategoryBug": "Ошибка",
   "feedbackCategoryIdea": "Идея",
   "feedbackCategoryConfusing": "Непонятно",
-  "feedbackCategoryPraise": "Похвала"
+  "feedbackCategoryPraise": "Похвала",
+  "settingsReminders": "Напоминания",
+  "settingsRemindersToggle": "Ежедневные напоминания",
+  "settingsRemindersDescription": "Получайте напоминания вести дневник утром и вечером",
+  "settingsRemindersPermissionDenied": "Для напоминаний необходимо разрешение на уведомления. Включите его в настройках устройства.",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "Начните день с размышления",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "У вас ещё остались записи на сегодня"
 }
