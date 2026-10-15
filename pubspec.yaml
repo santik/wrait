@@ -52,6 +52,9 @@ dependencies:
   path_provider: ^2.1.6
   connectivity_plus: ^7.3.1
   wakelock_plus: ^1.8.0
+  flutter_local_notifications: ^19.0.0
+  timezone: ^0.10.0
+  flutter_timezone: ^3.0.1
   # Pinned: the feedback adapter uses Wiredash's internal submission service
   # graph, which is verified against this exact SDK version.
   wiredash: 2.6.1

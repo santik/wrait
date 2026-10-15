@@ -372,6 +372,13 @@ void main() {
           .enabled,
       isFalse,
     );
+    await tester.dragUntilVisible(
+      find.text(
+        'Finish the current recording or transcription before changing settings.',
+      ),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
     expect(
       find.text('Finish the current recording or transcription before changing settings.'),
       findsOneWidget,

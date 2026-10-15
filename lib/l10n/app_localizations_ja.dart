@@ -240,6 +240,31 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsThemeSaveFailed => 'テーマを保存できませんでした。もう一度お試しください。';
 
   @override
+  String get settingsReminders => 'リマインダー';
+
+  @override
+  String get settingsRemindersToggle => '毎日のリマインダー';
+
+  @override
+  String get settingsRemindersDescription => '朝と夜に日記を書くリマインダーを受け取る';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'リマインダーには通知の許可が必要です。デバイスの設定で有効にしてください。';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => '今日も振り返りから始めましょう';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => '今日の録音がまだ残っています';
+
+  @override
   String get settingsTranscriptionLanguage => '文字起こし言語';
 
   @override

@@ -239,6 +239,30 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsThemeSaveFailed => '无法保存主题，请重试。';
 
   @override
+  String get settingsReminders => '提醒';
+
+  @override
+  String get settingsRemindersToggle => '每日提醒';
+
+  @override
+  String get settingsRemindersDescription => '在早晨和傍晚收到写日记的提醒';
+
+  @override
+  String get settingsRemindersPermissionDenied => '提醒功能需要通知权限，请在设备设置中开启。';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => '用一段反思开始新的一天';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => '今天还有剩余的录音次数';
+
+  @override
   String get settingsTranscriptionLanguage => '转写语言';
 
   @override

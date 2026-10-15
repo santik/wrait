@@ -39,6 +39,18 @@ class EntryDao extends DatabaseAccessor<LocalEntryDatabase>
         .get();
   }
 
+  Future<bool> hasEntryOnDate(int startOfDayMs, int endOfDayMs) async {
+    final query = selectOnly(entryRecords)
+      ..addColumns([entryRecords.id])
+      ..where(
+        entryRecords.createdAt.isBiggerOrEqualValue(startOfDayMs) &
+            entryRecords.createdAt.isSmallerThanValue(endOfDayMs),
+      )
+      ..limit(1);
+    final result = await query.get();
+    return result.isNotEmpty;
+  }
+
   Future<int> insertEntry(EntryRecordsCompanion entry) {
     return into(entryRecords).insert(entry);
   }

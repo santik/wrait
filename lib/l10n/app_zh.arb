@@ -161,5 +161,13 @@
   "feedbackCategoryBug": "问题",
   "feedbackCategoryIdea": "建议",
   "feedbackCategoryConfusing": "困惑",
-  "feedbackCategoryPraise": "好评"
+  "feedbackCategoryPraise": "好评",
+  "settingsReminders": "提醒",
+  "settingsRemindersToggle": "每日提醒",
+  "settingsRemindersDescription": "在早晨和傍晚收到写日记的提醒",
+  "settingsRemindersPermissionDenied": "提醒功能需要通知权限，请在设备设置中开启。",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "用一段反思开始新的一天",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "今天还有剩余的录音次数"
 }

@@ -173,5 +173,13 @@
   "feedbackCategoryBug": "Fehler",
   "feedbackCategoryIdea": "Idee",
   "feedbackCategoryConfusing": "Unklar",
-  "feedbackCategoryPraise": "Lob"
+  "feedbackCategoryPraise": "Lob",
+  "settingsReminders": "Erinnerungen",
+  "settingsRemindersToggle": "Tägliche Erinnerungen",
+  "settingsRemindersDescription": "Lass dich morgens und abends ans Tagebuchschreiben erinnern",
+  "settingsRemindersPermissionDenied": "Für Erinnerungen wird die Benachrichtigungsberechtigung benötigt. Bitte aktiviere sie in den Geräteeinstellungen.",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "Starte deinen Tag mit einer Reflexion",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "Du hast heute noch Aufnahmen übrig"
 }

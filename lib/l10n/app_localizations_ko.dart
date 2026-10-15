@@ -241,6 +241,31 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsThemeSaveFailed => '테마를 저장할 수 없습니다. 다시 시도해 주세요.';
 
   @override
+  String get settingsReminders => '알림';
+
+  @override
+  String get settingsRemindersToggle => '매일 알림';
+
+  @override
+  String get settingsRemindersDescription => '아침과 저녁에 일기 쓰기 알림을 받으세요';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      '알림을 받으려면 알림 권한이 필요합니다. 기기 설정에서 활성화해 주세요.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => '오늘 하루를 되돌아보며 시작하세요';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => '오늘 녹음이 아직 남아 있어요';
+
+  @override
   String get settingsTranscriptionLanguage => '음성 인식 언어';
 
   @override

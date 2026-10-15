@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/repository/app_lock_preferences_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
+import '../../domain/repository/reminders_preferences_repository.dart';
 import '../../domain/repository/theme_preferences_repository.dart';
 import '../../domain/repository/transcription_language_preferences_repository.dart';
 import 'platform_device_id_provider.dart';
@@ -52,6 +53,29 @@ final appLockPreferencesRepositoryProvider =
         _ => const _DisabledAppLockPreferencesRepository(),
       };
     });
+
+final remindersPreferencesRepositoryProvider =
+    Provider<RemindersPreferencesRepository>((ref) {
+      final repository = ref.watch(preferencesRepositoryProvider);
+      return switch (repository) {
+        RemindersPreferencesRepository remindersRepository =>
+          remindersRepository,
+        _ => const _DisabledRemindersPreferencesRepository(),
+      };
+    });
+
+class _DisabledRemindersPreferencesRepository
+    implements RemindersPreferencesRepository {
+  const _DisabledRemindersPreferencesRepository();
+
+  @override
+  Future<bool> getRemindersEnabled() async => false;
+
+  @override
+  Future<void> setRemindersEnabled(bool value) async {
+    throw UnsupportedError('Reminders preferences are not writable.');
+  }
+}
 
 class _DisabledAppLockPreferencesRepository
     implements AppLockPreferencesRepository {

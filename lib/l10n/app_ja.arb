@@ -173,5 +173,13 @@
   "feedbackCategoryBug": "不具合",
   "feedbackCategoryIdea": "アイデア",
   "feedbackCategoryConfusing": "わかりにくい",
-  "feedbackCategoryPraise": "良かった点"
+  "feedbackCategoryPraise": "良かった点",
+  "settingsReminders": "リマインダー",
+  "settingsRemindersToggle": "毎日のリマインダー",
+  "settingsRemindersDescription": "朝と夜に日記を書くリマインダーを受け取る",
+  "settingsRemindersPermissionDenied": "リマインダーには通知の許可が必要です。デバイスの設定で有効にしてください。",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "今日も振り返りから始めましょう",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "今日の録音がまだ残っています"
 }

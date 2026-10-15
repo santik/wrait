@@ -300,6 +300,32 @@ void main() {
     expect(resolved, 'legacy-device-id');
     expect(deviceIdProvider.callCount, 0);
   });
+
+  test('reminders enabled defaults to false when unset', () async {
+    await expectLater(repository.getRemindersEnabled(), completion(isFalse));
+  });
+
+  test('reminders enabled persists explicit values', () async {
+    await repository.setRemindersEnabled(false);
+    expect(await repository.getRemindersEnabled(), isFalse);
+
+    await repository.setRemindersEnabled(true);
+    expect(await repository.getRemindersEnabled(), isTrue);
+  });
+
+  test('failed reminders enabled write throws StateError', () async {
+    preferencesStore.failBoolWrites = true;
+    await expectLater(
+      repository.setRemindersEnabled(true),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          'Failed to persist remindersEnabled',
+        ),
+      ),
+    );
+  });
 }
 
 class _FakePlatformDeviceIdProvider implements PlatformDeviceIdProvider {

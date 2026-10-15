@@ -161,5 +161,13 @@
   "feedbackCategoryBug": "Bug",
   "feedbackCategoryIdea": "Idée",
   "feedbackCategoryConfusing": "Peu clair",
-  "feedbackCategoryPraise": "Éloge"
+  "feedbackCategoryPraise": "Éloge",
+  "settingsReminders": "Rappels",
+  "settingsRemindersToggle": "Rappels quotidiens",
+  "settingsRemindersDescription": "Reçois des rappels pour écrire dans ton journal le matin et le soir",
+  "settingsRemindersPermissionDenied": "L'autorisation de notifications est nécessaire pour les rappels. Active-la dans les paramètres de l'appareil.",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "Commence ta journée par une réflexion",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "Il te reste encore des enregistrements aujourd'hui"
 }

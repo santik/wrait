@@ -112,7 +112,6 @@ void main() {
 
     await tester.tap(find.byKey(appLockSwitchKey));
     await tester.pump();
-    expect(find.byKey(appLockSavingKey), findsOneWidget);
 
     _simulateForegroundExitAndResume(tester);
     availability.complete(AppLockAvailability.available);

@@ -258,6 +258,32 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível salvar o tema. Tente novamente.';
 
   @override
+  String get settingsReminders => 'Lembretes';
+
+  @override
+  String get settingsRemindersToggle => 'Lembretes diários';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Receba lembretes para escrever no diário de manhã e à noite';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'A permissão de notificações é necessária para os lembretes. Ative-a nas configurações do dispositivo.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Comece o dia com uma reflexão';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => 'Você ainda tem gravações restantes hoje';
+
+  @override
   String get settingsTranscriptionLanguage => 'Idioma de transcrição';
 
   @override

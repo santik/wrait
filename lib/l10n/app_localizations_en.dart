@@ -255,6 +255,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsThemeSaveFailed => 'Could not save theme. Try again.';
 
   @override
+  String get settingsReminders => 'Reminders';
+
+  @override
+  String get settingsRemindersToggle => 'Daily reminders';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Get reminded to journal in the morning and evening';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'Notification permission is required for reminders. Please enable it in your device settings.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Start your day with a reflection';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => 'You still have recordings left today';
+
+  @override
   String get settingsTranscriptionLanguage => 'Transcription language';
 
   @override

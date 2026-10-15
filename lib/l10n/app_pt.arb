@@ -173,5 +173,13 @@
   "feedbackCategoryBug": "Bug",
   "feedbackCategoryIdea": "Ideia",
   "feedbackCategoryConfusing": "Confuso",
-  "feedbackCategoryPraise": "Elogio"
+  "feedbackCategoryPraise": "Elogio",
+  "settingsReminders": "Lembretes",
+  "settingsRemindersToggle": "Lembretes diários",
+  "settingsRemindersDescription": "Receba lembretes para escrever no diário de manhã e à noite",
+  "settingsRemindersPermissionDenied": "A permissão de notificações é necessária para os lembretes. Ative-a nas configurações do dispositivo.",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "Comece o dia com uma reflexão",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "Você ainda tem gravações restantes hoje"
 }

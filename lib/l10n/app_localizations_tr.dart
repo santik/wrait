@@ -257,6 +257,32 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsThemeSaveFailed => 'Tema kaydedilemedi. Tekrar deneyin.';
 
   @override
+  String get settingsReminders => 'Hatırlatıcılar';
+
+  @override
+  String get settingsRemindersToggle => 'Günlük hatırlatıcılar';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Sabah ve akşam günlük yazmak için hatırlatıcı al';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'Hatırlatıcılar için bildirim izni gereklidir. Lütfen cihaz ayarlarından etkinleştirin.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Güne bir düşünceyle başla';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => 'Bugün hâlâ kayıt hakkın var';
+
+  @override
   String get settingsTranscriptionLanguage => 'Yazıya dökme dili';
 
   @override

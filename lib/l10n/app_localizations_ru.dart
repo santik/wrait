@@ -262,6 +262,32 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось сохранить тему. Попробуйте снова.';
 
   @override
+  String get settingsReminders => 'Напоминания';
+
+  @override
+  String get settingsRemindersToggle => 'Ежедневные напоминания';
+
+  @override
+  String get settingsRemindersDescription =>
+      'Получайте напоминания вести дневник утром и вечером';
+
+  @override
+  String get settingsRemindersPermissionDenied =>
+      'Для напоминаний необходимо разрешение на уведомления. Включите его в настройках устройства.';
+
+  @override
+  String get reminderMorningTitle => 'wrait';
+
+  @override
+  String get reminderMorningBody => 'Начните день с размышления';
+
+  @override
+  String get reminderEveningTitle => 'wrait';
+
+  @override
+  String get reminderEveningBody => 'У вас ещё остались записи на сегодня';
+
+  @override
   String get settingsTranscriptionLanguage => 'Язык транскрипции';
 
   @override
