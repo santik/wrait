@@ -276,7 +276,7 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
       if (!mounted) {
         return;
       }
-      context.go('/entries');
+      _navigateBackToEntries();
     });
   }
 
@@ -378,7 +378,7 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
       return;
     }
 
-    context.go('/entries');
+    _navigateBackToEntries();
   }
 
   Future<bool> _handleBackNavigation(
@@ -394,8 +394,16 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
     }
 
     _editorFocusNode.unfocus();
-    context.go('/entries');
+    _navigateBackToEntries();
     return false;
+  }
+
+  void _navigateBackToEntries() {
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go('/entries');
+    }
   }
 
   void _showMessage(String message) {

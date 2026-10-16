@@ -248,7 +248,7 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
         return EntryListRow(
           key: ValueKey('entryRow-${entry.id}'),
           entry: entry,
-          onTap: (entryId) => context.go('/entry/$entryId'),
+          onTap: (entryId) => context.push('/entry/$entryId'),
           onDeleteRequested: (entryId) => _confirmDelete(context, entryId),
         );
       },
