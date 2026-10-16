@@ -3,6 +3,11 @@
 *.log
 *.pyc
 *.swp
+
+# Signing
+*.jks
+*.keystore
+play-service-account.json
 .DS_Store
 .atom/
 .build/
