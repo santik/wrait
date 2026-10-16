@@ -148,10 +148,10 @@ void main() {
             )
             .controller
             ?.text,
-        isEmpty,
+        ' PROJECT monday ',
       );
       expect(find.byKey(ValueKey('entryRow-$matchingId')), findsOneWidget);
-      expect(find.byKey(ValueKey('entryRow-$otherId')), findsOneWidget);
+      expect(find.byKey(ValueKey('entryRow-$otherId')), findsNothing);
 
       await tester.enterText(
         find.byKey(const ValueKey('entryListSearchField')),
@@ -563,6 +563,105 @@ void main() {
     expect(find.text('Could not read the selected CSV file.'), findsOneWidget);
     expect(find.text('existing entry'), findsOneWidget);
     expect(find.text('clean entry 21'), findsNothing);
+  });
+
+  testWidgets('scroll position is preserved after navigating back from detail',
+      (tester) async {
+    final harness = await _createHarness();
+    addTearDown(harness.dispose);
+
+    final repository = harness.container.read(entryRepositoryProvider);
+    for (var i = 0; i < 20; i++) {
+      await repository.saveEntry('entry number $i', 'en-US');
+      harness.entryClock.advance(const Duration(hours: 1));
+    }
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: harness.container,
+        child: const WraitApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.byKey(const ValueKey('entryListView')),
+      const Offset(0, -400),
+    );
+    await tester.pumpAndSettle();
+
+    final listScrollable = find.descendant(
+      of: find.byKey(const ValueKey('entryListView')),
+      matching: find.byType(Scrollable),
+    );
+    final offsetBefore =
+        tester.state<ScrollableState>(listScrollable).position.pixels;
+    expect(offsetBefore, greaterThan(0));
+
+    final visibleEntry = find.byKey(const ValueKey('entryCard-10'));
+    expect(visibleEntry, findsOneWidget);
+    await tester.tap(visibleEntry);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('entryDetailReadText')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('entryDetailBackButton')));
+    await tester.pumpAndSettle();
+
+    final offsetAfter =
+        tester.state<ScrollableState>(listScrollable).position.pixels;
+
+    expect(offsetAfter, offsetBefore);
+  });
+
+  testWidgets(
+      'scroll position is preserved after system back from detail',
+      (tester) async {
+    final harness = await _createHarness();
+    addTearDown(harness.dispose);
+
+    final repository = harness.container.read(entryRepositoryProvider);
+    for (var i = 0; i < 20; i++) {
+      await repository.saveEntry('entry number $i', 'en-US');
+      harness.entryClock.advance(const Duration(hours: 1));
+    }
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: harness.container,
+        child: const WraitApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(
+      find.byKey(const ValueKey('entryListView')),
+      const Offset(0, -400),
+    );
+    await tester.pumpAndSettle();
+
+    final listScrollable = find.descendant(
+      of: find.byKey(const ValueKey('entryListView')),
+      matching: find.byType(Scrollable),
+    );
+    final offsetBefore =
+        tester.state<ScrollableState>(listScrollable).position.pixels;
+    expect(offsetBefore, greaterThan(0));
+
+    final visibleEntry = find.byKey(const ValueKey('entryCard-10'));
+    expect(visibleEntry, findsOneWidget);
+    await tester.tap(visibleEntry);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('entryDetailReadText')), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    final offsetAfter =
+        tester.state<ScrollableState>(listScrollable).position.pixels;
+
+    expect(offsetAfter, offsetBefore);
   });
 }
 
