@@ -1,0 +1,66 @@
+name: Deploy to Google Play Internal Testing
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-internal
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Decode keystore
+        run: echo "$KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Write local.properties for signing
+        run: |
+          printf 'sdk.dir=/usr/local/lib/android/sdk\n' > android/local.properties
+          printf 'KEYSTORE_PATH=upload-keystore.jks\n' >> android/local.properties
+          printf 'KEY_ALIAS=%s\n' "$KEY_ALIAS" >> android/local.properties
+        env:
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+
+      - name: Build release app bundle
+        run: |
+          flutter build appbundle --release \
+            --dart-define="BACKEND_URL=$BACKEND_URL" \
+            --dart-define="PROXY_SECRET=$PROXY_SECRET" \
+            --dart-define="RECORDING_HARD_CAP_MS=$RECORDING_HARD_CAP_MS" \
+            --dart-define="WIREDASH_PROJECT_ID=$WIREDASH_PROJECT_ID" \
+            --dart-define="WIREDASH_SECRET=$WIREDASH_SECRET" \
+            --dart-define="WIREDASH_ENVIRONMENT=production"
+        env:
+          WRAIT_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          WRAIT_RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          BACKEND_URL: ${{ secrets.BACKEND_URL }}
+          PROXY_SECRET: ${{ secrets.PROXY_SECRET }}
+          RECORDING_HARD_CAP_MS: ${{ secrets.RECORDING_HARD_CAP_MS }}
+          WIREDASH_PROJECT_ID: ${{ secrets.WIREDASH_PROJECT_ID }}
+          WIREDASH_SECRET: ${{ secrets.WIREDASH_SECRET }}
+
+      - name: Upload to Google Play Internal Testing
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.wrait.flutter
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
