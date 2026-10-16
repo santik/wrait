@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../tags/tag_assignment_sheet.dart';
 import '../theme/design_tokens.dart';
 import 'entry_delete_confirmation.dart';
 import 'entry_detail_controller.dart';
@@ -156,6 +157,32 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                               ),
                         ),
                       ),
+                    const SizedBox(height: WraitSpacingTokens.sm),
+                    Wrap(
+                      spacing: WraitSpacingTokens.sm,
+                      runSpacing: WraitSpacingTokens.sm,
+                      children: [
+                        ...entry.tags.map(
+                          (tag) => Chip(
+                            key: ValueKey('detailTag-${tag.id}'),
+                            label: Text(tag.name),
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                        ActionChip(
+                          key: const ValueKey('detailTagAdd'),
+                          avatar: const Icon(Icons.add, size: 18),
+                          label: Text(l10n.tagsAssign),
+                          visualDensity: VisualDensity.compact,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onPressed: () =>
+                              _showTagAssignment(context, widget.entryId),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: WraitSpacingTokens.lg),
                     Expanded(
                       child: SingleChildScrollView(
@@ -404,6 +431,14 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
     } else {
       context.go('/entries');
     }
+  }
+
+  void _showTagAssignment(BuildContext context, int entryId) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => TagAssignmentSheet(entryId: entryId),
+    );
   }
 
   void _showMessage(String message) {

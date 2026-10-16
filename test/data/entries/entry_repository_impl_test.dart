@@ -31,6 +31,7 @@ void main() {
     );
     repository = EntryRepositoryImpl(
       entryDao: database!.entryDao,
+      tagDao: database!.tagDao,
       clock: clock,
       storeDraftAudioPath: (audioPath) async => audioPath,
       resolveDraftAudioPath: (storedAudioPath) async => storedAudioPath,
@@ -257,6 +258,7 @@ void main() {
       var activeCacheDirectory = originalCacheDirectory.path;
       repository = EntryRepositoryImpl(
         entryDao: database!.entryDao,
+        tagDao: database!.tagDao,
         clock: clock,
         storeDraftAudioPath: (audioPath) async =>
             'app-cache://${path.basename(audioPath)}',

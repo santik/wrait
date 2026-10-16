@@ -572,4 +572,83 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get feedbackCategoryPraise => '良かった点';
+
+  @override
+  String get tagsTitle => 'タグ';
+
+  @override
+  String get tagsManage => 'タグを管理';
+
+  @override
+  String get tagsAdd => 'タグを追加';
+
+  @override
+  String get tagsAddHint => 'タグ名';
+
+  @override
+  String get tagsEmpty => 'タグはまだありません';
+
+  @override
+  String tagsLimitReached(int max) {
+    return 'タグの上限に達しました（$max）';
+  }
+
+  @override
+  String get tagsDeleteConfirmTitle => 'タグを削除しますか？';
+
+  @override
+  String get tagsDeleteConfirmBody => 'このタグはすべてのエントリーから削除されます。';
+
+  @override
+  String get tagsDeleteConfirm => '削除';
+
+  @override
+  String get tagsDeleteCancel => 'キャンセル';
+
+  @override
+  String tagsNameTooLong(int max) {
+    return 'タグ名は$max文字以内にしてください';
+  }
+
+  @override
+  String get tagsNameDuplicate => 'このタグはすでに存在します';
+
+  @override
+  String get tagsCreateFailed => 'タグを作成できませんでした';
+
+  @override
+  String get tagsDeleteFailed => 'タグを削除できませんでした';
+
+  @override
+  String get tagsFilterAll => 'すべて';
+
+  @override
+  String get tagsFilterClear => 'フィルターを解除';
+
+  @override
+  String get tagsNoEntriesWithTag => 'このタグのエントリーはありません';
+
+  @override
+  String get tagsAssign => 'タグ';
+
+  @override
+  String get tagsAssignDone => '完了';
+
+  @override
+  String tagsAssignCreate(String name) {
+    return '「$name」を作成';
+  }
+
+  @override
+  String tagsEntryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsSearchIncluded => '検索にはタグ名も含まれます';
 }

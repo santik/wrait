@@ -40,6 +40,7 @@ class LocalEntryStartupBootstrap {
     final database = await openDatabase(keyStore, databaseFile);
     final repository = EntryRepositoryImpl(
       entryDao: database.entryDao,
+      tagDao: database.tagDao,
       clock: clock,
       storeDraftAudioPath: storeDraftAudioPath,
       resolveDraftAudioPath: resolveDraftAudioPath,
@@ -74,6 +75,7 @@ final localEntryDatabaseProvider = Provider<LocalEntryDatabase>(
 final entryRepositoryProvider = Provider<EntryRepository>(
   (ref) => EntryRepositoryImpl(
     entryDao: ref.watch(localEntryDatabaseProvider).entryDao,
+    tagDao: ref.watch(localEntryDatabaseProvider).tagDao,
     clock: ref.watch(clockProvider),
   ),
 );

@@ -106,6 +106,7 @@ void main() {
       );
       final repository = EntryRepositoryImpl(
         entryDao: database.entryDao,
+        tagDao: database.tagDao,
         clock: FakeClock(_ts(2026, 6, 8)),
         storeDraftAudioPath: (audioPath) async => audioPath,
         resolveDraftAudioPath: (storedAudioPath) async => storedAudioPath,
@@ -196,6 +197,7 @@ void main() {
     );
     final repository = EntryRepositoryImpl(
       entryDao: database.entryDao,
+      tagDao: database.tagDao,
       clock: FakeClock(_ts(2026, 6, 8)),
       storeDraftAudioPath: (audioPath) async => audioPath,
       resolveDraftAudioPath: (storedAudioPath) async => storedAudioPath,
@@ -242,6 +244,7 @@ void main() {
     );
     final repository = EntryRepositoryImpl(
       entryDao: database.entryDao,
+      tagDao: database.tagDao,
       clock: FakeClock(_ts(2026, 6, 8)),
       storeDraftAudioPath: (audioPath) async => audioPath,
       resolveDraftAudioPath: (storedAudioPath) async => storedAudioPath,
@@ -411,6 +414,7 @@ void main() {
       final oldClock = FakeClock(_ts(2026, 5, 20));
       final seedRepository = EntryRepositoryImpl(
         entryDao: seedDatabase.entryDao,
+        tagDao: seedDatabase.tagDao,
         clock: oldClock,
         storeDraftAudioPath: (audioPath) async => audioPath,
         resolveDraftAudioPath: (storedAudioPath) async => storedAudioPath,
@@ -422,6 +426,7 @@ void main() {
       final freshClock = FakeClock(_ts(2026, 6, 6));
       final freshRepository = EntryRepositoryImpl(
         entryDao: seedDatabase.entryDao,
+        tagDao: seedDatabase.tagDao,
         clock: freshClock,
         storeDraftAudioPath: (audioPath) async => audioPath,
         resolveDraftAudioPath: (storedAudioPath) async => storedAudioPath,
@@ -443,6 +448,7 @@ void main() {
       );
       final bootstrappedRepository = EntryRepositoryImpl(
         entryDao: bootstrappedDatabase.entryDao,
+        tagDao: bootstrappedDatabase.tagDao,
         clock: const SystemClock(),
         storeDraftAudioPath: (audioPath) async => audioPath,
         resolveDraftAudioPath: (storedAudioPath) async => storedAudioPath,
@@ -533,6 +539,7 @@ Future<_DatabaseHarness> _createHarness({
   );
   final repository = EntryRepositoryImpl(
     entryDao: database.entryDao,
+    tagDao: database.tagDao,
     clock: clock,
   );
 

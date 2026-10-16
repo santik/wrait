@@ -616,6 +616,87 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get feedbackCategoryPraise => 'Elogio';
+
+  @override
+  String get tagsTitle => 'Etiquetas';
+
+  @override
+  String get tagsManage => 'Gestionar etiquetas';
+
+  @override
+  String get tagsAdd => 'Añadir etiqueta';
+
+  @override
+  String get tagsAddHint => 'Nombre de etiqueta';
+
+  @override
+  String get tagsEmpty => 'Sin etiquetas';
+
+  @override
+  String tagsLimitReached(int max) {
+    return 'Límite de etiquetas alcanzado ($max)';
+  }
+
+  @override
+  String get tagsDeleteConfirmTitle => '¿Eliminar etiqueta?';
+
+  @override
+  String get tagsDeleteConfirmBody =>
+      'Esta etiqueta se eliminará de todas las entradas.';
+
+  @override
+  String get tagsDeleteConfirm => 'Eliminar';
+
+  @override
+  String get tagsDeleteCancel => 'Cancelar';
+
+  @override
+  String tagsNameTooLong(int max) {
+    return 'El nombre debe tener $max caracteres o menos';
+  }
+
+  @override
+  String get tagsNameDuplicate => 'Esta etiqueta ya existe';
+
+  @override
+  String get tagsCreateFailed => 'No se pudo crear la etiqueta';
+
+  @override
+  String get tagsDeleteFailed => 'No se pudo eliminar la etiqueta';
+
+  @override
+  String get tagsFilterAll => 'Todas';
+
+  @override
+  String get tagsFilterClear => 'Borrar filtro';
+
+  @override
+  String get tagsNoEntriesWithTag => 'No hay entradas con esta etiqueta';
+
+  @override
+  String get tagsAssign => 'Etiquetas';
+
+  @override
+  String get tagsAssignDone => 'Listo';
+
+  @override
+  String tagsAssignCreate(String name) {
+    return 'Crear \"$name\"';
+  }
+
+  @override
+  String tagsEntryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entradas',
+      one: '1 entrada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsSearchIncluded => 'La búsqueda incluye nombres de etiquetas';
 }
 
 /// The translations for Spanish Castilian, as used in Latin America and the Caribbean (`es_419`).
@@ -1229,4 +1310,85 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
 
   @override
   String get feedbackCategoryPraise => 'Elogio';
+
+  @override
+  String get tagsTitle => 'Etiquetas';
+
+  @override
+  String get tagsManage => 'Administrar etiquetas';
+
+  @override
+  String get tagsAdd => 'Agregar etiqueta';
+
+  @override
+  String get tagsAddHint => 'Nombre de etiqueta';
+
+  @override
+  String get tagsEmpty => 'Sin etiquetas';
+
+  @override
+  String tagsLimitReached(int max) {
+    return 'Límite de etiquetas alcanzado ($max)';
+  }
+
+  @override
+  String get tagsDeleteConfirmTitle => '¿Eliminar etiqueta?';
+
+  @override
+  String get tagsDeleteConfirmBody =>
+      'Esta etiqueta se eliminará de todas las entradas.';
+
+  @override
+  String get tagsDeleteConfirm => 'Eliminar';
+
+  @override
+  String get tagsDeleteCancel => 'Cancelar';
+
+  @override
+  String tagsNameTooLong(int max) {
+    return 'El nombre debe tener $max caracteres o menos';
+  }
+
+  @override
+  String get tagsNameDuplicate => 'Esta etiqueta ya existe';
+
+  @override
+  String get tagsCreateFailed => 'No se pudo crear la etiqueta';
+
+  @override
+  String get tagsDeleteFailed => 'No se pudo eliminar la etiqueta';
+
+  @override
+  String get tagsFilterAll => 'Todas';
+
+  @override
+  String get tagsFilterClear => 'Borrar filtro';
+
+  @override
+  String get tagsNoEntriesWithTag => 'No hay entradas con esta etiqueta';
+
+  @override
+  String get tagsAssign => 'Etiquetas';
+
+  @override
+  String get tagsAssignDone => 'Listo';
+
+  @override
+  String tagsAssignCreate(String name) {
+    return 'Crear \"$name\"';
+  }
+
+  @override
+  String tagsEntryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entradas',
+      one: '1 entrada',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsSearchIncluded => 'La búsqueda incluye nombres de etiquetas';
 }

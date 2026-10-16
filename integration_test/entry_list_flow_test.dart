@@ -382,7 +382,7 @@ void main() {
     expect(
       exportWriter.contents,
       startsWith(
-        'type,created_at,language,word_count,raw_transcript,cleaned_text\n',
+        'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n',
       ),
     );
     expect(exportWriter.contents, contains('draft,'));

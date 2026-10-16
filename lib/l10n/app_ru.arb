@@ -1,12 +1,10 @@
 {
   "@@locale": "ru",
-
   "bootstrapTitle": "открываем wrait",
   "bootstrapSubtitle": "загрузка локального дневника",
   "bootstrapErrorTitle": "не удалось открыть wrait",
   "bootstrapErrorSubtitle": "попробуйте снова",
   "bootstrapRetryButton": "повторить",
-
   "mainSettingsTooltip": "Настройки",
   "mainFeedbackTooltip": "Отправить отзыв",
   "mainLanguageLabel": "Язык: {displayName}",
@@ -19,7 +17,6 @@
   "mainFeedbackSemanticsLabel": "Отправить отзыв",
   "mainQuotaSemanticsLabel": "Квота записей: {limit} всего, {remaining} осталось.",
   "mainQuotaText": "{limit} всего / {remaining} осталось",
-
   "mainButtonStop": "стоп",
   "mainButtonWrait": "wrait",
   "statusTapToWrite": "нажмите кнопку для записи",
@@ -48,12 +45,10 @@
   "statusMicBlockedSemanticsLabel": "Доступ к микрофону заблокирован для Wrait.",
   "statusMicBlockedSemanticsHint": "Нажмите дважды, чтобы открыть настройки приложения.",
   "statusDefaultSemanticsLabel": "Статус: {statusText}.",
-
   "statsEntryCount": "{count, plural, one{{count} запись} few{{count} записи} many{{count} записей} other{{count} записи}}",
   "statsActiveDays": "{count, plural, one{{count} день} few{{count} дня} many{{count} дней} other{{count} дня}}",
   "statsDisplay": "{entries} - {days}",
   "statsSemanticsLabel": "Статистика записей: {displayText}. Открывает список записей.",
-
   "settingsTitle": "Настройки",
   "settingsBack": "Назад",
   "settingsPrivacy": "Конфиденциальность",
@@ -72,7 +67,6 @@
   "settingsThemeLight": "Светлая",
   "settingsThemeDark": "Тёмная",
   "settingsThemeSaveFailed": "Не удалось сохранить тему. Попробуйте снова.",
-
   "settingsTranscriptionLanguage": "Язык транскрипции",
   "settingsTranscriptionLanguageDescription": "Выберите язык, на котором вы говорите, чтобы улучшить транскрипцию. Автоматическое определение используется, когда язык не выбран.",
   "settingsAutomaticDetection": "Автоматическое определение",
@@ -81,7 +75,6 @@
   "settingsTranscriptionLanguageSaveFailed": "Не удалось сохранить язык. Попробуйте снова.",
   "settingsTryAgain": "Попробовать снова",
   "settingsActivityMessage": "Завершите текущую запись или транскрипцию перед изменением настроек.",
-
   "entryListBack": "Назад",
   "entryListBackSemanticsLabel": "Назад на главный экран",
   "entryListSearchLabel": "Поиск записей",
@@ -104,7 +97,6 @@
   "entryListImportUnreadableFile": "Не удалось прочитать выбранный CSV-файл.",
   "entryListImportFileTooLarge": "Выбранный CSV слишком велик для импорта.",
   "entryListImportStorageFailure": "Не удалось сохранить импортированные записи.",
-
   "entryListAudioDraftPreview": "ожидание · повтор позже",
   "entryListAudioDraftStateDescription": "Аудио-черновик, ещё не транскрибирован",
   "entryListDeleteActionLabel": "Удалить запись",
@@ -114,7 +106,6 @@
   "entryListRowDraftBadge": "черновик",
   "entryListRowDraftValue": "черновик",
   "entryListRowAudioDraftValue": "черновик, {description}",
-
   "entryDetailSaving": "Сохранение изменений...",
   "entryDetailSaveFailed": "Не удалось сохранить изменения.",
   "entryDetailLoadFailed": "Не удалось загрузить эту запись.",
@@ -132,9 +123,7 @@
   "entryDetailDeleteSemanticsLabel": "Удалить запись",
   "entryDetailDelete": "Удалить",
   "entryDetailShareFailed": "Не удалось поделиться записью.",
-
   "wordCount": "{count, plural, one{{count} слово} few{{count} слова} many{{count} слов} other{{count} слов}}",
-
   "deleteDialogTitle": "Удалить запись?",
   "deleteDialogBody": "Эта запись будет удалена навсегда.",
   "deleteCancel": "Отмена",
@@ -143,7 +132,6 @@
   "deleteCancelSemanticsHint": "Сохраняет запись в списке.",
   "deleteConfirmSemanticsLabel": "Удалить запись навсегда",
   "deleteConfirmSemanticsHint": "Убирает запись из списка.",
-
   "appLockTitle": "wrait заблокирован",
   "appLockSemanticsLabel": "Wrait заблокирован.",
   "appLockUnlock": "Разблокировать",
@@ -160,7 +148,6 @@
   "appLockPreferenceLoadFailed": "Wrait не удалось загрузить настройку приватности.",
   "appLockPreferenceLoading": "загрузка настроек приватности",
   "appLockPreferenceRetry": "Повторить",
-
   "feedbackTitle": "отправить отзыв",
   "feedbackPrompt": "Чем хотите поделиться?",
   "feedbackContactLabel": "контакт для ответа (необязательно)",
@@ -182,5 +169,27 @@
   "reminderMorningTitle": "wrait",
   "reminderMorningBody": "Начните день с размышления",
   "reminderEveningTitle": "wrait",
-  "reminderEveningBody": "У вас ещё остались записи на сегодня"
+  "reminderEveningBody": "У вас ещё остались записи на сегодня",
+  "tagsTitle": "Теги",
+  "tagsManage": "Управление тегами",
+  "tagsAdd": "Добавить тег",
+  "tagsAddHint": "Название тега",
+  "tagsEmpty": "Тегов пока нет",
+  "tagsLimitReached": "Достигнут лимит тегов ({max})",
+  "tagsDeleteConfirmTitle": "Удалить тег?",
+  "tagsDeleteConfirmBody": "Этот тег будет удалён из всех записей.",
+  "tagsDeleteConfirm": "Удалить",
+  "tagsDeleteCancel": "Отмена",
+  "tagsNameTooLong": "Название тега — не более {max} символов",
+  "tagsNameDuplicate": "Такой тег уже существует",
+  "tagsCreateFailed": "Не удалось создать тег",
+  "tagsDeleteFailed": "Не удалось удалить тег",
+  "tagsFilterAll": "Все",
+  "tagsFilterClear": "Сбросить фильтр",
+  "tagsNoEntriesWithTag": "Нет записей с этим тегом",
+  "tagsAssign": "Теги",
+  "tagsAssignDone": "Готово",
+  "tagsAssignCreate": "Создать «{name}»",
+  "tagsEntryCount": "{count, plural, =1{1 запись} few{{count} записи} many{{count} записей} other{{count} записей}}",
+  "tagsSearchIncluded": "Поиск включает названия тегов"
 }

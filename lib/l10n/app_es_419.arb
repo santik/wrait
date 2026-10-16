@@ -1,12 +1,10 @@
 {
   "@@locale": "es_419",
-
   "bootstrapTitle": "abriendo wrait",
   "bootstrapSubtitle": "cargando tu diario local",
   "bootstrapErrorTitle": "no se pudo abrir wrait",
   "bootstrapErrorSubtitle": "inténtalo de nuevo",
   "bootstrapRetryButton": "reintentar",
-
   "mainSettingsTooltip": "Ajustes",
   "mainFeedbackTooltip": "Enviar comentarios",
   "mainLanguageLabel": "Idioma: {displayName}",
@@ -19,7 +17,6 @@
   "mainFeedbackSemanticsLabel": "Enviar comentarios",
   "mainQuotaSemanticsLabel": "Cuota de grabación: {limit} en total y {remaining} restantes.",
   "mainQuotaText": "{limit} en total / {remaining} restantes",
-
   "mainButtonStop": "detener",
   "mainButtonWrait": "wrait",
   "statusTapToWrite": "toca el botón para escribir",
@@ -48,12 +45,10 @@
   "statusMicBlockedSemanticsLabel": "El acceso al micrófono está bloqueado para Wrait.",
   "statusMicBlockedSemanticsHint": "Toca dos veces para abrir los ajustes de la app.",
   "statusDefaultSemanticsLabel": "Mensaje de estado: {statusText}.",
-
   "statsEntryCount": "{count, plural, one{{count} entrada} other{{count} entradas}}",
   "statsActiveDays": "{count, plural, one{{count} día} other{{count} días}}",
   "statsDisplay": "{entries} - {days}",
   "statsSemanticsLabel": "Estadísticas de entradas: {displayText}. Abre la lista de entradas.",
-
   "settingsTitle": "Ajustes",
   "settingsBack": "Atrás",
   "settingsPrivacy": "Privacidad",
@@ -80,7 +75,6 @@
   "settingsTranscriptionLanguageSaveFailed": "No se pudo guardar el idioma. Inténtalo de nuevo.",
   "settingsTryAgain": "Inténtalo de nuevo",
   "settingsActivityMessage": "Termina la grabación o transcripción actual antes de cambiar los ajustes.",
-
   "entryListBack": "Atrás",
   "entryListBackSemanticsLabel": "Volver a la pantalla principal",
   "entryListSearchLabel": "Buscar entradas",
@@ -103,7 +97,6 @@
   "entryListImportUnreadableFile": "No se pudo leer el archivo CSV seleccionado.",
   "entryListImportFileTooLarge": "El CSV seleccionado es demasiado grande para importarlo.",
   "entryListImportStorageFailure": "No se pudieron guardar las entradas importadas.",
-
   "entryListAudioDraftPreview": "pendiente · se reintentará",
   "entryListAudioDraftStateDescription": "Borrador de audio, aún sin transcribir",
   "entryListDeleteActionLabel": "Eliminar entrada",
@@ -113,7 +106,6 @@
   "entryListRowDraftBadge": "borrador",
   "entryListRowDraftValue": "borrador",
   "entryListRowAudioDraftValue": "borrador, {description}",
-
   "entryDetailSaving": "Guardando cambios...",
   "entryDetailSaveFailed": "No se pudieron guardar tus cambios.",
   "entryDetailLoadFailed": "No se pudo cargar esta entrada.",
@@ -131,9 +123,7 @@
   "entryDetailDeleteSemanticsLabel": "Eliminar entrada",
   "entryDetailDelete": "Eliminar",
   "entryDetailShareFailed": "No se pudo compartir esta entrada.",
-
   "wordCount": "{count, plural, =1{1 palabra} other{{count} palabras}}",
-
   "deleteDialogTitle": "¿Eliminar entrada?",
   "deleteDialogBody": "Esta entrada se eliminará de forma permanente.",
   "deleteCancel": "Cancelar",
@@ -142,7 +132,6 @@
   "deleteCancelSemanticsHint": "Mantiene esta entrada en la lista.",
   "deleteConfirmSemanticsLabel": "Eliminar entrada de forma permanente",
   "deleteConfirmSemanticsHint": "Quita esta entrada de la lista.",
-
   "appLockTitle": "wrait está bloqueado",
   "appLockSemanticsLabel": "Wrait está bloqueado.",
   "appLockUnlock": "Desbloquear",
@@ -159,7 +148,6 @@
   "appLockPreferenceLoadFailed": "Wrait no pudo cargar tu ajuste de privacidad.",
   "appLockPreferenceLoading": "cargando ajustes de privacidad",
   "appLockPreferenceRetry": "Inténtalo de nuevo",
-
   "feedbackTitle": "enviar comentarios",
   "feedbackPrompt": "¿Qué te gustaría compartir?",
   "feedbackContactLabel": "contacto para responderte (opcional)",
@@ -181,5 +169,27 @@
   "reminderMorningTitle": "wrait",
   "reminderMorningBody": "Comienza tu día con una reflexión",
   "reminderEveningTitle": "wrait",
-  "reminderEveningBody": "Aún te quedan grabaciones hoy"
+  "reminderEveningBody": "Aún te quedan grabaciones hoy",
+  "tagsTitle": "Etiquetas",
+  "tagsManage": "Administrar etiquetas",
+  "tagsAdd": "Agregar etiqueta",
+  "tagsAddHint": "Nombre de etiqueta",
+  "tagsEmpty": "Sin etiquetas",
+  "tagsLimitReached": "Límite de etiquetas alcanzado ({max})",
+  "tagsDeleteConfirmTitle": "¿Eliminar etiqueta?",
+  "tagsDeleteConfirmBody": "Esta etiqueta se eliminará de todas las entradas.",
+  "tagsDeleteConfirm": "Eliminar",
+  "tagsDeleteCancel": "Cancelar",
+  "tagsNameTooLong": "El nombre debe tener {max} caracteres o menos",
+  "tagsNameDuplicate": "Esta etiqueta ya existe",
+  "tagsCreateFailed": "No se pudo crear la etiqueta",
+  "tagsDeleteFailed": "No se pudo eliminar la etiqueta",
+  "tagsFilterAll": "Todas",
+  "tagsFilterClear": "Borrar filtro",
+  "tagsNoEntriesWithTag": "No hay entradas con esta etiqueta",
+  "tagsAssign": "Etiquetas",
+  "tagsAssignDone": "Listo",
+  "tagsAssignCreate": "Crear \"{name}\"",
+  "tagsEntryCount": "{count, plural, =1{1 entrada} other{{count} entradas}}",
+  "tagsSearchIncluded": "La búsqueda incluye nombres de etiquetas"
 }

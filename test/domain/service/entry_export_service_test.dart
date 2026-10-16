@@ -31,7 +31,7 @@ void main() {
     expect(
       writer.lastContents,
       startsWith(
-        'type,created_at,language,word_count,raw_transcript,cleaned_text\n',
+        'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n',
       ),
     );
     final lines = writer.lastContents.trimRight().split('\n');
@@ -95,7 +95,7 @@ void main() {
     expect(result.didExport, isTrue);
     expect(
       writer.lastContents,
-      'type,created_at,language,word_count,raw_transcript,cleaned_text\n',
+      'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n',
     );
   });
 

@@ -4,6 +4,7 @@ import '../../data/entries/entry_import_file_reader.dart';
 import '../model/entry.dart';
 import '../model/supported_language.dart';
 import '../repository/entry_repository.dart';
+import '../repository/tag_repository.dart';
 import 'entry_export_service.dart';
 
 enum EntryImportFailureCategory {
@@ -59,10 +60,19 @@ class EntryImportResult {
   final StackTrace? stackTrace;
 }
 
+/// An entry parsed from CSV together with the tag names found in its row.
+class ParsedImportEntry {
+  const ParsedImportEntry({required this.entry, this.tagNames = const []});
+
+  final Entry entry;
+  final List<String> tagNames;
+}
+
 class EntryImportService {
   EntryImportService({
     required this.fileReader,
     required this.entryRepository,
+    this.tagRepository,
     this.maxImportBytes = defaultMaxImportBytes,
     this.maxTextFieldBytes = defaultMaxTextFieldBytes,
     this.maxSmallFieldBytes = defaultMaxSmallFieldBytes,
@@ -75,6 +85,7 @@ class EntryImportService {
 
   final EntryImportFileReader fileReader;
   final EntryRepository entryRepository;
+  final TagRepository? tagRepository;
   final int maxImportBytes;
   final int maxTextFieldBytes;
   final int maxSmallFieldBytes;
@@ -86,13 +97,15 @@ class EntryImportService {
         return const EntryImportResult.cancelled();
       }
 
-      final entries = parseCsv(
+      final parsed = parseCsv(
         file.contents,
         maxImportBytes: maxImportBytes,
         maxTextFieldBytes: maxTextFieldBytes,
         maxSmallFieldBytes: maxSmallFieldBytes,
       );
+      final entries = parsed.map((item) => item.entry).toList(growable: false);
       await entryRepository.importEntries(entries);
+      await _ensureTagsExist(parsed);
       return EntryImportResult.success(
         fileName: file.fileName,
         importedCount: entries.length,
@@ -106,7 +119,36 @@ class EntryImportService {
     }
   }
 
-  static List<Entry> parseCsv(
+  /// Auto-creates tags referenced by the imported rows that do not exist yet.
+  ///
+  /// Tags are not assigned to the imported entries because the bulk insert does
+  /// not return entry IDs. Tag creation failures (e.g. tag limit reached) are
+  /// skipped silently so they never fail an otherwise successful import.
+  Future<void> _ensureTagsExist(List<ParsedImportEntry> parsed) async {
+    final repository = tagRepository;
+    if (repository == null) {
+      return;
+    }
+
+    final uniqueNames = <String>{
+      for (final item in parsed) ...item.tagNames,
+    };
+    for (final name in uniqueNames) {
+      try {
+        final existing = await repository.findTagByName(name);
+        if (existing != null) {
+          continue;
+        }
+        await repository.createTag(name);
+      } on StateError {
+        // Tag limit exceeded; skip silently.
+      } on ArgumentError {
+        // Invalid tag name (e.g. too long); skip silently.
+      }
+    }
+  }
+
+  static List<ParsedImportEntry> parseCsv(
     String contents, {
     int maxImportBytes = defaultMaxImportBytes,
     int maxTextFieldBytes = defaultMaxTextFieldBytes,
@@ -126,21 +168,25 @@ class EntryImportService {
     if (header.isNotEmpty) {
       header[0] = _stripUtf8Bom(header.first);
     }
-    if (!_listEquals(header, EntryExportService.csvHeaders)) {
+    final expectedHeader = EntryExportService.csvHeaders;
+    final legacyHeader = expectedHeader.sublist(0, expectedHeader.length - 1);
+    final hasTags = _listEquals(header, expectedHeader);
+    if (!hasTags && !_listEquals(header, legacyHeader)) {
       throw FormatException(
         'Entry import CSV header does not match the Wrait export format.',
       );
     }
+    final expectedColumns = header.length;
 
-    final importedEntries = <Entry>[];
+    final importedEntries = <ParsedImportEntry>[];
     for (final row in rows.skip(1)) {
       if (_isBlankRow(row)) {
         continue;
       }
-      if (row.length != EntryExportService.csvHeaders.length) {
+      if (row.length != expectedColumns) {
         throw FormatException(
           'Entry import CSV row has ${row.length} columns; '
-          'expected ${EntryExportService.csvHeaders.length}.',
+          'expected $expectedColumns.',
         );
       }
 
@@ -149,7 +195,7 @@ class EntryImportService {
         maxTextFieldBytes: maxTextFieldBytes,
         maxSmallFieldBytes: maxSmallFieldBytes,
       );
-      importedEntries.add(_parseEntryRow(row));
+      importedEntries.add(_parseEntryRow(row, hasTags: hasTags));
     }
 
     return importedEntries;
@@ -172,7 +218,10 @@ class EntryImportService {
     return EntryImportFailureCategory.storageFailure;
   }
 
-  static Entry _parseEntryRow(List<String> row) {
+  static ParsedImportEntry _parseEntryRow(
+    List<String> row, {
+    required bool hasTags,
+  }) {
     final entryType = EntryType.tryParse(row[0]);
     if (entryType == null) {
       throw FormatException(
@@ -219,14 +268,29 @@ class EntryImportService {
 
     final cleanedText = row[5].isEmpty ? null : row[5];
 
-    return Entry(
-      rawTranscript: row[4],
-      cleanedText: cleanedText,
-      type: entryType,
-      language: resolvedLanguage,
-      createdAt: createdAt,
-      wordCount: wordCount,
+    final tagNames = hasTags && row.length > 6
+        ? _parseTagNames(row[6])
+        : const <String>[];
+
+    return ParsedImportEntry(
+      entry: Entry(
+        rawTranscript: row[4],
+        cleanedText: cleanedText,
+        type: entryType,
+        language: resolvedLanguage,
+        createdAt: createdAt,
+        wordCount: wordCount,
+      ),
+      tagNames: tagNames,
     );
+  }
+
+  static List<String> _parseTagNames(String value) {
+    return value
+        .split(';')
+        .map((name) => name.trim())
+        .where((name) => name.isNotEmpty)
+        .toList(growable: false);
   }
 
   static List<List<String>> _parseRows(String contents) {

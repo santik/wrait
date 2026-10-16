@@ -34,6 +34,7 @@ class EntryExportService {
     'word_count',
     'raw_transcript',
     'cleaned_text',
+    'tags',
   ];
 
   final EntryExportFileWriter _fileWriter;
@@ -89,6 +90,7 @@ class EntryExportService {
           entry.wordCount.toString(),
           _escapeCsv(entry.rawTranscript),
           _escapeCsv(entry.cleanedText ?? ''),
+          _escapeCsv(entry.tags.map((tag) => tag.name).join(';')),
         ].join(','),
       );
     }

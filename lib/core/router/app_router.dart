@@ -5,6 +5,7 @@ import '../../presentation/entries/entry_detail_screen.dart';
 import '../../presentation/entries/entry_list_screen.dart';
 import '../../presentation/main/main_screen.dart';
 import '../../presentation/settings/settings_screen.dart';
+import '../../presentation/tags/manage_tags_screen.dart';
 
 GoRouter buildAppRouter({String? initialLocation}) {
   return GoRouter(
@@ -35,6 +36,10 @@ GoRouter buildAppRouter({String? initialLocation}) {
 
           return EntryDetailScreen(entryId: entryId);
         },
+      ),
+      GoRoute(
+        path: '/tags',
+        builder: (context, state) => const ManageTagsScreen(),
       ),
     ],
   );

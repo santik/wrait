@@ -219,7 +219,7 @@ void main() {
     expect(tester.widget<TextField>(searchField).controller?.text, isEmpty);
   });
 
-  testWidgets('resets search after leaving and reopening the entries list', (
+  testWidgets('preserves search after navigating to detail and back', (
     tester,
   ) async {
     entryRepository.emitEntries([
@@ -244,10 +244,10 @@ void main() {
     );
     expect(
       tester.widget<TextField>(reopenedSearchField).controller?.text,
-      isEmpty,
+      'target',
     );
     expect(find.byKey(const ValueKey('entryRow-2')), findsOneWidget);
-    expect(find.byKey(const ValueKey('entryRow-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('entryRow-1')), findsNothing);
   });
 
   testWidgets('row tap navigates to entry detail', (tester) async {
@@ -469,7 +469,7 @@ void main() {
     expect(
       exportFileWriter.lastContents,
       contains(
-        'type,created_at,language,word_count,raw_transcript,cleaned_text',
+        'type,created_at,language,word_count,raw_transcript,cleaned_text,tags',
       ),
     );
     expect(exportFileWriter.lastContents, contains('draft,'));
@@ -552,7 +552,7 @@ void main() {
     );
     expect(
       exportFileWriter.lastContents,
-      'type,created_at,language,word_count,raw_transcript,cleaned_text\n',
+      'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n',
     );
   });
 

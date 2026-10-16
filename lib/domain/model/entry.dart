@@ -1,3 +1,5 @@
+import 'tag.dart';
+
 enum EntryType {
   draft,
   saved;
@@ -23,6 +25,7 @@ class Entry {
     required this.createdAt,
     required this.wordCount,
     this.audioPath,
+    this.tags = const [],
   });
 
   final int id;
@@ -33,6 +36,7 @@ class Entry {
   final int createdAt;
   final int wordCount;
   final String? audioPath;
+  final List<Tag> tags;
 
   Entry copyWith({
     int? id,
@@ -45,6 +49,7 @@ class Entry {
     int? wordCount,
     String? audioPath,
     bool clearAudioPath = false,
+    List<Tag>? tags,
   }) {
     return Entry(
       id: id ?? this.id,
@@ -55,6 +60,7 @@ class Entry {
       createdAt: createdAt ?? this.createdAt,
       wordCount: wordCount ?? this.wordCount,
       audioPath: clearAudioPath ? null : audioPath ?? this.audioPath,
+      tags: tags ?? this.tags,
     );
   }
 
@@ -69,7 +75,8 @@ class Entry {
             other.language == language &&
             other.createdAt == createdAt &&
             other.wordCount == wordCount &&
-            other.audioPath == audioPath);
+            other.audioPath == audioPath &&
+            _listEquals(other.tags, tags));
   }
 
   @override
@@ -82,5 +89,15 @@ class Entry {
     createdAt,
     wordCount,
     audioPath,
+    Object.hashAll(tags),
   );
+
+  static bool _listEquals(List<Tag> a, List<Tag> b) {
+    if (identical(a, b)) return true;
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 }

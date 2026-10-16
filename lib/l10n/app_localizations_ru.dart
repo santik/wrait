@@ -616,4 +616,86 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get feedbackCategoryPraise => 'Похвала';
+
+  @override
+  String get tagsTitle => 'Теги';
+
+  @override
+  String get tagsManage => 'Управление тегами';
+
+  @override
+  String get tagsAdd => 'Добавить тег';
+
+  @override
+  String get tagsAddHint => 'Название тега';
+
+  @override
+  String get tagsEmpty => 'Тегов пока нет';
+
+  @override
+  String tagsLimitReached(int max) {
+    return 'Достигнут лимит тегов ($max)';
+  }
+
+  @override
+  String get tagsDeleteConfirmTitle => 'Удалить тег?';
+
+  @override
+  String get tagsDeleteConfirmBody => 'Этот тег будет удалён из всех записей.';
+
+  @override
+  String get tagsDeleteConfirm => 'Удалить';
+
+  @override
+  String get tagsDeleteCancel => 'Отмена';
+
+  @override
+  String tagsNameTooLong(int max) {
+    return 'Название тега — не более $max символов';
+  }
+
+  @override
+  String get tagsNameDuplicate => 'Такой тег уже существует';
+
+  @override
+  String get tagsCreateFailed => 'Не удалось создать тег';
+
+  @override
+  String get tagsDeleteFailed => 'Не удалось удалить тег';
+
+  @override
+  String get tagsFilterAll => 'Все';
+
+  @override
+  String get tagsFilterClear => 'Сбросить фильтр';
+
+  @override
+  String get tagsNoEntriesWithTag => 'Нет записей с этим тегом';
+
+  @override
+  String get tagsAssign => 'Теги';
+
+  @override
+  String get tagsAssignDone => 'Готово';
+
+  @override
+  String tagsAssignCreate(String name) {
+    return 'Создать «$name»';
+  }
+
+  @override
+  String tagsEntryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count записей',
+      many: '$count записей',
+      few: '$count записи',
+      one: '1 запись',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsSearchIncluded => 'Поиск включает названия тегов';
 }
