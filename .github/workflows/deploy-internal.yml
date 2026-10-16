@@ -26,6 +26,16 @@ jobs:
           channel: stable
           cache: true
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Generate backend API client
+        run: |
+          npm ci
+          npm run generate:backend-api
+
       - name: Decode keystore
         run: echo "$KEYSTORE_BASE64" | base64 --decode > android/upload-keystore.jks
         env:
