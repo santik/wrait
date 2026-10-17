@@ -22,6 +22,7 @@ RESOLVED_PROXY_SECRET=""
 RESOLVED_WIREDASH_PROJECT_ID=""
 RESOLVED_WIREDASH_SECRET=""
 RESOLVED_WIREDASH_ENVIRONMENT=""
+RESOLVED_DEBUG_DEVICE_ID=""
 
 fail() {
   printf 'error: %s\n' "$*" >&2
@@ -161,6 +162,12 @@ load_and_validate_debug_config() {
   RESOLVED_WIREDASH_ENVIRONMENT="$(
     optional_trimmed_property "$DEBUG_LOCAL_PROPERTIES_PATH" "WIREDASH_ENVIRONMENT"
   )"
+  RESOLVED_DEBUG_DEVICE_ID="$(
+    optional_trimmed_property "$DEBUG_LOCAL_PROPERTIES_PATH" "DEBUG_DEVICE_ID"
+  )"
+  if [[ -n "$RESOLVED_DEBUG_DEVICE_ID" && ! "$RESOLVED_DEBUG_DEVICE_ID" =~ ^[0-9a-f]{64}$ ]]; then
+    warn "DEBUG_DEVICE_ID is not a valid SHA-256 hex hash (expected 64 lowercase hex characters)"
+  fi
 
   validate_proxy_secret "$RESOLVED_PROXY_SECRET"
   validate_wiredash_config
@@ -603,6 +610,11 @@ main() {
       "--dart-define=WIREDASH_PROJECT_ID=$RESOLVED_WIREDASH_PROJECT_ID"
       "--dart-define=WIREDASH_SECRET=$RESOLVED_WIREDASH_SECRET"
       "--dart-define=WIREDASH_ENVIRONMENT=$RESOLVED_WIREDASH_ENVIRONMENT"
+    )
+  fi
+  if [[ -n "$RESOLVED_DEBUG_DEVICE_ID" ]]; then
+    flutter_build_args+=(
+      "--dart-define=DEBUG_DEVICE_ID=$RESOLVED_DEBUG_DEVICE_ID"
     )
   fi
 

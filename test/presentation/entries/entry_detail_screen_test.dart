@@ -467,6 +467,111 @@ void main() {
 
     semanticsHandle.dispose();
   });
+
+  group('raw transcript debug section', () {
+    const rawTranscriptKey = ValueKey('entryDetailRawTranscript');
+
+    testWidgets('shows raw transcript when debug mode enabled', (tester) async {
+      entryRepository.seedEntries([
+        _entry(
+          id: 1,
+          rawTranscript: 'raw version',
+          cleanedText: 'cleaned version',
+        ),
+      ]);
+
+      await _pumpEntryDetailApp(
+        tester,
+        entryRepository: entryRepository,
+        shareService: shareService,
+        debugDeviceMode: true,
+      );
+
+      expect(find.byKey(rawTranscriptKey), findsOneWidget);
+      expect(find.text('raw version'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('entryDetailRawTranscriptLabel')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides raw transcript when debug mode disabled', (
+      tester,
+    ) async {
+      entryRepository.seedEntries([
+        _entry(
+          id: 1,
+          rawTranscript: 'raw version',
+          cleanedText: 'cleaned version',
+        ),
+      ]);
+
+      await _pumpEntryDetailApp(
+        tester,
+        entryRepository: entryRepository,
+        shareService: shareService,
+      );
+
+      expect(find.byKey(rawTranscriptKey), findsNothing);
+    });
+
+    testWidgets('hides raw transcript when texts are identical', (
+      tester,
+    ) async {
+      entryRepository.seedEntries([
+        _entry(id: 1, rawTranscript: 'same text', cleanedText: 'same text'),
+      ]);
+
+      await _pumpEntryDetailApp(
+        tester,
+        entryRepository: entryRepository,
+        shareService: shareService,
+        debugDeviceMode: true,
+      );
+
+      expect(find.byKey(rawTranscriptKey), findsNothing);
+    });
+
+    testWidgets('hides raw transcript when cleanedText is null',
+        (tester) async {
+      entryRepository.seedEntries([
+        _entry(
+          id: 1,
+          rawTranscript: 'raw only entry',
+          cleanedText: null,
+        ),
+      ]);
+
+      await _pumpEntryDetailApp(
+        tester,
+        entryRepository: entryRepository,
+        shareService: shareService,
+        debugDeviceMode: true,
+      );
+
+      expect(find.byKey(rawTranscriptKey), findsNothing);
+    });
+
+    testWidgets('hides raw transcript for draft entries', (tester) async {
+      entryRepository.seedEntries([
+        _entry(
+          id: 1,
+          rawTranscript: 'raw',
+          cleanedText: 'cleaned',
+          type: EntryType.draft,
+        ),
+      ]);
+
+      await _pumpEntryDetailApp(
+        tester,
+        entryRepository: entryRepository,
+        shareService: shareService,
+        debugDeviceMode: true,
+      );
+
+      expect(find.byKey(rawTranscriptKey), findsNothing);
+    });
+  });
 }
 
 Future<void> _pumpEntryDetailApp(
@@ -476,6 +581,7 @@ Future<void> _pumpEntryDetailApp(
   String initialLocation = '/entry/1',
   Duration autoSaveDelay = const Duration(milliseconds: 1),
   bool settle = true,
+  bool debugDeviceMode = false,
 }) async {
   final sharedPreferences = await SharedPreferences.getInstance();
 
@@ -493,6 +599,7 @@ Future<void> _pumpEntryDetailApp(
           buildAppRouter(initialLocation: initialLocation),
         ),
         appLockEnabledProvider.overrideWithValue(false),
+        debugDeviceModeProvider.overrideWith((ref) async => debugDeviceMode),
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         preferencesRepositoryProvider.overrideWithValue(
           const _TestPreferencesRepository(),

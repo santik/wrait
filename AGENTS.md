@@ -328,6 +328,9 @@ Full process: see [`docs/spec-driven-workflow.md`](docs/spec-driven-workflow.md)
   `_FakeTagRepository`. Screens using GoRouter context extensions
   (`context.push`, `context.pop`) need a `MaterialApp.router` with a
   `GoRouter` instance, not a plain `MaterialApp`.
+- The "Raw transcript" label in the debug section of `entry_detail_screen.dart`
+  is intentionally hardcoded in English without localization. It is a
+  developer-only debug surface, not user-facing, so ARB/l10n is not required.
 - Current Android emulator validation has a known split for recording flows:
   `integration_test/main_recording_controller_flow_test.dart` passes on
   `emulator-5554`, while

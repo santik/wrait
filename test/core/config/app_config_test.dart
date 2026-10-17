@@ -16,6 +16,8 @@ void main() {
       expect(config.wiredashSecret, isEmpty);
       expect(config.wiredashEnvironment, AppConfig.defaultWiredashEnvironment);
       expect(config.wiredashConfigured, isFalse);
+      expect(config.debugDeviceId, isEmpty);
+      expect(config.isDebugDeviceConfigured, isFalse);
     });
 
     test('applies explicit override values', () {
@@ -44,6 +46,28 @@ void main() {
 
       expect(projectOnly.wiredashConfigured, isFalse);
       expect(secretOnly.wiredashConfigured, isFalse);
+    });
+
+    test('sets debugDeviceId and reports it as configured', () {
+      final config = AppConfig.fromValues(debugDeviceId: 'abc123');
+
+      expect(config.debugDeviceId, 'abc123');
+      expect(config.isDebugDeviceConfigured, isTrue);
+    });
+
+    test('treats an empty debugDeviceId as not configured', () {
+      expect(AppConfig.fromValues().isDebugDeviceConfigured, isFalse);
+      expect(
+        AppConfig.fromValues(debugDeviceId: '').isDebugDeviceConfigured,
+        isFalse,
+      );
+    });
+
+    test('trims a whitespace-only debugDeviceId to empty', () {
+      final config = AppConfig.fromValues(debugDeviceId: '   ');
+
+      expect(config.debugDeviceId, isEmpty);
+      expect(config.isDebugDeviceConfigured, isFalse);
     });
 
     test('rejects a non-positive recording hard cap', () {

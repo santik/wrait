@@ -129,6 +129,10 @@ Before starting any non-trivial feature:
 - Debug/profile: `com.wrait.flutter.dev`
 - Historical references to `com.wrait.app` are stale — verify actual package before debugging.
 
+## Implementation workflow
+
+Always implement SDD tasks using subagents with sonnet models. Split work into parallel agents by file ownership (no two agents touch the same files), and verify tests in the main session after agents complete.
+
 ## Additional references
 
 - [`AGENTS.md`](AGENTS.md) — detailed implementation guidance and accumulated findings
