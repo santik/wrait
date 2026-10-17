@@ -248,9 +248,10 @@ upcoming feature work:
   each entry row
 - entry-list previews derived from cleaned text first, then raw transcript,
   with audio-only drafts shown as `pending · will retry`
-- local entry-list text search across cleaned text and raw transcripts for
-  saved entries and drafts, with whitespace-separated literal all-term matching
-  performed only on the device
+- local entry-list text search across cleaned text, raw transcripts, and tag
+  names for saved entries and drafts, with whitespace-separated literal
+  all-term matching performed only on the device; tag matching checks each tag
+  name individually
 - manual CSV export from the entries screen, covering saved and draft entries,
   excluding retained audio files, database ids, and duplicate timestamp
   fields, and writing to an automatic local platform destination
@@ -261,6 +262,17 @@ upcoming feature work:
   ids are ignored in favor of new local ids, retained audio files are not
   restored by import, and `created_at` round-trips as the raw stored integer
   value from the local database
+- on-device tag system with up to 10 user-created tags per system,
+  15-character maximum name length, and case-insensitive uniqueness
+- tag management screen at `/tags` for creating, viewing, and deleting tags
+  with entry counts
+- tag assignment from entry detail via a bottom sheet with inline tag creation
+- horizontal tag filter chip row on the entry list with "All" default and
+  per-tag filtering that composes with text search using AND logic
+- CSV export and import of tags as a semicolon-separated seventh column,
+  backward-compatible with 6-column legacy files on import
+- database schema v2 migration adding tags and entry_tags tables, preserving
+  all existing entry data
 - right-swipe row deletion on `/entries` with immediate confirmation, cancel
   reset, and stay-on-list behavior after confirmed deletion
 - real entry-detail screen at `/entry/:id` backed by the local entry

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:drift/drift.dart';
@@ -8,6 +9,7 @@ import '../../domain/model/supported_language.dart';
 import '../../domain/repository/entry_repository.dart';
 import 'draft_audio_path_codec.dart';
 import 'local_entry_database.dart';
+import 'tag_repository_impl.dart';
 
 typedef StoreDraftAudioPathCallback = Future<String> Function(String audioPath);
 typedef ResolveDraftAudioPathCallback = Future<String> Function(
@@ -17,6 +19,7 @@ typedef ResolveDraftAudioPathCallback = Future<String> Function(
 class EntryRepositoryImpl implements EntryRepository {
   EntryRepositoryImpl({
     required this.entryDao,
+    required this.tagDao,
     required this.clock,
     StoreDraftAudioPathCallback? storeDraftAudioPath,
     ResolveDraftAudioPathCallback? resolveDraftAudioPath,
@@ -25,26 +28,80 @@ class EntryRepositoryImpl implements EntryRepository {
            resolveDraftAudioPath ?? DraftAudioPathCodec.resolve;
 
   final EntryDao entryDao;
+  final TagDao tagDao;
   final Clock clock;
   final StoreDraftAudioPathCallback _storeDraftAudioPath;
   final ResolveDraftAudioPathCallback _resolveDraftAudioPath;
 
   @override
   Stream<List<Entry>> watchAllEntries() {
-    return entryDao.watchAllEntries().asyncMap(
-      (rows) => Future.wait(rows.map(_mapEntryRecord), eagerError: true),
-    );
+    var latestRows = const <EntryRecord>[];
+    var ready = false;
+    final controller = StreamController<List<Entry>>.broadcast();
+
+    Future<void> emit() async {
+      if (!ready || controller.isClosed) return;
+      try {
+        final entries = await Future.wait(
+          latestRows.map(_mapEntryRecord),
+          eagerError: true,
+        );
+        if (!controller.isClosed) controller.add(entries);
+      } catch (e, st) {
+        if (!controller.isClosed) controller.addError(e, st);
+      }
+    }
+
+    final entriesSub = entryDao.watchAllEntries().listen((rows) {
+      latestRows = rows;
+      ready = true;
+      emit();
+    });
+    final tagsSub = tagDao.watchAllAssignments().listen((_) => emit());
+
+    controller.onCancel = () {
+      entriesSub.cancel();
+      tagsSub.cancel();
+      controller.close();
+    };
+
+    return controller.stream;
   }
 
   @override
   Stream<Entry?> watchEntryById(int id) {
-    return entryDao.watchEntryById(id).asyncMap((row) async {
-      if (row == null) {
-        return null;
-      }
+    EntryRecord? latestRow;
+    var ready = false;
+    final controller = StreamController<Entry?>.broadcast();
 
-      return _mapEntryRecord(row);
+    Future<void> emit() async {
+      if (!ready || controller.isClosed) return;
+      try {
+        if (latestRow == null) {
+          if (!controller.isClosed) controller.add(null);
+        } else {
+          final entry = await _mapEntryRecord(latestRow!);
+          if (!controller.isClosed) controller.add(entry);
+        }
+      } catch (e, st) {
+        if (!controller.isClosed) controller.addError(e, st);
+      }
+    }
+
+    final entrySub = entryDao.watchEntryById(id).listen((row) {
+      latestRow = row;
+      ready = true;
+      emit();
     });
+    final tagsSub = tagDao.watchTagsForEntry(id).listen((_) => emit());
+
+    controller.onCancel = () {
+      entrySub.cancel();
+      tagsSub.cancel();
+      controller.close();
+    };
+
+    return controller.stream;
   }
 
   @override
@@ -58,9 +115,9 @@ class EntryRepositoryImpl implements EntryRepository {
   }
 
   @override
-  Future<void> importEntries(List<Entry> entries) async {
+  Future<List<int>> importEntries(List<Entry> entries) async {
     if (entries.isEmpty) {
-      return;
+      return const [];
     }
 
     final importedEntries = entries
@@ -78,7 +135,7 @@ class EntryRepositoryImpl implements EntryRepository {
         })
         .toList(growable: false);
 
-    await entryDao.insertEntries(importedEntries);
+    return entryDao.insertEntries(importedEntries);
   }
 
   @override
@@ -261,6 +318,11 @@ class EntryRepositoryImpl implements EntryRepository {
       );
     }
 
+    final tagRecords = await tagDao.getTagsForEntry(row.id);
+    final tags = tagRecords
+        .map(TagRepositoryImpl.mapTagRecord)
+        .toList(growable: false);
+
     return Entry(
       id: row.id,
       rawTranscript: row.rawTranscript,
@@ -270,6 +332,7 @@ class EntryRepositoryImpl implements EntryRepository {
       createdAt: row.createdAt,
       wordCount: row.wordCount,
       audioPath: await _resolveAudioPath(row.audioPath),
+      tags: tags,
     );
   }
 

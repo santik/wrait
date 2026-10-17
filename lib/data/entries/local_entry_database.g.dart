@@ -514,16 +514,447 @@ class EntryRecordsCompanion extends UpdateCompanion<EntryRecord> {
   }
 }
 
+class $TagRecordsTable extends TagRecords
+    with TableInfo<$TagRecordsTable, TagRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TagRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+    'name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL UNIQUE COLLATE NOCASE',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, name];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TagRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+        _nameMeta,
+        name.isAcceptableOrUnknown(data['name']!, _nameMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TagRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TagRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      name: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}name'],
+      )!,
+    );
+  }
+
+  @override
+  $TagRecordsTable createAlias(String alias) {
+    return $TagRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class TagRecord extends DataClass implements Insertable<TagRecord> {
+  final int id;
+  final String name;
+  const TagRecord({required this.id, required this.name});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    return map;
+  }
+
+  TagRecordsCompanion toCompanion(bool nullToAbsent) {
+    return TagRecordsCompanion(id: Value(id), name: Value(name));
+  }
+
+  factory TagRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TagRecord(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+    };
+  }
+
+  TagRecord copyWith({int? id, String? name}) =>
+      TagRecord(id: id ?? this.id, name: name ?? this.name);
+  TagRecord copyWithCompanion(TagRecordsCompanion data) {
+    return TagRecord(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TagRecord(')
+          ..write('id: $id, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TagRecord && other.id == this.id && other.name == this.name);
+}
+
+class TagRecordsCompanion extends UpdateCompanion<TagRecord> {
+  final Value<int> id;
+  final Value<String> name;
+  const TagRecordsCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+  });
+  TagRecordsCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+  }) : name = Value(name);
+  static Insertable<TagRecord> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+    });
+  }
+
+  TagRecordsCompanion copyWith({Value<int>? id, Value<String>? name}) {
+    return TagRecordsCompanion(id: id ?? this.id, name: name ?? this.name);
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TagRecordsCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EntryTagRecordsTable extends EntryTagRecords
+    with TableInfo<$EntryTagRecordsTable, EntryTagRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EntryTagRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entryIdMeta = const VerificationMeta(
+    'entryId',
+  );
+  @override
+  late final GeneratedColumn<int> entryId = GeneratedColumn<int>(
+    'entry_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL REFERENCES entries(id) ON DELETE CASCADE',
+  );
+  static const VerificationMeta _tagIdMeta = const VerificationMeta('tagId');
+  @override
+  late final GeneratedColumn<int> tagId = GeneratedColumn<int>(
+    'tag_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL REFERENCES tags(id) ON DELETE CASCADE',
+  );
+  @override
+  List<GeneratedColumn> get $columns => [entryId, tagId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'entry_tags';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<EntryTagRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entry_id')) {
+      context.handle(
+        _entryIdMeta,
+        entryId.isAcceptableOrUnknown(data['entry_id']!, _entryIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entryIdMeta);
+    }
+    if (data.containsKey('tag_id')) {
+      context.handle(
+        _tagIdMeta,
+        tagId.isAcceptableOrUnknown(data['tag_id']!, _tagIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_tagIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entryId, tagId};
+  @override
+  EntryTagRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return EntryTagRecord(
+      entryId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}entry_id'],
+      )!,
+      tagId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}tag_id'],
+      )!,
+    );
+  }
+
+  @override
+  $EntryTagRecordsTable createAlias(String alias) {
+    return $EntryTagRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class EntryTagRecord extends DataClass implements Insertable<EntryTagRecord> {
+  final int entryId;
+  final int tagId;
+  const EntryTagRecord({required this.entryId, required this.tagId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entry_id'] = Variable<int>(entryId);
+    map['tag_id'] = Variable<int>(tagId);
+    return map;
+  }
+
+  EntryTagRecordsCompanion toCompanion(bool nullToAbsent) {
+    return EntryTagRecordsCompanion(
+      entryId: Value(entryId),
+      tagId: Value(tagId),
+    );
+  }
+
+  factory EntryTagRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return EntryTagRecord(
+      entryId: serializer.fromJson<int>(json['entryId']),
+      tagId: serializer.fromJson<int>(json['tagId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entryId': serializer.toJson<int>(entryId),
+      'tagId': serializer.toJson<int>(tagId),
+    };
+  }
+
+  EntryTagRecord copyWith({int? entryId, int? tagId}) => EntryTagRecord(
+    entryId: entryId ?? this.entryId,
+    tagId: tagId ?? this.tagId,
+  );
+  EntryTagRecord copyWithCompanion(EntryTagRecordsCompanion data) {
+    return EntryTagRecord(
+      entryId: data.entryId.present ? data.entryId.value : this.entryId,
+      tagId: data.tagId.present ? data.tagId.value : this.tagId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EntryTagRecord(')
+          ..write('entryId: $entryId, ')
+          ..write('tagId: $tagId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(entryId, tagId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is EntryTagRecord &&
+          other.entryId == this.entryId &&
+          other.tagId == this.tagId);
+}
+
+class EntryTagRecordsCompanion extends UpdateCompanion<EntryTagRecord> {
+  final Value<int> entryId;
+  final Value<int> tagId;
+  final Value<int> rowid;
+  const EntryTagRecordsCompanion({
+    this.entryId = const Value.absent(),
+    this.tagId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  EntryTagRecordsCompanion.insert({
+    required int entryId,
+    required int tagId,
+    this.rowid = const Value.absent(),
+  }) : entryId = Value(entryId),
+       tagId = Value(tagId);
+  static Insertable<EntryTagRecord> custom({
+    Expression<int>? entryId,
+    Expression<int>? tagId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entryId != null) 'entry_id': entryId,
+      if (tagId != null) 'tag_id': tagId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  EntryTagRecordsCompanion copyWith({
+    Value<int>? entryId,
+    Value<int>? tagId,
+    Value<int>? rowid,
+  }) {
+    return EntryTagRecordsCompanion(
+      entryId: entryId ?? this.entryId,
+      tagId: tagId ?? this.tagId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entryId.present) {
+      map['entry_id'] = Variable<int>(entryId.value);
+    }
+    if (tagId.present) {
+      map['tag_id'] = Variable<int>(tagId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EntryTagRecordsCompanion(')
+          ..write('entryId: $entryId, ')
+          ..write('tagId: $tagId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$LocalEntryDatabase extends GeneratedDatabase {
   _$LocalEntryDatabase(QueryExecutor e) : super(e);
   $LocalEntryDatabaseManager get managers => $LocalEntryDatabaseManager(this);
   late final $EntryRecordsTable entryRecords = $EntryRecordsTable(this);
+  late final $TagRecordsTable tagRecords = $TagRecordsTable(this);
+  late final $EntryTagRecordsTable entryTagRecords = $EntryTagRecordsTable(
+    this,
+  );
   late final EntryDao entryDao = EntryDao(this as LocalEntryDatabase);
+  late final TagDao tagDao = TagDao(this as LocalEntryDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
   @override
-  List<DatabaseSchemaEntity> get allSchemaEntities => [entryRecords];
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    entryRecords,
+    tagRecords,
+    entryTagRecords,
+  ];
+  @override
+  StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'entries',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('entry_tags', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tags',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('entry_tags', kind: UpdateKind.delete)],
+    ),
+  ]);
 }
 
 typedef $$EntryRecordsTableCreateCompanionBuilder =
@@ -548,6 +979,33 @@ typedef $$EntryRecordsTableUpdateCompanionBuilder =
       Value<int> wordCount,
       Value<String?> audioPath,
     });
+
+final class $$EntryRecordsTableReferences
+    extends
+        BaseReferences<_$LocalEntryDatabase, $EntryRecordsTable, EntryRecord> {
+  $$EntryRecordsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$EntryTagRecordsTable, List<EntryTagRecord>>
+  _entryTagRecordsRefsTable(_$LocalEntryDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.entryTagRecords,
+        aliasName: 'entries__id__entry_tags__entry_id',
+      );
+
+  $$EntryTagRecordsTableProcessedTableManager get entryTagRecordsRefs {
+    final manager = $$EntryTagRecordsTableTableManager(
+      $_db,
+      $_db.entryTagRecords,
+    ).filter((f) => f.entryId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _entryTagRecordsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
 
 class $$EntryRecordsTableFilterComposer
     extends Composer<_$LocalEntryDatabase, $EntryRecordsTable> {
@@ -597,6 +1055,31 @@ class $$EntryRecordsTableFilterComposer
     column: $table.audioPath,
     builder: (column) => ColumnFilters(column),
   );
+
+  Expression<bool> entryTagRecordsRefs(
+    Expression<bool> Function($$EntryTagRecordsTableFilterComposer f) f,
+  ) {
+    final $$EntryTagRecordsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.entryTagRecords,
+      getReferencedColumn: (t) => t.entryId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntryTagRecordsTableFilterComposer(
+            $db: $db,
+            $table: $db.entryTagRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$EntryRecordsTableOrderingComposer
@@ -685,6 +1168,31 @@ class $$EntryRecordsTableAnnotationComposer
 
   GeneratedColumn<String> get audioPath =>
       $composableBuilder(column: $table.audioPath, builder: (column) => column);
+
+  Expression<T> entryTagRecordsRefs<T extends Object>(
+    Expression<T> Function($$EntryTagRecordsTableAnnotationComposer a) f,
+  ) {
+    final $$EntryTagRecordsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.entryTagRecords,
+      getReferencedColumn: (t) => t.entryId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntryTagRecordsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.entryTagRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$EntryRecordsTableTableManager
@@ -698,16 +1206,9 @@ class $$EntryRecordsTableTableManager
           $$EntryRecordsTableAnnotationComposer,
           $$EntryRecordsTableCreateCompanionBuilder,
           $$EntryRecordsTableUpdateCompanionBuilder,
-          (
-            EntryRecord,
-            BaseReferences<
-              _$LocalEntryDatabase,
-              $EntryRecordsTable,
-              EntryRecord
-            >,
-          ),
+          (EntryRecord, $$EntryRecordsTableReferences),
           EntryRecord,
-          PrefetchHooks Function()
+          PrefetchHooks Function({bool entryTagRecordsRefs})
         > {
   $$EntryRecordsTableTableManager(
     _$LocalEntryDatabase db,
@@ -766,15 +1267,42 @@ class $$EntryRecordsTableTableManager
               .map(
                 (e) => (
                   e.readTable<$EntryRecordsTable, EntryRecord>(table),
-                  BaseReferences<
-                    _$LocalEntryDatabase,
-                    $EntryRecordsTable,
-                    EntryRecord
-                  >(db, table, e),
+                  $$EntryRecordsTableReferences(db, table, e),
                 ),
               )
               .toList(),
-          prefetchHooksCallback: null,
+          prefetchHooksCallback: ({entryTagRecordsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (entryTagRecordsRefs) db.entryTagRecords,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (entryTagRecordsRefs)
+                    await $_getPrefetchedData<
+                      EntryRecord,
+                      $EntryRecordsTable,
+                      EntryTagRecord
+                    >(
+                      currentTable: table,
+                      referencedTable: $$EntryRecordsTableReferences
+                          ._entryTagRecordsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$EntryRecordsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).entryTagRecordsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.entryId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
         ),
       );
 }
@@ -789,12 +1317,595 @@ typedef $$EntryRecordsTableProcessedTableManager =
       $$EntryRecordsTableAnnotationComposer,
       $$EntryRecordsTableCreateCompanionBuilder,
       $$EntryRecordsTableUpdateCompanionBuilder,
-      (
-        EntryRecord,
-        BaseReferences<_$LocalEntryDatabase, $EntryRecordsTable, EntryRecord>,
-      ),
+      (EntryRecord, $$EntryRecordsTableReferences),
       EntryRecord,
-      PrefetchHooks Function()
+      PrefetchHooks Function({bool entryTagRecordsRefs})
+    >;
+typedef $$TagRecordsTableCreateCompanionBuilder = TagRecordsCompanion Function({
+  Value<int> id,
+  required String name,
+});
+typedef $$TagRecordsTableUpdateCompanionBuilder = TagRecordsCompanion Function({
+  Value<int> id,
+  Value<String> name,
+});
+
+final class $$TagRecordsTableReferences
+    extends BaseReferences<_$LocalEntryDatabase, $TagRecordsTable, TagRecord> {
+  $$TagRecordsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$EntryTagRecordsTable, List<EntryTagRecord>>
+  _entryTagRecordsRefsTable(_$LocalEntryDatabase db) =>
+      MultiTypedResultKey.fromTable(
+        db.entryTagRecords,
+        aliasName: 'tags__id__entry_tags__tag_id',
+      );
+
+  $$EntryTagRecordsTableProcessedTableManager get entryTagRecordsRefs {
+    final manager = $$EntryTagRecordsTableTableManager(
+      $_db,
+      $_db.entryTagRecords,
+    ).filter((f) => f.tagId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(
+      _entryTagRecordsRefsTable($_db),
+    );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+}
+
+class $$TagRecordsTableFilterComposer
+    extends Composer<_$LocalEntryDatabase, $TagRecordsTable> {
+  $$TagRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  Expression<bool> entryTagRecordsRefs(
+    Expression<bool> Function($$EntryTagRecordsTableFilterComposer f) f,
+  ) {
+    final $$EntryTagRecordsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.entryTagRecords,
+      getReferencedColumn: (t) => t.tagId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntryTagRecordsTableFilterComposer(
+            $db: $db,
+            $table: $db.entryTagRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TagRecordsTableOrderingComposer
+    extends Composer<_$LocalEntryDatabase, $TagRecordsTable> {
+  $$TagRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get name => $composableBuilder(
+    column: $table.name,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TagRecordsTableAnnotationComposer
+    extends Composer<_$LocalEntryDatabase, $TagRecordsTable> {
+  $$TagRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  Expression<T> entryTagRecordsRefs<T extends Object>(
+    Expression<T> Function($$EntryTagRecordsTableAnnotationComposer a) f,
+  ) {
+    final $$EntryTagRecordsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.entryTagRecords,
+      getReferencedColumn: (t) => t.tagId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntryTagRecordsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.entryTagRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
+}
+
+class $$TagRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalEntryDatabase,
+          $TagRecordsTable,
+          TagRecord,
+          $$TagRecordsTableFilterComposer,
+          $$TagRecordsTableOrderingComposer,
+          $$TagRecordsTableAnnotationComposer,
+          $$TagRecordsTableCreateCompanionBuilder,
+          $$TagRecordsTableUpdateCompanionBuilder,
+          (TagRecord, $$TagRecordsTableReferences),
+          TagRecord,
+          PrefetchHooks Function({bool entryTagRecordsRefs})
+        > {
+  $$TagRecordsTableTableManager(_$LocalEntryDatabase db, $TagRecordsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TagRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TagRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TagRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+          }) => TagRecordsCompanion(id: id, name: name),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+          }) => TagRecordsCompanion.insert(id: id, name: name),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$TagRecordsTable, TagRecord>(table),
+                  $$TagRecordsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({entryTagRecordsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (entryTagRecordsRefs) db.entryTagRecords,
+              ],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (entryTagRecordsRefs)
+                    await $_getPrefetchedData<
+                      TagRecord,
+                      $TagRecordsTable,
+                      EntryTagRecord
+                    >(
+                      currentTable: table,
+                      referencedTable: $$TagRecordsTableReferences
+                          ._entryTagRecordsRefsTable(db),
+                      managerFromTypedResult: (p0) =>
+                          $$TagRecordsTableReferences(
+                            db,
+                            table,
+                            p0,
+                          ).entryTagRecordsRefs,
+                      referencedItemsForCurrentItem: (item, referencedItems) =>
+                          referencedItems.where((e) => e.tagId == item.id),
+                      typedResults: items,
+                    ),
+                ];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TagRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalEntryDatabase,
+      $TagRecordsTable,
+      TagRecord,
+      $$TagRecordsTableFilterComposer,
+      $$TagRecordsTableOrderingComposer,
+      $$TagRecordsTableAnnotationComposer,
+      $$TagRecordsTableCreateCompanionBuilder,
+      $$TagRecordsTableUpdateCompanionBuilder,
+      (TagRecord, $$TagRecordsTableReferences),
+      TagRecord,
+      PrefetchHooks Function({bool entryTagRecordsRefs})
+    >;
+typedef $$EntryTagRecordsTableCreateCompanionBuilder =
+    EntryTagRecordsCompanion Function({
+      required int entryId,
+      required int tagId,
+      Value<int> rowid,
+    });
+typedef $$EntryTagRecordsTableUpdateCompanionBuilder =
+    EntryTagRecordsCompanion Function({
+      Value<int> entryId,
+      Value<int> tagId,
+      Value<int> rowid,
+    });
+
+final class $$EntryTagRecordsTableReferences
+    extends
+        BaseReferences<
+          _$LocalEntryDatabase,
+          $EntryTagRecordsTable,
+          EntryTagRecord
+        > {
+  $$EntryTagRecordsTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $EntryRecordsTable _entryIdTable(_$LocalEntryDatabase db) =>
+      db.entryRecords.createAlias('entry_tags__entry_id__entries__id');
+
+  $$EntryRecordsTableProcessedTableManager get entryId {
+    final $_column = $_itemColumn<int>('entry_id')!;
+
+    final manager = $$EntryRecordsTableTableManager(
+      $_db,
+      $_db.entryRecords,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_entryIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+
+  static $TagRecordsTable _tagIdTable(_$LocalEntryDatabase db) =>
+      db.tagRecords.createAlias('entry_tags__tag_id__tags__id');
+
+  $$TagRecordsTableProcessedTableManager get tagId {
+    final $_column = $_itemColumn<int>('tag_id')!;
+
+    final manager = $$TagRecordsTableTableManager(
+      $_db,
+      $_db.tagRecords,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_tagIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$EntryTagRecordsTableFilterComposer
+    extends Composer<_$LocalEntryDatabase, $EntryTagRecordsTable> {
+  $$EntryTagRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$EntryRecordsTableFilterComposer get entryId {
+    final $$EntryRecordsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.entryId,
+      referencedTable: $db.entryRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntryRecordsTableFilterComposer(
+            $db: $db,
+            $table: $db.entryRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TagRecordsTableFilterComposer get tagId {
+    final $$TagRecordsTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tagId,
+      referencedTable: $db.tagRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TagRecordsTableFilterComposer(
+            $db: $db,
+            $table: $db.tagRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EntryTagRecordsTableOrderingComposer
+    extends Composer<_$LocalEntryDatabase, $EntryTagRecordsTable> {
+  $$EntryTagRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$EntryRecordsTableOrderingComposer get entryId {
+    final $$EntryRecordsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.entryId,
+      referencedTable: $db.entryRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntryRecordsTableOrderingComposer(
+            $db: $db,
+            $table: $db.entryRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TagRecordsTableOrderingComposer get tagId {
+    final $$TagRecordsTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tagId,
+      referencedTable: $db.tagRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TagRecordsTableOrderingComposer(
+            $db: $db,
+            $table: $db.tagRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EntryTagRecordsTableAnnotationComposer
+    extends Composer<_$LocalEntryDatabase, $EntryTagRecordsTable> {
+  $$EntryTagRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  $$EntryRecordsTableAnnotationComposer get entryId {
+    final $$EntryRecordsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.entryId,
+      referencedTable: $db.entryRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$EntryRecordsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.entryRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+
+  $$TagRecordsTableAnnotationComposer get tagId {
+    final $$TagRecordsTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.tagId,
+      referencedTable: $db.tagRecords,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TagRecordsTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tagRecords,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$EntryTagRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$LocalEntryDatabase,
+          $EntryTagRecordsTable,
+          EntryTagRecord,
+          $$EntryTagRecordsTableFilterComposer,
+          $$EntryTagRecordsTableOrderingComposer,
+          $$EntryTagRecordsTableAnnotationComposer,
+          $$EntryTagRecordsTableCreateCompanionBuilder,
+          $$EntryTagRecordsTableUpdateCompanionBuilder,
+          (EntryTagRecord, $$EntryTagRecordsTableReferences),
+          EntryTagRecord,
+          PrefetchHooks Function({bool entryId, bool tagId})
+        > {
+  $$EntryTagRecordsTableTableManager(
+    _$LocalEntryDatabase db,
+    $EntryTagRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EntryTagRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EntryTagRecordsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EntryTagRecordsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> entryId = const Value.absent(),
+                Value<int> tagId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => EntryTagRecordsCompanion(
+                entryId: entryId,
+                tagId: tagId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required int entryId,
+                required int tagId,
+                Value<int> rowid = const Value.absent(),
+              }) => EntryTagRecordsCompanion.insert(
+                entryId: entryId,
+                tagId: tagId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$EntryTagRecordsTable, EntryTagRecord>(table),
+                  $$EntryTagRecordsTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({entryId = false, tagId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (entryId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.entryId,
+                        referencedTable: $$EntryTagRecordsTableReferences
+                            ._entryIdTable(db),
+                        referencedColumn: $$EntryTagRecordsTableReferences
+                            ._entryIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+                    if (tagId) {
+                      state = state.withJoin(
+                        currentTable: table,
+                        currentColumn: table.tagId,
+                        referencedTable: $$EntryTagRecordsTableReferences
+                            ._tagIdTable(db),
+                        referencedColumn: $$EntryTagRecordsTableReferences
+                            ._tagIdTable(db)
+                            .id,
+                      ) as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$EntryTagRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$LocalEntryDatabase,
+      $EntryTagRecordsTable,
+      EntryTagRecord,
+      $$EntryTagRecordsTableFilterComposer,
+      $$EntryTagRecordsTableOrderingComposer,
+      $$EntryTagRecordsTableAnnotationComposer,
+      $$EntryTagRecordsTableCreateCompanionBuilder,
+      $$EntryTagRecordsTableUpdateCompanionBuilder,
+      (EntryTagRecord, $$EntryTagRecordsTableReferences),
+      EntryTagRecord,
+      PrefetchHooks Function({bool entryId, bool tagId})
     >;
 
 class $LocalEntryDatabaseManager {
@@ -802,6 +1913,10 @@ class $LocalEntryDatabaseManager {
   $LocalEntryDatabaseManager(this._db);
   $$EntryRecordsTableTableManager get entryRecords =>
       $$EntryRecordsTableTableManager(_db, _db.entryRecords);
+  $$TagRecordsTableTableManager get tagRecords =>
+      $$TagRecordsTableTableManager(_db, _db.tagRecords);
+  $$EntryTagRecordsTableTableManager get entryTagRecords =>
+      $$EntryTagRecordsTableTableManager(_db, _db.entryTagRecords);
 }
 
 mixin _$EntryDaoMixin on DatabaseAccessor<LocalEntryDatabase> {
@@ -814,4 +1929,25 @@ class EntryDaoManager {
   EntryDaoManager(this._db);
   $$EntryRecordsTableTableManager get entryRecords =>
       $$EntryRecordsTableTableManager(_db.attachedDatabase, _db.entryRecords);
+}
+
+mixin _$TagDaoMixin on DatabaseAccessor<LocalEntryDatabase> {
+  $TagRecordsTable get tagRecords => attachedDatabase.tagRecords;
+  $EntryRecordsTable get entryRecords => attachedDatabase.entryRecords;
+  $EntryTagRecordsTable get entryTagRecords => attachedDatabase.entryTagRecords;
+  TagDaoManager get managers => TagDaoManager(this);
+}
+
+class TagDaoManager {
+  final _$TagDaoMixin _db;
+  TagDaoManager(this._db);
+  $$TagRecordsTableTableManager get tagRecords =>
+      $$TagRecordsTableTableManager(_db.attachedDatabase, _db.tagRecords);
+  $$EntryRecordsTableTableManager get entryRecords =>
+      $$EntryRecordsTableTableManager(_db.attachedDatabase, _db.entryRecords);
+  $$EntryTagRecordsTableTableManager get entryTagRecords =>
+      $$EntryTagRecordsTableTableManager(
+        _db.attachedDatabase,
+        _db.entryTagRecords,
+      );
 }

@@ -198,6 +198,40 @@ class _EntryListRowState extends State<EntryListRow>
                                 color: theme.colorScheme.secondary,
                               ),
                             ),
+                            if (widget.entry.tags.isNotEmpty) ...[
+                              const SizedBox(height: WraitSpacingTokens.xs),
+                              Wrap(
+                                spacing: WraitSpacingTokens.xs,
+                                runSpacing: WraitSpacingTokens.xs,
+                                children: widget.entry.tags
+                                    .map(
+                                      (tag) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: WraitSpacingTokens.sm,
+                                          vertical: 2,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: theme
+                                              .colorScheme
+                                              .surfaceContainerHighest,
+                                          borderRadius: BorderRadius.circular(
+                                            WraitRadiusTokens.small,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          tag.name,
+                                          style: theme.textTheme.labelSmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                              ),
+                            ],
                           ],
                         ),
                       ),

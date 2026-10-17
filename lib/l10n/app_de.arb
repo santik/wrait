@@ -1,12 +1,10 @@
 {
   "@@locale": "de",
-
   "bootstrapTitle": "wrait wird geöffnet",
   "bootstrapSubtitle": "Ihr lokales Tagebuch wird geladen",
   "bootstrapErrorTitle": "wrait konnte nicht geöffnet werden",
   "bootstrapErrorSubtitle": "bitte erneut versuchen",
   "bootstrapRetryButton": "erneut versuchen",
-
   "mainSettingsTooltip": "Einstellungen",
   "mainFeedbackTooltip": "Feedback senden",
   "mainLanguageLabel": "Sprache: {displayName}",
@@ -19,7 +17,6 @@
   "mainFeedbackSemanticsLabel": "Feedback senden",
   "mainQuotaSemanticsLabel": "Aufnahmekontingent: insgesamt {limit}, noch {remaining} übrig.",
   "mainQuotaText": "{limit} gesamt / {remaining} übrig",
-
   "mainButtonStop": "stopp",
   "mainButtonWrait": "wrait",
   "statusTapToWrite": "zum Schreiben tippen",
@@ -48,12 +45,10 @@
   "statusMicBlockedSemanticsLabel": "Der Mikrofonzugriff für Wrait ist blockiert.",
   "statusMicBlockedSemanticsHint": "Doppeltippen, um die App-Einstellungen zu öffnen.",
   "statusDefaultSemanticsLabel": "Statusmeldung {statusText}.",
-
   "statsEntryCount": "{count, plural, one{{count} Eintrag} other{{count} Einträge}}",
   "statsActiveDays": "{count, plural, one{{count} Tag} other{{count} Tage}}",
   "statsDisplay": "{entries} - {days}",
   "statsSemanticsLabel": "Eintragsstatistik {displayText}. Öffnet die Eintragsliste.",
-
   "settingsTitle": "Einstellungen",
   "settingsBack": "Zurück",
   "settingsPrivacy": "Datenschutz",
@@ -80,7 +75,6 @@
   "settingsTranscriptionLanguageSaveFailed": "Die Sprache konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
   "settingsTryAgain": "Erneut versuchen",
   "settingsActivityMessage": "Beenden Sie die aktuelle Aufnahme oder Transkription, bevor Sie die Einstellungen ändern.",
-
   "entryListBack": "Zurück",
   "entryListBackSemanticsLabel": "Zurück zum Hauptbildschirm",
   "entryListSearchLabel": "Einträge durchsuchen",
@@ -103,7 +97,6 @@
   "entryListImportUnreadableFile": "Die ausgewählte CSV-Datei konnte nicht gelesen werden.",
   "entryListImportFileTooLarge": "Die ausgewählte CSV-Datei ist zu groß für den Import.",
   "entryListImportStorageFailure": "Die importierten Einträge konnten nicht gespeichert werden.",
-
   "entryListAudioDraftPreview": "ausstehend · neuer Versuch folgt",
   "entryListAudioDraftStateDescription": "Audio-Entwurf, noch nicht transkribiert",
   "entryListDeleteActionLabel": "Eintrag löschen",
@@ -113,7 +106,6 @@
   "entryListRowDraftBadge": "entwurf",
   "entryListRowDraftValue": "Entwurf",
   "entryListRowAudioDraftValue": "Entwurf, {description}",
-
   "entryDetailSaving": "Änderungen werden gespeichert...",
   "entryDetailSaveFailed": "Ihre Änderungen konnten nicht gespeichert werden.",
   "entryDetailLoadFailed": "Dieser Eintrag konnte nicht geladen werden.",
@@ -131,9 +123,7 @@
   "entryDetailDeleteSemanticsLabel": "Eintrag löschen",
   "entryDetailDelete": "Löschen",
   "entryDetailShareFailed": "Dieser Eintrag konnte nicht geteilt werden.",
-
   "wordCount": "{count, plural, =1{1 Wort} other{{count} Wörter}}",
-
   "deleteDialogTitle": "Eintrag löschen?",
   "deleteDialogBody": "Dieser Eintrag wird endgültig entfernt.",
   "deleteCancel": "Abbrechen",
@@ -142,7 +132,6 @@
   "deleteCancelSemanticsHint": "Behält diesen Eintrag in der Liste.",
   "deleteConfirmSemanticsLabel": "Eintrag endgültig löschen",
   "deleteConfirmSemanticsHint": "Entfernt diesen Eintrag aus der Liste.",
-
   "appLockTitle": "wrait ist gesperrt",
   "appLockSemanticsLabel": "Wrait ist gesperrt.",
   "appLockUnlock": "Entsperren",
@@ -159,7 +148,6 @@
   "appLockPreferenceLoadFailed": "Wrait konnte Ihre Datenschutzeinstellung nicht laden.",
   "appLockPreferenceLoading": "datenschutzeinstellungen werden geladen",
   "appLockPreferenceRetry": "Erneut versuchen",
-
   "feedbackTitle": "feedback senden",
   "feedbackPrompt": "Was möchten Sie uns mitteilen?",
   "feedbackContactLabel": "kontakt für Rückfragen (optional)",
@@ -181,5 +169,27 @@
   "reminderMorningTitle": "wrait",
   "reminderMorningBody": "Starte deinen Tag mit einer Reflexion",
   "reminderEveningTitle": "wrait",
-  "reminderEveningBody": "Du hast heute noch Aufnahmen übrig"
+  "reminderEveningBody": "Du hast heute noch Aufnahmen übrig",
+  "tagsTitle": "Tags",
+  "tagsManage": "Tags verwalten",
+  "tagsAdd": "Tag hinzufügen",
+  "tagsAddHint": "Tag-Name",
+  "tagsEmpty": "Noch keine Tags",
+  "tagsLimitReached": "Tag-Limit erreicht ({max})",
+  "tagsDeleteConfirmTitle": "Tag löschen?",
+  "tagsDeleteConfirmBody": "Dieser Tag wird von allen Einträgen entfernt.",
+  "tagsDeleteConfirm": "Löschen",
+  "tagsDeleteCancel": "Abbrechen",
+  "tagsNameTooLong": "Tag-Name darf höchstens {max} Zeichen lang sein",
+  "tagsNameDuplicate": "Dieser Tag existiert bereits",
+  "tagsCreateFailed": "Tag konnte nicht erstellt werden",
+  "tagsDeleteFailed": "Tag konnte nicht gelöscht werden",
+  "tagsFilterAll": "Alle",
+  "tagsFilterClear": "Filter löschen",
+  "tagsNoEntriesWithTag": "Keine Einträge mit diesem Tag",
+  "tagsAssign": "Tags",
+  "tagsAssignDone": "Fertig",
+  "tagsAssignCreate": "\"{name}\" erstellen",
+  "tagsEntryCount": "{count, plural, =1{1 Eintrag} other{{count} Einträge}}",
+  "tagsSearchIncluded": "Suche umfasst Tag-Namen"
 }

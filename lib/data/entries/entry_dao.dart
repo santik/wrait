@@ -55,11 +55,13 @@ class EntryDao extends DatabaseAccessor<LocalEntryDatabase>
     return into(entryRecords).insert(entry);
   }
 
-  Future<void> insertEntries(List<EntryRecordsCompanion> entries) async {
-    await transaction(() async {
-      await batch((batch) {
-        batch.insertAll(entryRecords, entries);
-      });
+  Future<List<int>> insertEntries(List<EntryRecordsCompanion> entries) async {
+    return transaction(() async {
+      final ids = <int>[];
+      for (final entry in entries) {
+        ids.add(await into(entryRecords).insert(entry));
+      }
+      return ids;
     });
   }
 

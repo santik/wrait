@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wrait/data/entries/entry_export_file_writer.dart';
 import 'package:wrait/domain/model/entry.dart';
+import 'package:wrait/domain/model/tag.dart';
 import 'package:wrait/domain/service/entry_export_service.dart';
 
 void main() {
@@ -31,7 +32,7 @@ void main() {
     expect(
       writer.lastContents,
       startsWith(
-        'type,created_at,language,word_count,raw_transcript,cleaned_text\n',
+        'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n',
       ),
     );
     final lines = writer.lastContents.trimRight().split('\n');
@@ -95,7 +96,7 @@ void main() {
     expect(result.didExport, isTrue);
     expect(
       writer.lastContents,
-      'type,created_at,language,word_count,raw_transcript,cleaned_text\n',
+      'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n',
     );
   });
 
@@ -146,6 +147,51 @@ void main() {
       expect(secondResult.fileName, 'wrait-entries-20260630-101112-1.csv');
     },
   );
+
+  test('exports entry with a single tag', () {
+    final csv = EntryExportService.buildCsv(<Entry>[
+      _entry(id: 1).copyWith(
+        tags: [const Tag(id: 1, name: 'work')],
+      ),
+    ]);
+
+    final lines = csv.trimRight().split('\n');
+    expect(lines[1], endsWith(',work'));
+  });
+
+  test('exports entry with multiple tags separated by semicolons', () {
+    final csv = EntryExportService.buildCsv(<Entry>[
+      _entry(id: 1).copyWith(
+        tags: [
+          const Tag(id: 1, name: 'work'),
+          const Tag(id: 2, name: 'travel'),
+          const Tag(id: 3, name: 'ideas'),
+        ],
+      ),
+    ]);
+
+    final lines = csv.trimRight().split('\n');
+    expect(lines[1], endsWith(',work;travel;ideas'));
+  });
+
+  test('exports entry with no tags as empty tags column', () {
+    final csv = EntryExportService.buildCsv(<Entry>[
+      _entry(id: 1).copyWith(tags: const []),
+    ]);
+
+    final lines = csv.trimRight().split('\n');
+    expect(lines[1], endsWith(','));
+  });
+
+  test('escapes tag names containing special CSV characters', () {
+    final csv = EntryExportService.buildCsv(<Entry>[
+      _entry(id: 1).copyWith(
+        tags: [const Tag(id: 1, name: 'a,b')],
+      ),
+    ]);
+
+    expect(csv, contains('"a,b"'));
+  });
 }
 
 class _CapturingFileWriter implements EntryExportFileWriter {

@@ -10,6 +10,7 @@ import 'package:sqlite3/sqlite3.dart' as sqlite;
 import 'database_key_store.dart';
 
 part 'entry_dao.dart';
+part 'tag_dao.dart';
 part 'local_entry_database.g.dart';
 
 typedef CipherSupportVerifier = void Function(sqlite.Database rawDb);
@@ -31,7 +32,30 @@ class EntryRecords extends Table {
   TextColumn get audioPath => text().named('audio_path').nullable()();
 }
 
-@DriftDatabase(tables: [EntryRecords], daos: [EntryDao])
+class TagRecords extends Table {
+  @override
+  String get tableName => 'tags';
+
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().customConstraint('NOT NULL UNIQUE COLLATE NOCASE')();
+}
+
+class EntryTagRecords extends Table {
+  @override
+  String get tableName => 'entry_tags';
+
+  IntColumn get entryId => integer()
+      .named('entry_id')
+      .customConstraint('NOT NULL REFERENCES entries(id) ON DELETE CASCADE')();
+  IntColumn get tagId => integer()
+      .named('tag_id')
+      .customConstraint('NOT NULL REFERENCES tags(id) ON DELETE CASCADE')();
+
+  @override
+  Set<Column> get primaryKey => {entryId, tagId};
+}
+
+@DriftDatabase(tables: [EntryRecords, TagRecords, EntryTagRecords], daos: [EntryDao, TagDao])
 class LocalEntryDatabase extends _$LocalEntryDatabase {
   LocalEntryDatabase(super.e);
 
@@ -40,12 +64,18 @@ class LocalEntryDatabase extends _$LocalEntryDatabase {
   static const databaseFileName = 'wrait_entries_v2.sqlite';
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) async {
       await migrator.createAll();
+    },
+    onUpgrade: (migrator, from, to) async {
+      if (from < 2) {
+        await migrator.createTable(tagRecords);
+        await migrator.createTable(entryTagRecords);
+      }
     },
   );
 

@@ -1,12 +1,10 @@
 {
   "@@locale": "pt",
-
   "bootstrapTitle": "abrindo o wrait",
   "bootstrapSubtitle": "carregando seu diário local",
   "bootstrapErrorTitle": "não foi possível abrir o wrait",
   "bootstrapErrorSubtitle": "tente novamente",
   "bootstrapRetryButton": "tentar de novo",
-
   "mainSettingsTooltip": "Ajustes",
   "mainFeedbackTooltip": "Enviar feedback",
   "mainLanguageLabel": "Idioma: {displayName}",
@@ -19,7 +17,6 @@
   "mainFeedbackSemanticsLabel": "Enviar feedback",
   "mainQuotaSemanticsLabel": "Cota de gravação: {limit} no total e {remaining} restantes.",
   "mainQuotaText": "{limit} no total / {remaining} restantes",
-
   "mainButtonStop": "parar",
   "mainButtonWrait": "wrait",
   "statusTapToWrite": "toque no botão para escrever",
@@ -48,12 +45,10 @@
   "statusMicBlockedSemanticsLabel": "O acesso ao microfone está bloqueado para o wrait.",
   "statusMicBlockedSemanticsHint": "Toque duas vezes para abrir os ajustes do app.",
   "statusDefaultSemanticsLabel": "Mensagem de status: {statusText}.",
-
   "statsEntryCount": "{count, plural, one{{count} entrada} other{{count} entradas}}",
   "statsActiveDays": "{count, plural, one{{count} dia} other{{count} dias}}",
   "statsDisplay": "{entries} - {days}",
   "statsSemanticsLabel": "Estatísticas das entradas: {displayText}. Abre a lista de entradas.",
-
   "settingsTitle": "Ajustes",
   "settingsBack": "Voltar",
   "settingsPrivacy": "Privacidade",
@@ -80,7 +75,6 @@
   "settingsTranscriptionLanguageSaveFailed": "Não foi possível salvar o idioma. Tente novamente.",
   "settingsTryAgain": "Tentar de novo",
   "settingsActivityMessage": "Conclua a gravação ou a transcrição em andamento antes de alterar os ajustes.",
-
   "entryListBack": "Voltar",
   "entryListBackSemanticsLabel": "Voltar para a tela principal",
   "entryListSearchLabel": "Buscar entradas",
@@ -103,7 +97,6 @@
   "entryListImportUnreadableFile": "Não foi possível ler o arquivo CSV selecionado.",
   "entryListImportFileTooLarge": "O CSV selecionado é grande demais para ser importado.",
   "entryListImportStorageFailure": "Não foi possível salvar as entradas importadas.",
-
   "entryListAudioDraftPreview": "pendente · tentaremos de novo",
   "entryListAudioDraftStateDescription": "Rascunho de áudio, ainda não transcrito",
   "entryListDeleteActionLabel": "Excluir entrada",
@@ -113,7 +106,6 @@
   "entryListRowDraftBadge": "rascunho",
   "entryListRowDraftValue": "rascunho",
   "entryListRowAudioDraftValue": "rascunho, {description}",
-
   "entryDetailSaving": "Salvando alterações...",
   "entryDetailSaveFailed": "Não foi possível salvar suas alterações.",
   "entryDetailLoadFailed": "Não foi possível carregar esta entrada.",
@@ -131,9 +123,7 @@
   "entryDetailDeleteSemanticsLabel": "Excluir entrada",
   "entryDetailDelete": "Excluir",
   "entryDetailShareFailed": "Não foi possível compartilhar esta entrada.",
-
   "wordCount": "{count, plural, =1{1 palavra} other{{count} palavras}}",
-
   "deleteDialogTitle": "Excluir entrada?",
   "deleteDialogBody": "Esta entrada será removida permanentemente.",
   "deleteCancel": "Cancelar",
@@ -142,7 +132,6 @@
   "deleteCancelSemanticsHint": "Mantém esta entrada na lista.",
   "deleteConfirmSemanticsLabel": "Excluir entrada permanentemente",
   "deleteConfirmSemanticsHint": "Remove esta entrada da lista.",
-
   "appLockTitle": "o wrait está bloqueado",
   "appLockSemanticsLabel": "O wrait está bloqueado.",
   "appLockUnlock": "Desbloquear",
@@ -159,7 +148,6 @@
   "appLockPreferenceLoadFailed": "O wrait não conseguiu carregar sua configuração de privacidade.",
   "appLockPreferenceLoading": "carregando configurações de privacidade",
   "appLockPreferenceRetry": "Tentar de novo",
-
   "feedbackTitle": "enviar feedback",
   "feedbackPrompt": "O que você gostaria de compartilhar?",
   "feedbackContactLabel": "contato para resposta (opcional)",
@@ -181,5 +169,27 @@
   "reminderMorningTitle": "wrait",
   "reminderMorningBody": "Comece o dia com uma reflexão",
   "reminderEveningTitle": "wrait",
-  "reminderEveningBody": "Você ainda tem gravações restantes hoje"
+  "reminderEveningBody": "Você ainda tem gravações restantes hoje",
+  "tagsTitle": "Tags",
+  "tagsManage": "Gerir tags",
+  "tagsAdd": "Adicionar tag",
+  "tagsAddHint": "Nome da tag",
+  "tagsEmpty": "Sem tags",
+  "tagsLimitReached": "Limite de tags atingido ({max})",
+  "tagsDeleteConfirmTitle": "Eliminar tag?",
+  "tagsDeleteConfirmBody": "Esta tag será removida de todas as entradas.",
+  "tagsDeleteConfirm": "Eliminar",
+  "tagsDeleteCancel": "Cancelar",
+  "tagsNameTooLong": "O nome deve ter {max} caracteres ou menos",
+  "tagsNameDuplicate": "Esta tag já existe",
+  "tagsCreateFailed": "Não foi possível criar a tag",
+  "tagsDeleteFailed": "Não foi possível eliminar a tag",
+  "tagsFilterAll": "Todas",
+  "tagsFilterClear": "Limpar filtro",
+  "tagsNoEntriesWithTag": "Nenhuma entrada com esta tag",
+  "tagsAssign": "Tags",
+  "tagsAssignDone": "Concluído",
+  "tagsAssignCreate": "Criar \"{name}\"",
+  "tagsEntryCount": "{count, plural, =1{1 entrada} other{{count} entradas}}",
+  "tagsSearchIncluded": "A pesquisa inclui nomes de tags"
 }

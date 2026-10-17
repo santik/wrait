@@ -575,4 +575,83 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get feedbackCategoryPraise => '칭찬';
+
+  @override
+  String get tagsTitle => '태그';
+
+  @override
+  String get tagsManage => '태그 관리';
+
+  @override
+  String get tagsAdd => '태그 추가';
+
+  @override
+  String get tagsAddHint => '태그 이름';
+
+  @override
+  String get tagsEmpty => '태그 없음';
+
+  @override
+  String tagsLimitReached(int max) {
+    return '태그 한도에 도달했습니다 ($max)';
+  }
+
+  @override
+  String get tagsDeleteConfirmTitle => '태그를 삭제할까요?';
+
+  @override
+  String get tagsDeleteConfirmBody => '이 태그가 모든 항목에서 제거됩니다.';
+
+  @override
+  String get tagsDeleteConfirm => '삭제';
+
+  @override
+  String get tagsDeleteCancel => '취소';
+
+  @override
+  String tagsNameTooLong(int max) {
+    return '태그 이름은 $max자 이내여야 합니다';
+  }
+
+  @override
+  String get tagsNameDuplicate => '이 태그는 이미 존재합니다';
+
+  @override
+  String get tagsCreateFailed => '태그를 만들 수 없습니다';
+
+  @override
+  String get tagsDeleteFailed => '태그를 삭제할 수 없습니다';
+
+  @override
+  String get tagsFilterAll => '전체';
+
+  @override
+  String get tagsFilterClear => '필터 지우기';
+
+  @override
+  String get tagsNoEntriesWithTag => '이 태그가 있는 항목이 없습니다';
+
+  @override
+  String get tagsAssign => '태그';
+
+  @override
+  String get tagsAssignDone => '완료';
+
+  @override
+  String tagsAssignCreate(String name) {
+    return '\"$name\" 만들기';
+  }
+
+  @override
+  String tagsEntryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count개 항목',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsSearchIncluded => '검색에 태그 이름이 포함됩니다';
 }

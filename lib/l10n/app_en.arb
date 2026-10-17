@@ -1,18 +1,18 @@
 {
   "@@locale": "en",
-
   "bootstrapTitle": "opening wrait",
   "bootstrapSubtitle": "loading your local journal",
   "bootstrapErrorTitle": "could not open wrait",
   "bootstrapErrorSubtitle": "try again",
   "bootstrapRetryButton": "retry",
-
   "mainSettingsTooltip": "Settings",
   "mainFeedbackTooltip": "Send feedback",
   "mainLanguageLabel": "Language: {displayName}",
   "@mainLanguageLabel": {
     "placeholders": {
-      "displayName": { "type": "String" }
+      "displayName": {
+        "type": "String"
+      }
     }
   },
   "mainLanguageUnavailable": "Language unavailable · try again",
@@ -22,7 +22,9 @@
   "mainLanguageSemanticsLabel": "Selected transcription language {displayName}. Opens transcription language settings.",
   "@mainLanguageSemanticsLabel": {
     "placeholders": {
-      "displayName": { "type": "String" }
+      "displayName": {
+        "type": "String"
+      }
     }
   },
   "mainSettingsSemanticsLabel": "Settings",
@@ -30,18 +32,25 @@
   "mainQuotaSemanticsLabel": "Recording quota {limit} total and {remaining} left.",
   "@mainQuotaSemanticsLabel": {
     "placeholders": {
-      "limit": { "type": "int" },
-      "remaining": { "type": "int" }
+      "limit": {
+        "type": "int"
+      },
+      "remaining": {
+        "type": "int"
+      }
     }
   },
   "mainQuotaText": "{limit} total / {remaining} left",
   "@mainQuotaText": {
     "placeholders": {
-      "limit": { "type": "int" },
-      "remaining": { "type": "int" }
+      "limit": {
+        "type": "int"
+      },
+      "remaining": {
+        "type": "int"
+      }
     }
   },
-
   "mainButtonStop": "stop",
   "mainButtonWrait": "wrait",
   "statusTapToWrite": "tap button to write",
@@ -72,36 +81,46 @@
   "statusDefaultSemanticsLabel": "Status message {statusText}.",
   "@statusDefaultSemanticsLabel": {
     "placeholders": {
-      "statusText": { "type": "String" }
+      "statusText": {
+        "type": "String"
+      }
     }
   },
-
   "statsEntryCount": "{count, plural, one{{count} entry} other{{count} entries}}",
   "@statsEntryCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statsActiveDays": "{count, plural, one{{count} day} other{{count} days}}",
   "@statsActiveDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "statsDisplay": "{entries} - {days}",
   "@statsDisplay": {
     "placeholders": {
-      "entries": { "type": "String" },
-      "days": { "type": "String" }
+      "entries": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
     }
   },
   "statsSemanticsLabel": "Entry stats {displayText}. Opens the entry list.",
   "@statsSemanticsLabel": {
     "placeholders": {
-      "displayText": { "type": "String" }
+      "displayText": {
+        "type": "String"
+      }
     }
   },
-
   "settingsTitle": "Settings",
   "settingsBack": "Back",
   "settingsPrivacy": "Privacy",
@@ -128,7 +147,6 @@
   "reminderMorningBody": "Start your day with a reflection",
   "reminderEveningTitle": "wrait",
   "reminderEveningBody": "You still have recordings left today",
-
   "settingsTranscriptionLanguage": "Transcription language",
   "settingsTranscriptionLanguageDescription": "Choose the language you speak to improve transcription. Automatic detection is used when no language is selected.",
   "settingsAutomaticDetection": "Automatic detection",
@@ -137,7 +155,6 @@
   "settingsTranscriptionLanguageSaveFailed": "Could not save language. Try again.",
   "settingsTryAgain": "Try again",
   "settingsActivityMessage": "Finish the current recording or transcription before changing settings.",
-
   "entryListBack": "Back",
   "entryListBackSemanticsLabel": "Back to main screen",
   "entryListSearchLabel": "Search entries",
@@ -155,16 +172,24 @@
   "entryListExportSuccess": "Exported {fileName} to {pathLabel}.",
   "@entryListExportSuccess": {
     "placeholders": {
-      "fileName": { "type": "String" },
-      "pathLabel": { "type": "String" }
+      "fileName": {
+        "type": "String"
+      },
+      "pathLabel": {
+        "type": "String"
+      }
     }
   },
   "entryListExportFailed": "Could not export entries.",
   "entryListImportSuccess": "Imported {count} {count, plural, =1{record} other{records}} from {fileName}.",
   "@entryListImportSuccess": {
     "placeholders": {
-      "count": { "type": "int" },
-      "fileName": { "type": "String" }
+      "count": {
+        "type": "int"
+      },
+      "fileName": {
+        "type": "String"
+      }
     }
   },
   "entryListImportFailed": "Could not import entries.",
@@ -172,15 +197,18 @@
   "entryListImportUnreadableFile": "Could not read the selected CSV file.",
   "entryListImportFileTooLarge": "Selected CSV is too large to import.",
   "entryListImportStorageFailure": "Could not save imported entries.",
-
   "entryListAudioDraftPreview": "pending · will retry",
   "entryListAudioDraftStateDescription": "Audio draft, not yet transcribed",
   "entryListDeleteActionLabel": "Delete entry",
   "entryListRowSemanticsLabel": "Entry {timestamp}. {languageLabel}.",
   "@entryListRowSemanticsLabel": {
     "placeholders": {
-      "timestamp": { "type": "String" },
-      "languageLabel": { "type": "String" }
+      "timestamp": {
+        "type": "String"
+      },
+      "languageLabel": {
+        "type": "String"
+      }
     }
   },
   "entryListRowSwipeHint": "Swipe right to delete.",
@@ -190,10 +218,11 @@
   "entryListRowAudioDraftValue": "draft, {description}",
   "@entryListRowAudioDraftValue": {
     "placeholders": {
-      "description": { "type": "String" }
+      "description": {
+        "type": "String"
+      }
     }
   },
-
   "entryDetailSaving": "Saving changes...",
   "entryDetailSaveFailed": "Could not save your changes.",
   "entryDetailLoadFailed": "Could not load this entry.",
@@ -211,14 +240,14 @@
   "entryDetailDeleteSemanticsLabel": "Delete entry",
   "entryDetailDelete": "Delete",
   "entryDetailShareFailed": "Could not share this entry.",
-
   "wordCount": "{count, plural, =1{1 word} other{{count} words}}",
   "@wordCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
-
   "deleteDialogTitle": "Delete entry?",
   "deleteDialogBody": "This entry will be permanently removed.",
   "deleteCancel": "Cancel",
@@ -227,7 +256,6 @@
   "deleteCancelSemanticsHint": "Keeps this entry in the list.",
   "deleteConfirmSemanticsLabel": "Delete entry permanently",
   "deleteConfirmSemanticsHint": "Removes this entry from the list.",
-
   "appLockTitle": "wrait is locked",
   "appLockSemanticsLabel": "Wrait is locked.",
   "appLockUnlock": "Unlock",
@@ -244,7 +272,6 @@
   "appLockPreferenceLoadFailed": "Wrait could not load your privacy setting.",
   "appLockPreferenceLoading": "loading privacy settings",
   "appLockPreferenceRetry": "Try again",
-
   "feedbackTitle": "send feedback",
   "feedbackPrompt": "What would you like to share?",
   "feedbackContactLabel": "reply contact (optional)",
@@ -258,5 +285,55 @@
   "feedbackCategoryBug": "Bug",
   "feedbackCategoryIdea": "Idea",
   "feedbackCategoryConfusing": "Confusing",
-  "feedbackCategoryPraise": "Praise"
+  "feedbackCategoryPraise": "Praise",
+  "tagsTitle": "Tags",
+  "tagsManage": "Manage tags",
+  "tagsAdd": "Add tag",
+  "tagsAddHint": "Tag name",
+  "tagsEmpty": "No tags yet",
+  "tagsLimitReached": "Tag limit reached ({max})",
+  "@tagsLimitReached": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsDeleteConfirmTitle": "Delete tag?",
+  "tagsDeleteConfirmBody": "This tag will be removed from all entries.",
+  "tagsDeleteConfirm": "Delete",
+  "tagsDeleteCancel": "Cancel",
+  "tagsNameTooLong": "Tag name must be {max} characters or fewer",
+  "@tagsNameTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsNameDuplicate": "This tag already exists",
+  "tagsCreateFailed": "Could not create tag",
+  "tagsDeleteFailed": "Could not delete tag",
+  "tagsFilterAll": "All",
+  "tagsFilterClear": "Clear filter",
+  "tagsNoEntriesWithTag": "No entries with this tag",
+  "tagsAssign": "Tags",
+  "tagsAssignDone": "Done",
+  "tagsAssignCreate": "Create \"{name}\"",
+  "@tagsAssignCreate": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tagsEntryCount": "{count, plural, =1{1 entry} other{{count} entries}}",
+  "@tagsEntryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsSearchIncluded": "Search includes tag names"
 }

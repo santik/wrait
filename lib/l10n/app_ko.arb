@@ -1,12 +1,10 @@
 {
   "@@locale": "ko",
-
   "bootstrapTitle": "wrait 여는 중",
   "bootstrapSubtitle": "내 기기의 일기를 불러오는 중",
   "bootstrapErrorTitle": "wrait을 열 수 없어요",
   "bootstrapErrorSubtitle": "다시 시도해 주세요",
   "bootstrapRetryButton": "다시 시도",
-
   "mainSettingsTooltip": "설정",
   "mainFeedbackTooltip": "의견 보내기",
   "mainLanguageLabel": "언어: {displayName}",
@@ -19,7 +17,6 @@
   "mainFeedbackSemanticsLabel": "의견 보내기",
   "mainQuotaSemanticsLabel": "녹음 한도는 총 {limit}이고 {remaining} 남았습니다.",
   "mainQuotaText": "총 {limit} / {remaining} 남음",
-
   "mainButtonStop": "중지",
   "mainButtonWrait": "wrait",
   "statusTapToWrite": "버튼을 눌러 기록하세요",
@@ -48,12 +45,10 @@
   "statusMicBlockedSemanticsLabel": "Wrait의 마이크 접근이 차단되어 있습니다.",
   "statusMicBlockedSemanticsHint": "두 번 탭하면 앱 설정을 엽니다.",
   "statusDefaultSemanticsLabel": "상태 메시지: {statusText}.",
-
   "statsEntryCount": "{count, plural, other{기록 {count}개}}",
   "statsActiveDays": "{count, plural, other{{count}일}}",
   "statsDisplay": "{entries} - {days}",
   "statsSemanticsLabel": "기록 통계 {displayText}. 기록 목록을 엽니다.",
-
   "settingsTitle": "설정",
   "settingsBack": "뒤로",
   "settingsPrivacy": "개인정보 보호",
@@ -80,7 +75,6 @@
   "settingsTranscriptionLanguageSaveFailed": "언어를 저장하지 못했습니다. 다시 시도해 주세요.",
   "settingsTryAgain": "다시 시도",
   "settingsActivityMessage": "설정을 변경하려면 진행 중인 녹음 또는 음성 인식을 먼저 마쳐 주세요.",
-
   "entryListBack": "뒤로",
   "entryListBackSemanticsLabel": "메인 화면으로 돌아가기",
   "entryListSearchLabel": "기록 검색",
@@ -103,7 +97,6 @@
   "entryListImportUnreadableFile": "선택한 CSV 파일을 읽을 수 없습니다.",
   "entryListImportFileTooLarge": "선택한 CSV 파일이 너무 커서 가져올 수 없습니다.",
   "entryListImportStorageFailure": "가져온 기록을 저장하지 못했습니다.",
-
   "entryListAudioDraftPreview": "대기 중 · 다시 시도할게요",
   "entryListAudioDraftStateDescription": "오디오 임시 저장본, 아직 텍스트로 변환되지 않음",
   "entryListDeleteActionLabel": "기록 삭제",
@@ -113,7 +106,6 @@
   "entryListRowDraftBadge": "임시",
   "entryListRowDraftValue": "임시 저장",
   "entryListRowAudioDraftValue": "임시 저장, {description}",
-
   "entryDetailSaving": "변경 사항을 저장하는 중...",
   "entryDetailSaveFailed": "변경 사항을 저장하지 못했습니다.",
   "entryDetailLoadFailed": "이 기록을 불러오지 못했습니다.",
@@ -131,9 +123,7 @@
   "entryDetailDeleteSemanticsLabel": "기록 삭제",
   "entryDetailDelete": "삭제",
   "entryDetailShareFailed": "이 기록을 공유하지 못했습니다.",
-
   "wordCount": "{count, plural, other{{count}단어}}",
-
   "deleteDialogTitle": "기록을 삭제할까요?",
   "deleteDialogBody": "이 기록은 영구적으로 삭제됩니다.",
   "deleteCancel": "취소",
@@ -142,7 +132,6 @@
   "deleteCancelSemanticsHint": "이 기록을 목록에 그대로 둡니다.",
   "deleteConfirmSemanticsLabel": "기록 영구 삭제",
   "deleteConfirmSemanticsHint": "이 기록을 목록에서 삭제합니다.",
-
   "appLockTitle": "wrait이 잠겨 있어요",
   "appLockSemanticsLabel": "Wrait이 잠겨 있습니다.",
   "appLockUnlock": "잠금 해제",
@@ -159,7 +148,6 @@
   "appLockPreferenceLoadFailed": "Wrait이 개인정보 보호 설정을 불러오지 못했습니다.",
   "appLockPreferenceLoading": "개인정보 보호 설정을 불러오는 중",
   "appLockPreferenceRetry": "다시 시도",
-
   "feedbackTitle": "의견 보내기",
   "feedbackPrompt": "어떤 의견을 전하고 싶으신가요?",
   "feedbackContactLabel": "답변받을 연락처 (선택)",
@@ -181,5 +169,27 @@
   "reminderMorningTitle": "wrait",
   "reminderMorningBody": "오늘 하루를 되돌아보며 시작하세요",
   "reminderEveningTitle": "wrait",
-  "reminderEveningBody": "오늘 녹음이 아직 남아 있어요"
+  "reminderEveningBody": "오늘 녹음이 아직 남아 있어요",
+  "tagsTitle": "태그",
+  "tagsManage": "태그 관리",
+  "tagsAdd": "태그 추가",
+  "tagsAddHint": "태그 이름",
+  "tagsEmpty": "태그 없음",
+  "tagsLimitReached": "태그 한도에 도달했습니다 ({max})",
+  "tagsDeleteConfirmTitle": "태그를 삭제할까요?",
+  "tagsDeleteConfirmBody": "이 태그가 모든 항목에서 제거됩니다.",
+  "tagsDeleteConfirm": "삭제",
+  "tagsDeleteCancel": "취소",
+  "tagsNameTooLong": "태그 이름은 {max}자 이내여야 합니다",
+  "tagsNameDuplicate": "이 태그는 이미 존재합니다",
+  "tagsCreateFailed": "태그를 만들 수 없습니다",
+  "tagsDeleteFailed": "태그를 삭제할 수 없습니다",
+  "tagsFilterAll": "전체",
+  "tagsFilterClear": "필터 지우기",
+  "tagsNoEntriesWithTag": "이 태그가 있는 항목이 없습니다",
+  "tagsAssign": "태그",
+  "tagsAssignDone": "완료",
+  "tagsAssignCreate": "\"{name}\" 만들기",
+  "tagsEntryCount": "{count, plural, other{{count}개 항목}}",
+  "tagsSearchIncluded": "검색에 태그 이름이 포함됩니다"
 }

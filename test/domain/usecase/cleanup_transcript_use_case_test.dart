@@ -494,7 +494,7 @@ class _FakeEntryRepository implements EntryRepository {
   Future<Entry?> getEntryById(int id) async => _entries[id];
 
   @override
-  Future<void> importEntries(List<Entry> entries) async {}
+  Future<List<int>> importEntries(List<Entry> entries) async => const [];
 
   @override
   Future<int> saveDraft(String transcript, String language) async {

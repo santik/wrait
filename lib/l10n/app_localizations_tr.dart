@@ -605,4 +605,84 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get feedbackCategoryPraise => 'Övgü';
+
+  @override
+  String get tagsTitle => 'Etiketler';
+
+  @override
+  String get tagsManage => 'Etiketleri yönet';
+
+  @override
+  String get tagsAdd => 'Etiket ekle';
+
+  @override
+  String get tagsAddHint => 'Etiket adı';
+
+  @override
+  String get tagsEmpty => 'Henüz etiket yok';
+
+  @override
+  String tagsLimitReached(int max) {
+    return 'Etiket sınırına ulaşıldı ($max)';
+  }
+
+  @override
+  String get tagsDeleteConfirmTitle => 'Etiket silinsin mi?';
+
+  @override
+  String get tagsDeleteConfirmBody => 'Bu etiket tüm girişlerden kaldırılacak.';
+
+  @override
+  String get tagsDeleteConfirm => 'Sil';
+
+  @override
+  String get tagsDeleteCancel => 'İptal';
+
+  @override
+  String tagsNameTooLong(int max) {
+    return 'Etiket adı en fazla $max karakter olmalıdır';
+  }
+
+  @override
+  String get tagsNameDuplicate => 'Bu etiket zaten var';
+
+  @override
+  String get tagsCreateFailed => 'Etiket oluşturulamadı';
+
+  @override
+  String get tagsDeleteFailed => 'Etiket silinemedi';
+
+  @override
+  String get tagsFilterAll => 'Tümü';
+
+  @override
+  String get tagsFilterClear => 'Filtreyi temizle';
+
+  @override
+  String get tagsNoEntriesWithTag => 'Bu etikete sahip giriş yok';
+
+  @override
+  String get tagsAssign => 'Etiketler';
+
+  @override
+  String get tagsAssignDone => 'Tamam';
+
+  @override
+  String tagsAssignCreate(String name) {
+    return '\"$name\" oluştur';
+  }
+
+  @override
+  String tagsEntryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count giriş',
+      one: '1 giriş',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsSearchIncluded => 'Arama etiket adlarını da içerir';
 }

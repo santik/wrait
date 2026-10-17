@@ -173,7 +173,7 @@ class _RouterEntryRepository implements EntryRepository {
       id == 1 ? _routerEntry(id) : null;
 
   @override
-  Future<void> importEntries(List<Entry> entries) async {}
+  Future<List<int>> importEntries(List<Entry> entries) async => const [];
 
   @override
   Future<int> saveDraft(String transcript, String language) async => 1;

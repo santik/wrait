@@ -1,3 +1,7 @@
+import 'package:flutter/foundation.dart';
+
+import 'tag.dart';
+
 enum EntryType {
   draft,
   saved;
@@ -23,6 +27,7 @@ class Entry {
     required this.createdAt,
     required this.wordCount,
     this.audioPath,
+    this.tags = const [],
   });
 
   final int id;
@@ -33,6 +38,7 @@ class Entry {
   final int createdAt;
   final int wordCount;
   final String? audioPath;
+  final List<Tag> tags;
 
   Entry copyWith({
     int? id,
@@ -45,6 +51,7 @@ class Entry {
     int? wordCount,
     String? audioPath,
     bool clearAudioPath = false,
+    List<Tag>? tags,
   }) {
     return Entry(
       id: id ?? this.id,
@@ -55,6 +62,7 @@ class Entry {
       createdAt: createdAt ?? this.createdAt,
       wordCount: wordCount ?? this.wordCount,
       audioPath: clearAudioPath ? null : audioPath ?? this.audioPath,
+      tags: tags ?? this.tags,
     );
   }
 
@@ -69,7 +77,8 @@ class Entry {
             other.language == language &&
             other.createdAt == createdAt &&
             other.wordCount == wordCount &&
-            other.audioPath == audioPath);
+            other.audioPath == audioPath &&
+            listEquals(other.tags, tags));
   }
 
   @override
@@ -82,5 +91,7 @@ class Entry {
     createdAt,
     wordCount,
     audioPath,
+    Object.hashAll(tags),
   );
+
 }

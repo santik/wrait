@@ -1136,6 +1136,138 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Praise'**
   String get feedbackCategoryPraise;
+
+  /// No description provided for @tagsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tagsTitle;
+
+  /// No description provided for @tagsManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage tags'**
+  String get tagsManage;
+
+  /// No description provided for @tagsAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add tag'**
+  String get tagsAdd;
+
+  /// No description provided for @tagsAddHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag name'**
+  String get tagsAddHint;
+
+  /// No description provided for @tagsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No tags yet'**
+  String get tagsEmpty;
+
+  /// No description provided for @tagsLimitReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag limit reached ({max})'**
+  String tagsLimitReached(int max);
+
+  /// No description provided for @tagsDeleteConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete tag?'**
+  String get tagsDeleteConfirmTitle;
+
+  /// No description provided for @tagsDeleteConfirmBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This tag will be removed from all entries.'**
+  String get tagsDeleteConfirmBody;
+
+  /// No description provided for @tagsDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get tagsDeleteConfirm;
+
+  /// No description provided for @tagsDeleteCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get tagsDeleteCancel;
+
+  /// No description provided for @tagsNameTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Tag name must be {max} characters or fewer'**
+  String tagsNameTooLong(int max);
+
+  /// No description provided for @tagsNameDuplicate.
+  ///
+  /// In en, this message translates to:
+  /// **'This tag already exists'**
+  String get tagsNameDuplicate;
+
+  /// No description provided for @tagsCreateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not create tag'**
+  String get tagsCreateFailed;
+
+  /// No description provided for @tagsDeleteFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not delete tag'**
+  String get tagsDeleteFailed;
+
+  /// No description provided for @tagsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get tagsFilterAll;
+
+  /// No description provided for @tagsFilterClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear filter'**
+  String get tagsFilterClear;
+
+  /// No description provided for @tagsNoEntriesWithTag.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries with this tag'**
+  String get tagsNoEntriesWithTag;
+
+  /// No description provided for @tagsAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tagsAssign;
+
+  /// No description provided for @tagsAssignDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get tagsAssignDone;
+
+  /// No description provided for @tagsAssignCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create \"{name}\"'**
+  String tagsAssignCreate(String name);
+
+  /// No description provided for @tagsEntryCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry} other{{count} entries}}'**
+  String tagsEntryCount(int count);
+
+  /// No description provided for @tagsSearchIncluded.
+  ///
+  /// In en, this message translates to:
+  /// **'Search includes tag names'**
+  String get tagsSearchIncluded;
 }
 
 class _AppLocalizationsDelegate

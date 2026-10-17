@@ -567,4 +567,83 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get feedbackCategoryPraise => '好评';
+
+  @override
+  String get tagsTitle => '标签';
+
+  @override
+  String get tagsManage => '管理标签';
+
+  @override
+  String get tagsAdd => '添加标签';
+
+  @override
+  String get tagsAddHint => '标签名称';
+
+  @override
+  String get tagsEmpty => '暂无标签';
+
+  @override
+  String tagsLimitReached(int max) {
+    return '已达标签上限（$max）';
+  }
+
+  @override
+  String get tagsDeleteConfirmTitle => '删除标签？';
+
+  @override
+  String get tagsDeleteConfirmBody => '此标签将从所有条目中移除。';
+
+  @override
+  String get tagsDeleteConfirm => '删除';
+
+  @override
+  String get tagsDeleteCancel => '取消';
+
+  @override
+  String tagsNameTooLong(int max) {
+    return '标签名称不超过$max个字符';
+  }
+
+  @override
+  String get tagsNameDuplicate => '此标签已存在';
+
+  @override
+  String get tagsCreateFailed => '无法创建标签';
+
+  @override
+  String get tagsDeleteFailed => '无法删除标签';
+
+  @override
+  String get tagsFilterAll => '全部';
+
+  @override
+  String get tagsFilterClear => '清除筛选';
+
+  @override
+  String get tagsNoEntriesWithTag => '没有带此标签的条目';
+
+  @override
+  String get tagsAssign => '标签';
+
+  @override
+  String get tagsAssignDone => '完成';
+
+  @override
+  String tagsAssignCreate(String name) {
+    return '创建「$name」';
+  }
+
+  @override
+  String tagsEntryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count条',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsSearchIncluded => '搜索包含标签名称';
 }

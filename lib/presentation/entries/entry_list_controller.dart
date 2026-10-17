@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/entries/entry_export_providers.dart';
 import '../../data/entries/entry_import_providers.dart';
 import '../../data/entries/entry_providers.dart';
+import '../../data/entries/tag_providers.dart';
 import '../../domain/model/entry.dart';
+import '../../domain/model/tag.dart';
 import '../../domain/service/entry_export_service.dart';
 import '../../domain/service/entry_import_service.dart';
 import 'entry_deletion_controller.dart';
@@ -27,7 +29,36 @@ final entryListFilteredEntriesProvider = Provider.autoDispose<List<Entry>>((
 ) {
   final entries = ref.watch(entryListEntriesProvider).value ?? const [];
   final query = ref.watch(entryListSearchQueryProvider);
-  return EntryListController.filterEntries(entries, query);
+  final selectedTagId = ref.watch(entryListTagFilterProvider);
+  return EntryListController.filterEntries(
+    entries,
+    query,
+    selectedTagId: selectedTagId,
+  );
+});
+
+/// Holds the currently selected tag ID for filtering (null = show all).
+final entryListTagFilterProvider =
+    NotifierProvider.autoDispose<EntryListTagFilter, int?>(
+      EntryListTagFilter.new,
+    );
+
+class EntryListTagFilter extends Notifier<int?> {
+  @override
+  int? build() => null;
+
+  void select(int? tagId) {
+    state = tagId;
+  }
+
+  void clear() {
+    state = null;
+  }
+}
+
+/// All tags stream for the filter chip row.
+final entryListAllTagsProvider = StreamProvider.autoDispose<List<Tag>>((ref) {
+  return ref.watch(tagRepositoryProvider).watchAllTags();
 });
 
 class EntryListSearchQuery extends Notifier<String> {
@@ -154,7 +185,19 @@ class EntryListController extends Notifier<EntryListControllerState> {
     return sortedEntries;
   }
 
-  static List<Entry> filterEntries(List<Entry> entries, String query) {
+  static List<Entry> filterEntries(
+    List<Entry> entries,
+    String query, {
+    int? selectedTagId,
+  }) {
+    var filtered = entries;
+
+    if (selectedTagId != null) {
+      filtered = filtered
+          .where((entry) => entry.tags.any((tag) => tag.id == selectedTagId))
+          .toList(growable: false);
+    }
+
     final terms = query
         .trim()
         .split(RegExp(r'\s+'))
@@ -162,16 +205,20 @@ class EntryListController extends Notifier<EntryListControllerState> {
         .map(_normalizeForSearch)
         .toList(growable: false);
     if (terms.isEmpty) {
-      return entries;
+      return filtered;
     }
 
-    return entries
+    return filtered
         .where((entry) {
           final cleanedText = _normalizeForSearch(entry.cleanedText ?? '');
           final rawTranscript = _normalizeForSearch(entry.rawTranscript);
           return terms.every(
             (term) =>
-                cleanedText.contains(term) || rawTranscript.contains(term),
+                cleanedText.contains(term) ||
+                rawTranscript.contains(term) ||
+                entry.tags.any(
+                  (tag) => _normalizeForSearch(tag.name).contains(term),
+                ),
           );
         })
         .toList(growable: false);

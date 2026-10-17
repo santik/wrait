@@ -1,12 +1,10 @@
 {
   "@@locale": "ja",
-
   "bootstrapTitle": "wrait を開いています",
   "bootstrapSubtitle": "ローカルの日記を読み込み中",
   "bootstrapErrorTitle": "wrait を開けませんでした",
   "bootstrapErrorSubtitle": "もう一度お試しください",
   "bootstrapRetryButton": "再試行",
-
   "mainSettingsTooltip": "設定",
   "mainFeedbackTooltip": "フィードバックを送信",
   "mainLanguageLabel": "言語: {displayName}",
@@ -19,7 +17,6 @@
   "mainFeedbackSemanticsLabel": "フィードバックを送信",
   "mainQuotaSemanticsLabel": "録音の上限は合計 {limit}、残り {remaining} です。",
   "mainQuotaText": "合計 {limit} / 残り {remaining}",
-
   "mainButtonStop": "停止",
   "mainButtonWrait": "wrait",
   "statusTapToWrite": "ボタンをタップして記録",
@@ -48,12 +45,10 @@
   "statusMicBlockedSemanticsLabel": "wrait のマイクへのアクセスがブロックされています。",
   "statusMicBlockedSemanticsHint": "ダブルタップするとアプリの設定を開きます。",
   "statusDefaultSemanticsLabel": "ステータスメッセージ: {statusText}。",
-
   "statsEntryCount": "{count, plural, other{{count} 件}}",
   "statsActiveDays": "{count, plural, other{{count} 日}}",
   "statsDisplay": "{entries} - {days}",
   "statsSemanticsLabel": "エントリーの統計: {displayText}。エントリー一覧を開きます。",
-
   "settingsTitle": "設定",
   "settingsBack": "戻る",
   "settingsPrivacy": "プライバシー",
@@ -80,7 +75,6 @@
   "settingsTranscriptionLanguageSaveFailed": "言語を保存できませんでした。もう一度お試しください。",
   "settingsTryAgain": "もう一度試す",
   "settingsActivityMessage": "設定を変更する前に、現在の録音または文字起こしを完了してください。",
-
   "entryListBack": "戻る",
   "entryListBackSemanticsLabel": "メイン画面に戻る",
   "entryListSearchLabel": "エントリーを検索",
@@ -103,7 +97,6 @@
   "entryListImportUnreadableFile": "選択した CSV ファイルを読み込めませんでした。",
   "entryListImportFileTooLarge": "選択した CSV はサイズが大きすぎてインポートできません。",
   "entryListImportStorageFailure": "インポートしたエントリーを保存できませんでした。",
-
   "entryListAudioDraftPreview": "保留中 · 再試行します",
   "entryListAudioDraftStateDescription": "音声の下書き、まだ文字起こしされていません",
   "entryListDeleteActionLabel": "エントリーを削除",
@@ -113,7 +106,6 @@
   "entryListRowDraftBadge": "下書き",
   "entryListRowDraftValue": "下書き",
   "entryListRowAudioDraftValue": "下書き、{description}",
-
   "entryDetailSaving": "変更を保存中...",
   "entryDetailSaveFailed": "変更を保存できませんでした。",
   "entryDetailLoadFailed": "このエントリーを読み込めませんでした。",
@@ -131,9 +123,7 @@
   "entryDetailDeleteSemanticsLabel": "エントリーを削除",
   "entryDetailDelete": "削除",
   "entryDetailShareFailed": "このエントリーを共有できませんでした。",
-
   "wordCount": "{count, plural, other{{count} 語}}",
-
   "deleteDialogTitle": "エントリーを削除しますか？",
   "deleteDialogBody": "このエントリーは完全に削除されます。",
   "deleteCancel": "キャンセル",
@@ -142,7 +132,6 @@
   "deleteCancelSemanticsHint": "このエントリーを一覧に残します。",
   "deleteConfirmSemanticsLabel": "エントリーを完全に削除",
   "deleteConfirmSemanticsHint": "このエントリーを一覧から削除します。",
-
   "appLockTitle": "wrait はロックされています",
   "appLockSemanticsLabel": "wrait はロックされています。",
   "appLockUnlock": "ロック解除",
@@ -159,7 +148,6 @@
   "appLockPreferenceLoadFailed": "wrait はプライバシー設定を読み込めませんでした。",
   "appLockPreferenceLoading": "プライバシー設定を読み込み中",
   "appLockPreferenceRetry": "もう一度試す",
-
   "feedbackTitle": "フィードバックを送信",
   "feedbackPrompt": "どのようなことをお伝えいただけますか？",
   "feedbackContactLabel": "返信先の連絡先（任意）",
@@ -181,5 +169,27 @@
   "reminderMorningTitle": "wrait",
   "reminderMorningBody": "今日も振り返りから始めましょう",
   "reminderEveningTitle": "wrait",
-  "reminderEveningBody": "今日の録音がまだ残っています"
+  "reminderEveningBody": "今日の録音がまだ残っています",
+  "tagsTitle": "タグ",
+  "tagsManage": "タグを管理",
+  "tagsAdd": "タグを追加",
+  "tagsAddHint": "タグ名",
+  "tagsEmpty": "タグはまだありません",
+  "tagsLimitReached": "タグの上限に達しました（{max}）",
+  "tagsDeleteConfirmTitle": "タグを削除しますか？",
+  "tagsDeleteConfirmBody": "このタグはすべてのエントリーから削除されます。",
+  "tagsDeleteConfirm": "削除",
+  "tagsDeleteCancel": "キャンセル",
+  "tagsNameTooLong": "タグ名は{max}文字以内にしてください",
+  "tagsNameDuplicate": "このタグはすでに存在します",
+  "tagsCreateFailed": "タグを作成できませんでした",
+  "tagsDeleteFailed": "タグを削除できませんでした",
+  "tagsFilterAll": "すべて",
+  "tagsFilterClear": "フィルターを解除",
+  "tagsNoEntriesWithTag": "このタグのエントリーはありません",
+  "tagsAssign": "タグ",
+  "tagsAssignDone": "完了",
+  "tagsAssignCreate": "「{name}」を作成",
+  "tagsEntryCount": "{count, plural, other{{count}件}}",
+  "tagsSearchIncluded": "検索にはタグ名も含まれます"
 }

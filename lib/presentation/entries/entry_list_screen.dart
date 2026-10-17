@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../tags/tag_filter_chip_row.dart';
 import '../theme/design_tokens.dart';
 import 'entry_delete_confirmation.dart';
 import 'entry_list_controller.dart';
@@ -166,7 +167,9 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: WraitSpacingTokens.md),
+                const SizedBox(height: WraitSpacingTokens.sm),
+                const TagFilterChipRow(),
+                const SizedBox(height: WraitSpacingTokens.sm),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -200,6 +203,7 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
     required bool hasActiveQuery,
   }) {
     final l10n = AppLocalizations.of(context);
+    final selectedTagId = ref.watch(entryListTagFilterProvider);
     if (allEntries.isEmpty) {
       return Center(
         child: Text(
@@ -231,6 +235,31 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
               key: const ValueKey('entryListNoResultsClearButton'),
               onPressed: _clearSearch,
               child: Text(l10n.entryListClearSearch),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (selectedTagId != null && filteredEntries.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              l10n.tagsNoEntriesWithTag,
+              key: const ValueKey('entryListNoTagResults'),
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.secondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: WraitSpacingTokens.sm),
+            TextButton(
+              key: const ValueKey('entryListNoTagResultsClearButton'),
+              onPressed: () =>
+                  ref.read(entryListTagFilterProvider.notifier).clear(),
+              child: Text(l10n.tagsFilterClear),
             ),
           ],
         ),

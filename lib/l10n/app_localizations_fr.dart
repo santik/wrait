@@ -614,4 +614,85 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get feedbackCategoryPraise => 'Éloge';
+
+  @override
+  String get tagsTitle => 'Tags';
+
+  @override
+  String get tagsManage => 'Gérer les tags';
+
+  @override
+  String get tagsAdd => 'Ajouter un tag';
+
+  @override
+  String get tagsAddHint => 'Nom du tag';
+
+  @override
+  String get tagsEmpty => 'Aucun tag';
+
+  @override
+  String tagsLimitReached(int max) {
+    return 'Limite de tags atteinte ($max)';
+  }
+
+  @override
+  String get tagsDeleteConfirmTitle => 'Supprimer le tag ?';
+
+  @override
+  String get tagsDeleteConfirmBody =>
+      'Ce tag sera retiré de toutes les entrées.';
+
+  @override
+  String get tagsDeleteConfirm => 'Supprimer';
+
+  @override
+  String get tagsDeleteCancel => 'Annuler';
+
+  @override
+  String tagsNameTooLong(int max) {
+    return 'Le nom doit faire $max caractères ou moins';
+  }
+
+  @override
+  String get tagsNameDuplicate => 'Ce tag existe déjà';
+
+  @override
+  String get tagsCreateFailed => 'Impossible de créer le tag';
+
+  @override
+  String get tagsDeleteFailed => 'Impossible de supprimer le tag';
+
+  @override
+  String get tagsFilterAll => 'Tous';
+
+  @override
+  String get tagsFilterClear => 'Effacer le filtre';
+
+  @override
+  String get tagsNoEntriesWithTag => 'Aucune entrée avec ce tag';
+
+  @override
+  String get tagsAssign => 'Tags';
+
+  @override
+  String get tagsAssignDone => 'Terminé';
+
+  @override
+  String tagsAssignCreate(String name) {
+    return 'Créer \"$name\"';
+  }
+
+  @override
+  String tagsEntryCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entrées',
+      one: '1 entrée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tagsSearchIncluded => 'La recherche inclut les noms de tags';
 }
