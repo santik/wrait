@@ -32,6 +32,7 @@ RESOLVED_RECORDING_HARD_CAP_MS=""
 RESOLVED_WIREDASH_PROJECT_ID=""
 RESOLVED_WIREDASH_SECRET=""
 RESOLVED_WIREDASH_ENVIRONMENT=""
+RESOLVED_DEBUG_DEVICE_ID=""
 SYNCED_TARGET_LOCAL_PROPERTIES=false
 
 fail() {
@@ -562,6 +563,12 @@ load_and_validate_private_config() {
   RESOLVED_WIREDASH_ENVIRONMENT="$(
     require_non_blank_property "$SOURCE_LOCAL_PROPERTIES_PATH" "WIREDASH_ENVIRONMENT"
   )"
+  RESOLVED_DEBUG_DEVICE_ID="$(
+    optional_trimmed_property "$SOURCE_LOCAL_PROPERTIES_PATH" "DEBUG_DEVICE_ID"
+  )"
+  if [[ -n "$RESOLVED_DEBUG_DEVICE_ID" && ! "$RESOLVED_DEBUG_DEVICE_ID" =~ ^[0-9a-f]{64}$ ]]; then
+    warn "DEBUG_DEVICE_ID is not a valid SHA-256 hex hash (expected 64 lowercase hex characters)"
+  fi
 
   raw_keystore_path="$RESOLVED_KEYSTORE_PATH"
   RESOLVED_KEYSTORE_PATH="$(resolve_source_relative_path "$SOURCE_LOCAL_PROPERTIES_PATH" "$raw_keystore_path")"
@@ -600,6 +607,11 @@ main() {
     "--dart-define=WIREDASH_SECRET=$RESOLVED_WIREDASH_SECRET"
     "--dart-define=WIREDASH_ENVIRONMENT=$RESOLVED_WIREDASH_ENVIRONMENT"
   )
+  if [[ -n "$RESOLVED_DEBUG_DEVICE_ID" ]]; then
+    flutter_build_args+=(
+      "--dart-define=DEBUG_DEVICE_ID=$RESOLVED_DEBUG_DEVICE_ID"
+    )
+  fi
 
   phone_serial="$(find_connected_phone)"
 

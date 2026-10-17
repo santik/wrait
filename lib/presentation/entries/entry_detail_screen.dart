@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../data/preferences/preferences_providers.dart';
+import '../../domain/model/entry.dart';
 import '../../l10n/app_localizations.dart';
 import '../tags/tag_assignment_sheet.dart';
 import '../theme/design_tokens.dart';
@@ -86,6 +88,13 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                 createdAt: entry.createdAt,
                 locale: Localizations.localeOf(context),
               );
+              final isDebugDevice =
+                  ref.watch(debugDeviceModeProvider).value ?? false;
+              final showRawTranscript =
+                  isDebugDevice &&
+                  entry.type == EntryType.saved &&
+                  entry.cleanedText != null &&
+                  entry.rawTranscript != entry.cleanedText;
               final saveMessage = detailState.isSaving
                   ? l10n.entryDetailSaving
                   : detailState.saveFailed
@@ -187,34 +196,73 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                     Expanded(
                       child: SingleChildScrollView(
                         key: const ValueKey('entryDetailScrollView'),
-                        child: detailState.isEditing
-                            ? Semantics(
-                                label: l10n.entryDetailEditSemanticsLabel,
-                                textField: true,
-                                child: TextField(
-                                  key: const ValueKey('entryDetailEditor'),
-                                  controller: _textController,
-                                  focusNode: _editorFocusNode,
-                                  maxLines: null,
-                                  minLines: 12,
-                                  textInputAction: TextInputAction.newline,
-                                  decoration: InputDecoration(
-                                    border: InputBorder.none,
-                                    hintText: l10n.entryDetailEditHint,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            detailState.isEditing
+                                ? Semantics(
+                                    label: l10n.entryDetailEditSemanticsLabel,
+                                    textField: true,
+                                    child: TextField(
+                                      key: const ValueKey('entryDetailEditor'),
+                                      controller: _textController,
+                                      focusNode: _editorFocusNode,
+                                      maxLines: null,
+                                      minLines: 12,
+                                      textInputAction: TextInputAction.newline,
+                                      decoration: InputDecoration(
+                                        border: InputBorder.none,
+                                        hintText: l10n.entryDetailEditHint,
+                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge,
+                                    ),
+                                  )
+                                : Semantics(
+                                    hint: l10n.entryDetailTapToEditHint,
+                                    onTap: () => _handleBodyTap(displayText),
+                                    child: SelectableText(
+                                      displayText,
+                                      key: const ValueKey(
+                                        'entryDetailReadText',
+                                      ),
+                                      onTap: () => _handleBodyTap(displayText),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge,
+                                    ),
                                   ),
-                                  style: Theme.of(context).textTheme.bodyLarge,
+                            if (showRawTranscript) ...[
+                              const SizedBox(height: WraitSpacingTokens.lg),
+                              const Divider(),
+                              const SizedBox(height: WraitSpacingTokens.sm),
+                              Text(
+                                'Raw transcript',
+                                key: const ValueKey(
+                                  'entryDetailRawTranscriptLabel',
                                 ),
-                              )
-                            : Semantics(
-                                hint: l10n.entryDetailTapToEditHint,
-                                onTap: () => _handleBodyTap(displayText),
-                                child: SelectableText(
-                                  displayText,
-                                  key: const ValueKey('entryDetailReadText'),
-                                  onTap: () => _handleBodyTap(displayText),
-                                  style: Theme.of(context).textTheme.bodyLarge,
-                                ),
+                                style: Theme.of(context).textTheme.labelLarge
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondary,
+                                    ),
                               ),
+                              const SizedBox(height: WraitSpacingTokens.sm),
+                              SelectableText(
+                                entry.rawTranscript,
+                                key: const ValueKey('entryDetailRawTranscript'),
+                                style: Theme.of(context).textTheme.bodyMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondary,
+                                    ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
                     ),
                   ],

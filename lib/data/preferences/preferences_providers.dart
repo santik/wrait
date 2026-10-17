@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../app.dart';
 import '../../domain/repository/app_lock_preferences_repository.dart';
 import '../../domain/repository/preferences_repository.dart';
 import '../../domain/repository/reminders_preferences_repository.dart';
@@ -26,6 +27,13 @@ final preferencesRepositoryProvider = Provider<PreferencesRepository>(
   ),
 );
 
+final debugDeviceModeProvider = FutureProvider<bool>((ref) async {
+  final debugDeviceId = ref.watch(appConfigProvider).debugDeviceId;
+  if (debugDeviceId.isEmpty) return false;
+  final deviceId = await ref.watch(preferencesRepositoryProvider).getDeviceId();
+  return deviceId == debugDeviceId;
+});
+
 final transcriptionLanguagePreferencesRepositoryProvider =
     Provider<TranscriptionLanguagePreferencesRepository>((ref) {
       final repository = ref.watch(preferencesRepositoryProvider);
@@ -36,14 +44,15 @@ final transcriptionLanguagePreferencesRepositoryProvider =
       };
     });
 
-final themePreferencesRepositoryProvider =
-    Provider<ThemePreferencesRepository>((ref) {
-      final repository = ref.watch(preferencesRepositoryProvider);
-      return switch (repository) {
-        ThemePreferencesRepository themeRepository => themeRepository,
-        _ => const _SystemThemePreferencesRepository(),
-      };
-    });
+final themePreferencesRepositoryProvider = Provider<ThemePreferencesRepository>(
+  (ref) {
+    final repository = ref.watch(preferencesRepositoryProvider);
+    return switch (repository) {
+      ThemePreferencesRepository themeRepository => themeRepository,
+      _ => const _SystemThemePreferencesRepository(),
+    };
+  },
+);
 
 final appLockPreferencesRepositoryProvider =
     Provider<AppLockPreferencesRepository>((ref) {

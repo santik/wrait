@@ -51,13 +51,18 @@ jobs:
 
       - name: Build release app bundle
         run: |
-          flutter build appbundle --release \
-            --dart-define="BACKEND_URL=$BACKEND_URL" \
-            --dart-define="PROXY_SECRET=$PROXY_SECRET" \
-            --dart-define="RECORDING_HARD_CAP_MS=$RECORDING_HARD_CAP_MS" \
-            --dart-define="WIREDASH_PROJECT_ID=$WIREDASH_PROJECT_ID" \
-            --dart-define="WIREDASH_SECRET=$WIREDASH_SECRET" \
+          BUILD_ARGS=(
+            --dart-define="BACKEND_URL=$BACKEND_URL"
+            --dart-define="PROXY_SECRET=$PROXY_SECRET"
+            --dart-define="RECORDING_HARD_CAP_MS=$RECORDING_HARD_CAP_MS"
+            --dart-define="WIREDASH_PROJECT_ID=$WIREDASH_PROJECT_ID"
+            --dart-define="WIREDASH_SECRET=$WIREDASH_SECRET"
             --dart-define="WIREDASH_ENVIRONMENT=production"
+          )
+          if [[ -n "${DEBUG_DEVICE_ID:-}" ]]; then
+            BUILD_ARGS+=(--dart-define="DEBUG_DEVICE_ID=$DEBUG_DEVICE_ID")
+          fi
+          flutter build appbundle --release "${BUILD_ARGS[@]}"
         env:
           WRAIT_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           WRAIT_RELEASE_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -66,6 +71,7 @@ jobs:
           RECORDING_HARD_CAP_MS: ${{ secrets.RECORDING_HARD_CAP_MS }}
           WIREDASH_PROJECT_ID: ${{ secrets.WIREDASH_PROJECT_ID }}
           WIREDASH_SECRET: ${{ secrets.WIREDASH_SECRET }}
+          DEBUG_DEVICE_ID: ${{ secrets.DEBUG_DEVICE_ID }}
 
       - name: Upload to Google Play Internal Testing
         uses: r0adkll/upload-google-play@v1

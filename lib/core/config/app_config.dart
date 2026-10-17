@@ -5,6 +5,7 @@ class AppConfig {
   static const String wiredashProjectIdDefine = 'WIREDASH_PROJECT_ID';
   static const String wiredashSecretDefine = 'WIREDASH_SECRET';
   static const String wiredashEnvironmentDefine = 'WIREDASH_ENVIRONMENT';
+  static const String debugDeviceIdDefine = 'DEBUG_DEVICE_ID';
 
   static const String defaultBackendUrl = 'https://wrait-backend.vercel.app';
   static const String defaultRecordingHardCapMs = '120000';
@@ -17,6 +18,7 @@ class AppConfig {
     this.wiredashProjectId = '',
     this.wiredashSecret = '',
     this.wiredashEnvironment = defaultWiredashEnvironment,
+    this.debugDeviceId = '',
   });
 
   final String backendUrl;
@@ -25,9 +27,12 @@ class AppConfig {
   final String wiredashProjectId;
   final String wiredashSecret;
   final String wiredashEnvironment;
+  final String debugDeviceId;
 
   bool get wiredashConfigured =>
       wiredashProjectId.trim().isNotEmpty && wiredashSecret.trim().isNotEmpty;
+
+  bool get isDebugDeviceConfigured => debugDeviceId.isNotEmpty;
 
   Uri get backendUri => Uri.parse(backendUrl);
 
@@ -57,6 +62,10 @@ class AppConfig {
         wiredashEnvironmentDefine,
         defaultValue: defaultWiredashEnvironment,
       ),
+      debugDeviceId: const String.fromEnvironment(
+        debugDeviceIdDefine,
+        defaultValue: '',
+      ),
     );
   }
 
@@ -67,6 +76,7 @@ class AppConfig {
     String? wiredashProjectId,
     String? wiredashSecret,
     String? wiredashEnvironment,
+    String? debugDeviceId,
   }) {
     final resolvedBackendUrl = (backendUrl ?? defaultBackendUrl).trim();
     final resolvedProxySecret = (proxySecret ?? '').trim();
@@ -76,6 +86,7 @@ class AppConfig {
     final resolvedWiredashSecret = (wiredashSecret ?? '').trim();
     final resolvedWiredashEnvironment =
         (wiredashEnvironment ?? defaultWiredashEnvironment).trim();
+    final resolvedDebugDeviceId = (debugDeviceId ?? '').trim();
 
     final parsedBackendUri = Uri.tryParse(resolvedBackendUrl);
     if (parsedBackendUri == null ||
@@ -102,6 +113,7 @@ class AppConfig {
       wiredashEnvironment: resolvedWiredashEnvironment.isEmpty
           ? defaultWiredashEnvironment
           : resolvedWiredashEnvironment,
+      debugDeviceId: resolvedDebugDeviceId,
     );
   }
 }

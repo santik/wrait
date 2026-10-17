@@ -118,6 +118,11 @@ main_bundle() {
     "--dart-define=WIREDASH_SECRET=$RESOLVED_WIREDASH_SECRET"
     "--dart-define=WIREDASH_ENVIRONMENT=$RESOLVED_WIREDASH_ENVIRONMENT"
   )
+  if [[ -n "$RESOLVED_DEBUG_DEVICE_ID" ]]; then
+    flutter_build_args+=(
+      "--dart-define=DEBUG_DEVICE_ID=$RESOLVED_DEBUG_DEVICE_ID"
+    )
+  fi
 
   if [[ -n "$BUILD_NAME" ]]; then
     flutter_build_args+=("--build-name=$BUILD_NAME")
