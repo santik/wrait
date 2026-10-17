@@ -865,16 +865,19 @@ class _TestEntryRepository implements EntryRepository {
   Future<Entry?> getEntryById(int id) async => _findEntry(id);
 
   @override
-  Future<void> importEntries(List<Entry> entries) async {
+  Future<List<int>> importEntries(List<Entry> entries) async {
+    final ids = <int>[];
     var nextId = _entries.fold<int>(
       0,
       (current, entry) => entry.id > current ? entry.id : current,
     );
     for (final entry in entries) {
       nextId += 1;
+      ids.add(nextId);
       _entries = [..._entries, entry.copyWith(id: nextId)];
     }
     _controller.add(_entries);
+    return ids;
   }
 
   @override

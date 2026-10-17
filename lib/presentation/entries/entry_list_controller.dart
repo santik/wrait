@@ -212,14 +212,13 @@ class EntryListController extends Notifier<EntryListControllerState> {
         .where((entry) {
           final cleanedText = _normalizeForSearch(entry.cleanedText ?? '');
           final rawTranscript = _normalizeForSearch(entry.rawTranscript);
-          final tagNames = entry.tags
-              .map((tag) => _normalizeForSearch(tag.name))
-              .join(' ');
           return terms.every(
             (term) =>
                 cleanedText.contains(term) ||
                 rawTranscript.contains(term) ||
-                tagNames.contains(term),
+                entry.tags.any(
+                  (tag) => _normalizeForSearch(tag.name).contains(term),
+                ),
           );
         })
         .toList(growable: false);

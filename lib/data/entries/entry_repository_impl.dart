@@ -35,33 +35,29 @@ class EntryRepositoryImpl implements EntryRepository {
 
   @override
   Stream<List<Entry>> watchAllEntries() {
-    // Re-emit when entries or any tag assignment changes.
-    List<EntryRecord> latestRows = const [];
-    var entriesReady = false;
-    var tagsReady = false;
-
+    var latestRows = const <EntryRecord>[];
+    var ready = false;
     final controller = StreamController<List<Entry>>.broadcast();
 
     Future<void> emit() async {
-      if (!entriesReady || !tagsReady) return;
-      controller.add(
-        await Future.wait(
+      if (!ready || controller.isClosed) return;
+      try {
+        final entries = await Future.wait(
           latestRows.map(_mapEntryRecord),
           eagerError: true,
-        ),
-      );
+        );
+        if (!controller.isClosed) controller.add(entries);
+      } catch (e, st) {
+        if (!controller.isClosed) controller.addError(e, st);
+      }
     }
 
     final entriesSub = entryDao.watchAllEntries().listen((rows) {
       latestRows = rows;
-      entriesReady = true;
+      ready = true;
       emit();
     });
-    // Watch the entry-tag join table; any assignment change re-maps.
-    final tagsSub = tagDao.watchAllAssignments().listen((_) {
-      tagsReady = true;
-      if (entriesReady) emit();
-    });
+    final tagsSub = tagDao.watchAllAssignments().listen((_) => emit());
 
     controller.onCancel = () {
       entriesSub.cancel();
@@ -74,31 +70,30 @@ class EntryRepositoryImpl implements EntryRepository {
 
   @override
   Stream<Entry?> watchEntryById(int id) {
-    // Re-emit when either the entry row or its tags change.
     EntryRecord? latestRow;
-    var entryReady = false;
-    var tagsReady = false;
-
+    var ready = false;
     final controller = StreamController<Entry?>.broadcast();
 
     Future<void> emit() async {
-      if (!entryReady || !tagsReady) return;
-      if (latestRow == null) {
-        controller.add(null);
-        return;
+      if (!ready || controller.isClosed) return;
+      try {
+        if (latestRow == null) {
+          if (!controller.isClosed) controller.add(null);
+        } else {
+          final entry = await _mapEntryRecord(latestRow!);
+          if (!controller.isClosed) controller.add(entry);
+        }
+      } catch (e, st) {
+        if (!controller.isClosed) controller.addError(e, st);
       }
-      controller.add(await _mapEntryRecord(latestRow!));
     }
 
     final entrySub = entryDao.watchEntryById(id).listen((row) {
       latestRow = row;
-      entryReady = true;
+      ready = true;
       emit();
     });
-    final tagsSub = tagDao.watchTagsForEntry(id).listen((_) {
-      tagsReady = true;
-      emit();
-    });
+    final tagsSub = tagDao.watchTagsForEntry(id).listen((_) => emit());
 
     controller.onCancel = () {
       entrySub.cancel();
@@ -120,9 +115,9 @@ class EntryRepositoryImpl implements EntryRepository {
   }
 
   @override
-  Future<void> importEntries(List<Entry> entries) async {
+  Future<List<int>> importEntries(List<Entry> entries) async {
     if (entries.isEmpty) {
-      return;
+      return const [];
     }
 
     final importedEntries = entries
@@ -140,7 +135,7 @@ class EntryRepositoryImpl implements EntryRepository {
         })
         .toList(growable: false);
 
-    await entryDao.insertEntries(importedEntries);
+    return entryDao.insertEntries(importedEntries);
   }
 
   @override

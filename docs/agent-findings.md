@@ -173,10 +173,22 @@ this file as supporting implementation memory.
   Wrait-produced CSV. It is additive-only: preserve imported draft vs saved
   state as-is, ignore CSV ids, force imported `audioPath` to null, and never
   update or delete existing rows.
-- The current Wrait CSV contract is exactly
-  `type,created_at,language,word_count,raw_transcript,cleaned_text`.
-  Older Wrait CSVs with `id` or `created_at_epoch_ms` are intentionally
-  rejected.
+- The current Wrait CSV contract is
+  `type,created_at,language,word_count,raw_transcript,cleaned_text,tags`.
+  Import must accept both 6-column (pre-tags legacy) and 7-column files for
+  backward compatibility. Older Wrait CSVs with `id` or `created_at_epoch_ms`
+  are intentionally rejected.
+- Database schema v2 adds `tags` (id, name with COLLATE NOCASE) and
+  `entry_tags` (entry_id, tag_id with ON DELETE CASCADE on entry_id) tables.
+  Migration is additive-only (CREATE TABLE IF NOT EXISTS).
+- Tag system limits are enforced at the repository level: 10 tags, 15-char
+  max. Do not move limit enforcement to the DAO or UI layer.
+- CSV import tag assignment depends on `importEntries` returning inserted IDs.
+  The one-by-one insert inside a transaction (not batch) is the accepted
+  tradeoff.
+- `EntryRepositoryImpl` stream composition must guard `controller.add` and
+  `controller.addError` with `!controller.isClosed` because async tag mapping
+  can outlive stream cancellation.
 - `created_at` import uses the raw stored integer value and currently rejects
   values above `2100-01-01T00:00:00Z` (`4102444800000`) in
   `lib/domain/service/entry_import_service.dart`.
@@ -328,6 +340,10 @@ this file as supporting implementation memory.
 - Search splits whitespace-separated literal all terms and uses Dart's default
   case conversion, not locale-aware/full Unicode case folding. The keyboard
   Search action unfocuses the field while retaining the query and results.
+- Entry-list tag search must match individual tag names via
+  `entry.tags.any(...)`, never by joining tag names into a single string and
+  doing substring matching. The joined-string approach creates false positives
+  across tag boundaries.
 - Audio-only draft rows remain visible as pending retry state and should not
   navigate to `/entry/:id`.
 - Keep row preview, timestamp, and language-label derivation in

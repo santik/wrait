@@ -4,7 +4,7 @@ abstract interface class EntryRepository {
   Stream<List<Entry>> watchAllEntries();
   Stream<Entry?> watchEntryById(int id);
   Future<Entry?> getEntryById(int id);
-  Future<void> importEntries(List<Entry> entries);
+  Future<List<int>> importEntries(List<Entry> entries);
   Future<int> saveDraft(String transcript, String language);
   Future<int> saveEntry(String transcript, String language);
   Future<int> saveAudioDraft(String audioPath, String language);

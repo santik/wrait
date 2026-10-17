@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
+
 import '../../data/entries/entry_import_file_reader.dart';
 import '../model/entry.dart';
 import '../model/supported_language.dart';
@@ -104,8 +106,8 @@ class EntryImportService {
         maxSmallFieldBytes: maxSmallFieldBytes,
       );
       final entries = parsed.map((item) => item.entry).toList(growable: false);
-      await entryRepository.importEntries(entries);
-      await _ensureTagsExist(parsed);
+      final entryIds = await entryRepository.importEntries(entries);
+      await _assignImportedTags(parsed, entryIds);
       return EntryImportResult.success(
         fileName: file.fileName,
         importedCount: entries.length,
@@ -119,17 +121,22 @@ class EntryImportService {
     }
   }
 
-  /// Auto-creates tags referenced by the imported rows that do not exist yet.
+  /// Auto-creates tags referenced by the imported rows that do not exist yet,
+  /// then assigns them to the corresponding imported entries.
   ///
-  /// Tags are not assigned to the imported entries because the bulk insert does
-  /// not return entry IDs. Tag creation failures (e.g. tag limit reached) are
-  /// skipped silently so they never fail an otherwise successful import.
-  Future<void> _ensureTagsExist(List<ParsedImportEntry> parsed) async {
+  /// Tag creation failures (e.g. tag limit reached, invalid name) are skipped
+  /// silently so they never fail an otherwise successful import.
+  Future<void> _assignImportedTags(
+    List<ParsedImportEntry> parsed,
+    List<int> entryIds,
+  ) async {
     final repository = tagRepository;
     if (repository == null) {
       return;
     }
 
+    // Resolve all unique tag names to their IDs, creating as needed.
+    final tagIdByName = <String, int>{};
     final uniqueNames = <String>{
       for (final item in parsed) ...item.tagNames,
     };
@@ -137,13 +144,30 @@ class EntryImportService {
       try {
         final existing = await repository.findTagByName(name);
         if (existing != null) {
+          tagIdByName[name.toLowerCase()] = existing.id;
           continue;
         }
-        await repository.createTag(name);
+        final created = await repository.createTag(name);
+        tagIdByName[name.toLowerCase()] = created.id;
       } on StateError {
         // Tag limit exceeded; skip silently.
       } on ArgumentError {
         // Invalid tag name (e.g. too long); skip silently.
+      }
+    }
+
+    // Assign tags to each imported entry.
+    for (var i = 0; i < parsed.length; i++) {
+      final tagNames = parsed[i].tagNames;
+      if (tagNames.isEmpty) continue;
+
+      final tagIds = <int>[
+        for (final name in tagNames)
+          if (tagIdByName.containsKey(name.toLowerCase()))
+            tagIdByName[name.toLowerCase()]!,
+      ];
+      if (tagIds.isNotEmpty) {
+        await repository.setTagsForEntry(entryIds[i], tagIds);
       }
     }
   }
@@ -170,8 +194,8 @@ class EntryImportService {
     }
     final expectedHeader = EntryExportService.csvHeaders;
     final legacyHeader = expectedHeader.sublist(0, expectedHeader.length - 1);
-    final hasTags = _listEquals(header, expectedHeader);
-    if (!hasTags && !_listEquals(header, legacyHeader)) {
+    final hasTags = listEquals(header, expectedHeader);
+    if (!hasTags && !listEquals(header, legacyHeader)) {
       throw FormatException(
         'Entry import CSV header does not match the Wrait export format.',
       );
@@ -397,15 +421,4 @@ class EntryImportService {
     return value;
   }
 
-  static bool _listEquals(List<String> left, List<String> right) {
-    if (left.length != right.length) {
-      return false;
-    }
-    for (var i = 0; i < left.length; i += 1) {
-      if (left[i] != right[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
 }

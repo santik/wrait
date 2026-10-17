@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import 'tag.dart';
 
 enum EntryType {
@@ -76,7 +78,7 @@ class Entry {
             other.createdAt == createdAt &&
             other.wordCount == wordCount &&
             other.audioPath == audioPath &&
-            _listEquals(other.tags, tags));
+            listEquals(other.tags, tags));
   }
 
   @override
@@ -92,12 +94,4 @@ class Entry {
     Object.hashAll(tags),
   );
 
-  static bool _listEquals(List<Tag> a, List<Tag> b) {
-    if (identical(a, b)) return true;
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
 }

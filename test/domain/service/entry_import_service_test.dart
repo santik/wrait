@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wrait/data/entries/entry_import_file_reader.dart';
 import 'package:wrait/domain/model/entry.dart';
+import 'package:wrait/domain/model/tag.dart';
 import 'package:wrait/domain/repository/entry_repository.dart';
+import 'package:wrait/domain/repository/tag_repository.dart';
 import 'package:wrait/domain/service/entry_export_service.dart';
 import 'package:wrait/domain/service/entry_import_service.dart';
 
@@ -441,6 +443,124 @@ void main() {
     expect(repository.importCallCount, 0);
   });
 
+  test('imports CSV with tags and assigns them to entries', () async {
+    final repository = _FakeEntryRepository();
+    final tagRepository = _FakeTagRepository();
+    final csv = _csvWithTags();
+    final service = EntryImportService(
+      fileReader: _StaticImportFileReader(
+        EntryImportFileReadResult(fileName: 'tags.csv', contents: csv),
+      ),
+      entryRepository: repository,
+      tagRepository: tagRepository,
+    );
+
+    final result = await service.importEntries();
+
+    expect(result.didImport, isTrue);
+    expect(result.importedCount, 2);
+    expect(tagRepository.createdTagNames, containsAll(['work', 'travel']));
+    expect(tagRepository.assignedTags[1], isNotNull);
+    expect(tagRepository.assignedTags[2], isNotNull);
+  });
+
+  test('imports CSV without tags column (backward compatibility)', () async {
+    final repository = _FakeEntryRepository();
+    final tagRepository = _FakeTagRepository();
+    final csv = _legacyCsv();
+    final service = EntryImportService(
+      fileReader: _StaticImportFileReader(
+        EntryImportFileReadResult(fileName: 'legacy.csv', contents: csv),
+      ),
+      entryRepository: repository,
+      tagRepository: tagRepository,
+    );
+
+    final result = await service.importEntries();
+
+    expect(result.didImport, isTrue);
+    expect(result.importedCount, 1);
+    expect(tagRepository.createdTagNames, isEmpty);
+    expect(tagRepository.assignedTags, isEmpty);
+  });
+
+  test('auto-creates missing tags and reuses existing ones on import',
+      () async {
+    final repository = _FakeEntryRepository();
+    final tagRepository = _FakeTagRepository()
+      ..seedTag(const Tag(id: 99, name: 'work'));
+    final csv = _csvWithTags();
+    final service = EntryImportService(
+      fileReader: _StaticImportFileReader(
+        EntryImportFileReadResult(fileName: 'tags.csv', contents: csv),
+      ),
+      entryRepository: repository,
+      tagRepository: tagRepository,
+    );
+
+    await service.importEntries();
+
+    // 'work' already existed, only 'travel' should be created.
+    expect(tagRepository.createdTagNames, ['travel']);
+    // First entry has 'work;travel', second has 'work'.
+    expect(tagRepository.assignedTags[1], containsAll([99]));
+    expect(tagRepository.assignedTags[2], contains(99));
+  });
+
+  test('skips tags exceeding the system limit on import', () async {
+    final repository = _FakeEntryRepository();
+    final tagRepository = _FakeTagRepository(
+      throwOnCreateAfter: TagRepository.maxTags,
+    );
+    // Pre-fill to the limit.
+    for (var i = 0; i < TagRepository.maxTags; i++) {
+      tagRepository.seedTag(Tag(id: i + 1, name: 'pre$i'));
+    }
+
+    final csv = _csvWithNewTag('overflow');
+    final service = EntryImportService(
+      fileReader: _StaticImportFileReader(
+        EntryImportFileReadResult(fileName: 'full.csv', contents: csv),
+      ),
+      entryRepository: repository,
+      tagRepository: tagRepository,
+    );
+
+    final result = await service.importEntries();
+
+    expect(result.didImport, isTrue);
+    expect(tagRepository.createdTagNames, isEmpty);
+  });
+
+  test('skips invalid tag names during import without failing', () async {
+    final repository = _FakeEntryRepository();
+    final tagRepository = _FakeTagRepository(
+      rejectTagNamesLongerThan: TagRepository.maxTagNameLength,
+    );
+    final longName = 'a' * (TagRepository.maxTagNameLength + 1);
+    final csv = _csvWithNewTag(longName);
+    final service = EntryImportService(
+      fileReader: _StaticImportFileReader(
+        EntryImportFileReadResult(fileName: 'invalid.csv', contents: csv),
+      ),
+      entryRepository: repository,
+      tagRepository: tagRepository,
+    );
+
+    final result = await service.importEntries();
+
+    expect(result.didImport, isTrue);
+    expect(tagRepository.createdTagNames, isEmpty);
+  });
+
+  test('handles whitespace in tag names during import', () async {
+    final parsed = EntryImportService.parseCsv(
+      'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n'
+      'saved,1700000000000,en,2,text,clean, work ; travel \n',
+    );
+    expect(parsed.first.tagNames, ['work', 'travel']);
+  });
+
   test('maps repository failures to the storage category', () async {
     final repository = _FakeEntryRepository(throwOnImport: true);
     final service = EntryImportService(
@@ -490,13 +610,16 @@ class _FakeEntryRepository implements EntryRepository {
   int importCallCount = 0;
 
   @override
-  Future<void> importEntries(List<Entry> entries) async {
+  Future<List<int>> importEntries(List<Entry> entries) async {
     importCallCount += 1;
     if (throwOnImport) {
       throw StateError('save failed');
     }
     importedEntries.addAll(entries);
+    return List.generate(entries.length, (i) => _nextId + i);
   }
+
+  int _nextId = 1;
 
   @override
   Stream<List<Entry>> watchAllEntries() => const Stream<List<Entry>>.empty();
@@ -576,6 +699,88 @@ Entry _entry({
     createdAt: DateTime.utc(2026, 6, 30, 12, 34, 56).millisecondsSinceEpoch,
     wordCount: 2,
   );
+}
+
+class _FakeTagRepository implements TagRepository {
+  _FakeTagRepository({
+    this.throwOnCreateAfter,
+    this.rejectTagNamesLongerThan,
+  });
+
+  final int? throwOnCreateAfter;
+  final int? rejectTagNamesLongerThan;
+  final List<Tag> _tags = [];
+  int _nextId = 100;
+  final List<String> createdTagNames = [];
+  final Map<int, List<int>> assignedTags = {};
+
+  void seedTag(Tag tag) {
+    _tags.add(tag);
+  }
+
+  @override
+  Future<Tag> createTag(String name) async {
+    final trimmed = name.trim();
+    if (rejectTagNamesLongerThan != null &&
+        trimmed.length > rejectTagNamesLongerThan!) {
+      throw ArgumentError('Tag name too long');
+    }
+    if (throwOnCreateAfter != null && _tags.length >= throwOnCreateAfter!) {
+      throw StateError('Tag limit reached');
+    }
+    final tag = Tag(id: _nextId++, name: trimmed);
+    _tags.add(tag);
+    createdTagNames.add(trimmed);
+    return tag;
+  }
+
+  @override
+  Future<Tag?> findTagByName(String name) async {
+    final trimmed = name.trim().toLowerCase();
+    for (final tag in _tags) {
+      if (tag.name.toLowerCase() == trimmed) return tag;
+    }
+    return null;
+  }
+
+  @override
+  Future<void> deleteTag(int id) async {
+    _tags.removeWhere((t) => t.id == id);
+  }
+
+  @override
+  Future<List<Tag>> getAllTags() async => List.unmodifiable(_tags);
+
+  @override
+  Future<Map<int, int>> getTagCounts() async => {};
+
+  @override
+  Future<void> setTagsForEntry(int entryId, List<int> tagIds) async {
+    assignedTags[entryId] = tagIds;
+  }
+
+  @override
+  Stream<List<Tag>> watchAllTags() => Stream.value(List.unmodifiable(_tags));
+
+  @override
+  Stream<List<Tag>> watchTagsForEntry(int entryId) =>
+      const Stream<List<Tag>>.empty();
+}
+
+String _csvWithTags() {
+  return 'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n'
+      'saved,1700000000000,en,2,hello,Hello.,work;travel\n'
+      'saved,1700000100000,en,3,world,World.,work\n';
+}
+
+String _legacyCsv() {
+  return 'type,created_at,language,word_count,raw_transcript,cleaned_text\n'
+      'saved,1700000000000,en,2,hello,Hello.\n';
+}
+
+String _csvWithNewTag(String tagName) {
+  return 'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n'
+      'saved,1700000000000,en,2,hello,Hello.,$tagName\n';
 }
 
 String _validCsv() {

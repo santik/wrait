@@ -266,10 +266,29 @@ Full process: see [`docs/spec-driven-workflow.md`](docs/spec-driven-workflow.md)
   conversion rather than locale-aware/full Unicode case folding; an indexed or
   internationalized search change requires a future approved story and fresh
   Android/iOS validation.
-- The current Wrait CSV contract is exactly
-  `type,created_at,language,word_count,raw_transcript,cleaned_text`. Do not
-  reintroduce `id` or `created_at_epoch_ms` compatibility unless a future
-  approved story explicitly changes that contract.
+- Entry-list search now covers cleaned text, raw transcripts, and tag names.
+  Tag matching checks each tag name individually via `entry.tags.any(...)`, not
+  by concatenating tag names into a single string. The tag filter chip composes
+  with text search using AND logic.
+- The current Wrait CSV contract is
+  `type,created_at,language,word_count,raw_transcript,cleaned_text,tags`.
+  Import accepts both 6-column (pre-tags legacy) and 7-column files. Tags in
+  CSV are semicolon-separated within the `tags` cell. Do not reintroduce `id`
+  or `created_at_epoch_ms` compatibility unless a future approved story
+  explicitly changes that contract.
+- Database schema v2 adds `tags` and `entry_tags` tables. Migration from v1 is
+  additive-only (CREATE TABLE IF NOT EXISTS). The `entry_tags` join table uses
+  ON DELETE CASCADE on the entry foreign key.
+- Tag system limits: 10 tags per system (`TagRepository.maxTags`), 15
+  characters per tag name (`TagRepository.maxTagNameLength`). Tag name
+  uniqueness is case-insensitive via COLLATE NOCASE at the database level.
+- CSV import tag assignment resolves tag names to IDs (creating missing tags as
+  needed), then assigns by returned entry IDs. Tags that fail to create (limit
+  exceeded, invalid name) are silently skipped without failing the import.
+- Stream composition for `watchAllEntries()` and `watchEntryById()` in
+  `EntryRepositoryImpl` combines entry and tag-assignment change signals. Guard
+  `controller.add()` and `controller.addError()` with `!controller.isClosed`
+  checks because the async mapping may outlive stream cancellation.
 - `created_at` in CSV is the raw stored database integer value. Import should
   reject `created_at` values above `2100-01-01T00:00:00Z`
   (`4102444800000`) instead of converting or clamping them.
@@ -305,6 +324,10 @@ Full process: see [`docs/spec-driven-workflow.md`](docs/spec-driven-workflow.md)
 - Settings-related widget tests should override
   `transcriptionLanguageControllerProvider` with known state to avoid async
   loading in focused tests.
+- Tag-related widget tests override `tagRepositoryProvider` with a
+  `_FakeTagRepository`. Screens using GoRouter context extensions
+  (`context.push`, `context.pop`) need a `MaterialApp.router` with a
+  `GoRouter` instance, not a plain `MaterialApp`.
 - Current Android emulator validation has a known split for recording flows:
   `integration_test/main_recording_controller_flow_test.dart` passes on
   `emulator-5554`, while
