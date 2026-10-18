@@ -69,3 +69,26 @@ final class CleanupFailure extends CleanupResult {
   final BackendFailureReason reason;
   final RecordQuotaState? quota;
 }
+
+sealed class TagTextResult {
+  const TagTextResult();
+}
+
+final class TagTextSuccess extends TagTextResult {
+  const TagTextSuccess({required this.tags});
+
+  final List<TagProbabilityResult> tags;
+}
+
+final class TagTextFailure extends TagTextResult {
+  const TagTextFailure({required this.reason});
+
+  final BackendFailureReason reason;
+}
+
+class TagProbabilityResult {
+  const TagProbabilityResult({required this.tag, required this.probability});
+
+  final String tag;
+  final double probability;
+}

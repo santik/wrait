@@ -22,6 +22,12 @@ class TagRepositoryImpl implements TagRepository {
   }
 
   @override
+  Future<List<Tag>> getTagsForEntry(int entryId) async {
+    final rows = await tagDao.getTagsForEntry(entryId);
+    return rows.map(mapTagRecord).toList(growable: false);
+  }
+
+  @override
   Future<List<Tag>> getAllTags() async {
     final rows = await tagDao.getAllTags();
     return rows.map(mapTagRecord).toList(growable: false);

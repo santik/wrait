@@ -160,6 +160,9 @@ class _FakeTagRepository implements TagRepository {
   }
 
   @override
+  Future<List<Tag>> getTagsForEntry(int entryId) async => const [];
+
+  @override
   Future<List<Tag>> getAllTags() async => _tags;
 
   @override

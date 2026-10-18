@@ -47,7 +47,13 @@ paths:
         When language is supplied, automatic detection is disabled and that value
         is used for transcription. Unsupported language values return 400. If the
         provider rejects an accepted value, the request is not retried with
-        automatic detection.
+        automatic detection. Exactly one provider request is made per accepted
+        request. If the provider succeeds but returns an empty transcript (for
+        example silence, or speech in a language other than the one requested),
+        the response is 422 with reason `speech_not_recognized`, no successful
+        transcription is counted, and no quota is returned. Clients may change the
+        language or use automatic detection and retry. A 200 response always
+        carries a non-empty transcript.
       security:
         - ProxySecretHeader: []
       parameters:
@@ -84,6 +90,8 @@ paths:
           $ref: '#/components/responses/MethodNotAllowed'
         '413':
           $ref: '#/components/responses/RequestTooLarge'
+        '422':
+          $ref: '#/components/responses/SpeechNotRecognized'
         '429':
           $ref: '#/components/responses/DailyRecordLimitExceeded'
         '500':
@@ -120,6 +128,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CleanupResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '413':
+          $ref: '#/components/responses/RequestTooLarge'
+        '429':
+          $ref: '#/components/responses/DailyRecordLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: Upstream service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+  /api/tag:
+    post:
+      operationId: tagText
+      summary: Classify text with tags
+      description: |
+        Accepts a text and a list of tags, returns each tag with its probability
+        of being relevant to the text. Uses the TypeSafe AI Choice primitive for
+        classification. Stateless — no text, tags, or results are persisted.
+      security:
+        - ProxySecretHeader: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '200':
+          description: Classification completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -305,6 +358,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DailyRecordLimitExceededResponse'
+    SpeechNotRecognized:
+      description: |
+        The provider responded successfully but the transcript was empty. The
+        cause is unknown (silence or a language mismatch cannot be told apart).
+        Not counted as a successful transcription.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SpeechNotRecognizedResponse'
     InternalServerError:
       description: Internal backend error
       content:
@@ -325,6 +387,23 @@ components:
       properties:
         error:
           type: string
+    SpeechNotRecognizedResponse:
+      type: object
+      required:
+        - error
+        - reason
+      properties:
+        error:
+          type: string
+          enum:
+            - Speech could not be recognized
+        reason:
+          type: string
+          enum:
+            - speech_not_recognized
+        language:
+          type: string
+          description: The requested language. Omitted when automatic detection was used.
     DailyRecordLimitExceededResponse:
       type: object
       required:
@@ -493,6 +572,8 @@ components:
       properties:
         transcript:
           type: string
+          minLength: 1
+          description: Non-empty transcript. An empty provider transcript is reported as 422.
         detected_language:
           type: string
           description: Provider-detected language when automatic detection is used, or the requested language in explicit mode.
@@ -500,6 +581,48 @@ components:
           allOf:
             - $ref: '#/components/schemas/RecordQuota'
           description: Current cleanup quota for the device on the active UTC day. Omitted if quota lookup fails after transcription succeeds.
+    TagRequest:
+      type: object
+      required:
+        - text
+        - tags
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: Text to classify.
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          minItems: 2
+          maxItems: 50
+          uniqueItems: true
+          description: List of 2–50 unique non-empty tag strings.
+    TagResponse:
+      type: object
+      required:
+        - tags
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagProbability'
+    TagProbability:
+      type: object
+      required:
+        - tag
+        - probability
+      properties:
+        tag:
+          type: string
+        probability:
+          type: number
+          minimum: 0
+          maximum: 1
     UpstreamErrorResponse:
       type: object
       additionalProperties: true

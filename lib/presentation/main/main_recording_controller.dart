@@ -12,11 +12,13 @@ import '../../data/audio/audio_recording_providers.dart';
 import '../../data/audio/audio_recording_service.dart';
 import '../../data/audio/microphone_permission_service.dart';
 import '../../data/entries/entry_providers.dart';
+import '../../data/entries/tag_providers.dart';
 import '../../data/preferences/preferences_providers.dart';
 import '../../data/reminders/reminder_providers.dart';
 import '../../data/transcription/transcription_providers.dart';
 import '../../data/transcription/transcription_service.dart';
 import '../../domain/repository/entry_repository.dart';
+import '../../domain/model/tag.dart';
 import '../../domain/repository/preferences_repository.dart';
 import '../../domain/usecase/cleanup_transcript_use_case.dart';
 import 'recording_state.dart';
@@ -380,6 +382,27 @@ class MainRecordingController extends Notifier<RecordingControllerState> {
   }
 
   Future<void> _handleCleanup(TranscriptionSuccess result) async {
+    // Start auto-tag detection in parallel with cleanup. It must never block
+    // or affect the cleanup/save flow, so any failure here is swallowed.
+    var tags = const <Tag>[];
+    Future<backend.TagTextResult>? tagFuture;
+    try {
+      tags = await ref.read(tagRepositoryProvider).getAllTags();
+      if (tags.length >= 2 && result.transcript.trim().isNotEmpty) {
+        tagFuture = ref.read(tagTextCallbackProvider)(
+          text: result.transcript,
+          tags: tags.map((t) => t.name).toList(),
+        );
+      }
+    } catch (error, stackTrace) {
+      tagFuture = null;
+      _logWarning(
+        'Failed to start auto-tag detection.',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+
     final cleanupResult = await _cleanupTranscriptUseCase(
       rawTranscript: result.transcript,
       language: result.detectedLanguage,
@@ -405,6 +428,15 @@ class MainRecordingController extends Notifier<RecordingControllerState> {
             detectedLanguage: result.detectedLanguage,
           ),
         );
+        if (tagFuture != null) {
+          unawaited(
+            ref.read(autoTagUseCaseProvider)(
+              entryId: entryId,
+              tagResultFuture: tagFuture,
+              userTags: tags,
+            ),
+          );
+        }
         return;
       case CleanupTranscriptFailure():
         _emitError(

@@ -160,6 +160,12 @@ class _FakeTagRepository implements TagRepository {
   }
 
   @override
+  Future<List<Tag>> getTagsForEntry(int entryId) async {
+    final ids = _entryTags[entryId] ?? const {};
+    return _tags.where((t) => ids.contains(t.id)).toList();
+  }
+
+  @override
   Future<List<Tag>> getAllTags() async => _tags;
 
   @override

@@ -43,6 +43,10 @@ void main() {
       transcript: 'hello there diary friend',
       language: 'en-US',
     );
+    final tagResult = await client.tagText(
+      text: 'I had a productive day at the office',
+      tags: ['work', 'health', 'travel'],
+    );
 
     expect(registration, isA<RegistrationSuccess>());
     expect(
@@ -64,11 +68,22 @@ void main() {
       ),
     );
 
-    expect(requests, hasLength(3));
+    expect(
+      tagResult,
+      isA<TagTextSuccess>()
+          .having((v) => v.tags, 'tags', hasLength(2))
+          .having((v) => v.tags[0].tag, 'tag[0].tag', 'work')
+          .having((v) => v.tags[0].probability, 'tag[0].probability', 0.85)
+          .having((v) => v.tags[1].tag, 'tag[1].tag', 'health')
+          .having((v) => v.tags[1].probability, 'tag[1].probability', 0.3),
+    );
+
+    expect(requests, hasLength(4));
     expect(requests[0].path, '/api/register');
     expect(requests[1].path, '/api/transcribe');
     expect(requests[1].queryParameters, <String, String>{'language': 'nl-BE'});
     expect(requests[2].path, '/api/cleanup');
+    expect(requests[3].path, '/api/tag');
 
     for (final request in requests) {
       expect(request.deviceId, _FakePreferencesRepository.deviceId);
@@ -83,6 +98,12 @@ void main() {
 
     expect(requests[2].jsonBody?['transcript'], 'hello there diary friend');
     expect(requests[2].jsonBody?['language'], 'en-US');
+
+    expect(
+      requests[3].jsonBody?['text'],
+      'I had a productive day at the office',
+    );
+    expect(requests[3].jsonBody?['tags'], ['work', 'health', 'travel']);
 
     await server.close(force: true);
     await serverFuture;
@@ -134,6 +155,13 @@ Future<void> _serveBackend(
           ..statusCode = 200
           ..write(
             '{"cleanedText":"Cleaned transcript.","wasTruncated":false,"quota":{"limit":5,"count":3,"remaining":2,"resetAt":"2026-06-10T00:00:00Z"}}',
+          );
+        break;
+      case '/api/tag':
+        request.response
+          ..statusCode = 200
+          ..write(
+            '{"tags":[{"tag":"work","probability":0.85},{"tag":"health","probability":0.3}]}',
           );
         break;
       default:
