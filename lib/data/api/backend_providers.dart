@@ -4,11 +4,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app.dart';
+import '../../domain/usecase/auto_tag_use_case.dart';
 import '../../domain/usecase/cleanup_transcript_use_case.dart';
 import '../../domain/usecase/register_device_on_launch_use_case.dart';
 import '../entries/entry_providers.dart';
+import '../entries/tag_providers.dart';
 import '../preferences/preferences_providers.dart';
 import 'backend_client.dart';
+import 'backend_results.dart';
 import 'generated/backend_api_generated.dart';
 import 'record_quota_state.dart';
 
@@ -115,5 +118,37 @@ final cleanupTranscriptUseCaseProvider = Provider<CleanupTranscriptUseCase>((
       ref.read(sessionRecordQuotaStateProvider.notifier).setQuota(quota);
     },
     logWarning: ref.watch(cleanupWarningLoggerProvider),
+  );
+});
+
+typedef TagTextCallback =
+    Future<TagTextResult> Function({
+      required String text,
+      required List<String> tags,
+    });
+
+final tagTextCallbackProvider = Provider<TagTextCallback>((ref) {
+  return ({required String text, required List<String> tags}) {
+    return ref
+        .watch(wraitBackendClientProvider)
+        .tagText(text: text, tags: tags);
+  };
+});
+
+final autoTagWarningLoggerProvider = Provider<AutoTagWarningLogger>((ref) {
+  return (message, {error, stackTrace}) {
+    developer.log(
+      message,
+      name: 'AutoTagUseCase',
+      error: error,
+      stackTrace: stackTrace,
+    );
+  };
+});
+
+final autoTagUseCaseProvider = Provider<AutoTagUseCase>((ref) {
+  return AutoTagUseCase(
+    tagRepository: ref.watch(tagRepositoryProvider),
+    logWarning: ref.watch(autoTagWarningLoggerProvider),
   );
 });

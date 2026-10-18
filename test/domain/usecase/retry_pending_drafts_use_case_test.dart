@@ -6,7 +6,10 @@ import 'package:wrait/data/api/backend_results.dart' as backend;
 import 'package:wrait/data/api/record_quota_state.dart';
 import 'package:wrait/data/transcription/transcription_service.dart';
 import 'package:wrait/domain/model/entry.dart';
+import 'package:wrait/domain/model/tag.dart';
 import 'package:wrait/domain/repository/entry_repository.dart';
+import 'package:wrait/domain/repository/tag_repository.dart';
+import 'package:wrait/domain/usecase/auto_tag_use_case.dart';
 import 'package:wrait/domain/usecase/cleanup_transcript_use_case.dart';
 import 'package:wrait/domain/usecase/retry_pending_drafts_use_case.dart';
 
@@ -24,6 +27,9 @@ void main() {
   })
   cleanupCallback;
   late CleanupTranscriptUseCase cleanupUseCase;
+  late _FakeTagRepository tagRepository;
+  late List<List<String>> tagTextCalls;
+  late RetryTagTextCallback tagTextCallback;
   late RetryPendingDraftsUseCase useCase;
 
   Future<String?> validateAudioPath(String path) async {
@@ -87,6 +93,13 @@ void main() {
         logErrors.add(error);
       },
     );
+    tagRepository = _FakeTagRepository();
+    tagTextCalls = <List<String>>[];
+    tagTextCallback = ({required text, required tags}) async {
+      return const backend.TagTextFailure(
+        reason: backend.BackendFailureReason.apiError,
+      );
+    };
     useCase = RetryPendingDraftsUseCase(
       entryRepository: entryRepository,
       transcriptionService: transcriptionService,
@@ -98,6 +111,15 @@ void main() {
         logMessages.add(message);
         logErrors.add(error);
       },
+      autoTagUseCase: AutoTagUseCase(
+        tagRepository: tagRepository,
+        logWarning: (message, {error, stackTrace}) {},
+      ),
+      tagText: ({required text, required tags}) {
+        tagTextCalls.add(tags);
+        return tagTextCallback(text: text, tags: tags);
+      },
+      tagRepository: tagRepository,
     );
   });
 
@@ -438,6 +460,169 @@ void main() {
       expect(transcriptionService.transcribedAudioPaths, [audioFile.path]);
     },
   );
+
+  group('auto-tag during retry', () {
+    const workTag = Tag(id: 1, name: 'work');
+    const healthTag = Tag(id: 2, name: 'health');
+
+    test('text draft retry: cleanup succeeds -> auto-tag runs', () async {
+      tagRepository.allTags = [workTag, healthTag];
+      final draftId = entryRepository.seedEntry(
+        Entry(
+          rawTranscript: 'meeting with my team',
+          type: EntryType.draft,
+          language: 'en-US',
+          createdAt: currentTimeMs,
+          wordCount: 4,
+        ),
+      );
+      tagTextCallback = ({required text, required tags}) async {
+        expect(text, 'meeting with my team');
+        return const backend.TagTextSuccess(
+          tags: [
+            backend.TagProbabilityResult(tag: 'work', probability: 0.9),
+            backend.TagProbabilityResult(tag: 'health', probability: 0.1),
+          ],
+        );
+      };
+
+      await useCase();
+
+      expect(tagTextCalls, [
+        ['work', 'health'],
+      ]);
+      expect(tagRepository.setTagsCalls, hasLength(1));
+      expect(tagRepository.setTagsCalls.single.entryId, draftId);
+      expect(tagRepository.setTagsCalls.single.tagIds, [workTag.id]);
+    });
+
+    test('audio draft retry: cleanup succeeds -> auto-tag runs', () async {
+      tagRepository.allTags = [workTag, healthTag];
+      final audioFile = await _writeAudioFile(
+        tempDirectory,
+        'audio-auto-tag.m4a',
+      );
+      final draftId = entryRepository.seedEntry(
+        Entry(
+          rawTranscript: '',
+          type: EntryType.draft,
+          language: 'en-US',
+          createdAt: currentTimeMs,
+          wordCount: 0,
+          audioPath: audioFile.path,
+        ),
+      );
+      transcriptionService.nextDraftResult = const TranscriptionSuccess(
+        transcript: 'went for a long run',
+        detectedLanguage: 'en-US',
+      );
+      tagTextCallback = ({required text, required tags}) async {
+        expect(text, 'went for a long run');
+        return const backend.TagTextSuccess(
+          tags: [
+            backend.TagProbabilityResult(tag: 'health', probability: 0.8),
+          ],
+        );
+      };
+
+      await useCase();
+
+      expect(tagTextCalls, [
+        ['work', 'health'],
+      ]);
+      expect(tagRepository.setTagsCalls, hasLength(1));
+      expect(tagRepository.setTagsCalls.single.entryId, draftId);
+      expect(tagRepository.setTagsCalls.single.tagIds, [healthTag.id]);
+    });
+
+    test('retry cleanup fails -> no auto-tag assignment', () async {
+      tagRepository.allTags = [workTag, healthTag];
+      entryRepository.seedEntry(
+        Entry(
+          rawTranscript: 'meeting with my team',
+          type: EntryType.draft,
+          language: 'en-US',
+          createdAt: currentTimeMs,
+          wordCount: 4,
+        ),
+      );
+      cleanupCallback = ({required transcript, required language}) async {
+        return const backend.CleanupFailure(
+          reason: backend.BackendFailureReason.backendUnavailable,
+        );
+      };
+      tagTextCallback = ({required text, required tags}) async {
+        return const backend.TagTextSuccess(
+          tags: [backend.TagProbabilityResult(tag: 'work', probability: 0.9)],
+        );
+      };
+
+      await useCase();
+
+      expect(tagRepository.setTagsCalls, isEmpty);
+    });
+
+    test('fewer than 2 tags during retry -> tag call is not made', () async {
+      tagRepository.allTags = [workTag];
+      entryRepository.seedEntry(
+        Entry(
+          rawTranscript: 'meeting with my team',
+          type: EntryType.draft,
+          language: 'en-US',
+          createdAt: currentTimeMs,
+          wordCount: 4,
+        ),
+      );
+
+      await useCase();
+
+      expect(tagTextCalls, isEmpty);
+      expect(tagRepository.setTagsCalls, isEmpty);
+    });
+  });
+}
+
+class _SetTagsCall {
+  const _SetTagsCall(this.entryId, this.tagIds);
+
+  final int entryId;
+  final List<int> tagIds;
+}
+
+class _FakeTagRepository implements TagRepository {
+  List<Tag> allTags = <Tag>[];
+  List<Tag> entryTags = <Tag>[];
+  final List<_SetTagsCall> setTagsCalls = <_SetTagsCall>[];
+
+  @override
+  Future<List<Tag>> getAllTags() async => allTags;
+
+  @override
+  Stream<List<Tag>> watchTagsForEntry(int entryId) =>
+      Stream<List<Tag>>.value(entryTags);
+
+  @override
+  Future<List<Tag>> getTagsForEntry(int entryId) async => entryTags;
+
+  @override
+  Future<void> setTagsForEntry(int entryId, List<int> tagIds) async {
+    setTagsCalls.add(_SetTagsCall(entryId, List<int>.of(tagIds)));
+  }
+
+  @override
+  Stream<List<Tag>> watchAllTags() => throw UnimplementedError();
+
+  @override
+  Future<Map<int, int>> getTagCounts() => throw UnimplementedError();
+
+  @override
+  Future<Tag> createTag(String name) => throw UnimplementedError();
+
+  @override
+  Future<Tag?> findTagByName(String name) => throw UnimplementedError();
+
+  @override
+  Future<void> deleteTag(int id) => throw UnimplementedError();
 }
 
 Future<File> _writeAudioFile(Directory tempDirectory, String name) async {

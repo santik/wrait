@@ -11,6 +11,8 @@ import 'record_quota_state.dart';
 
 typedef DelayFunction = Future<void> Function(Duration duration);
 
+const tagTextMaxLength = 10000;
+
 class WraitBackendClient {
   WraitBackendClient({
     required this.generatedClient,
@@ -158,6 +160,47 @@ class WraitBackendClient {
       return CleanupFailure(reason: _mapDioFailureReason(error));
     } on FormatException {
       return const CleanupFailure(reason: BackendFailureReason.apiError);
+    }
+  }
+
+  Future<TagTextResult> tagText({
+    required String text,
+    required List<String> tags,
+  }) async {
+    final trimmed = text.trim();
+    if (trimmed.isEmpty) {
+      return const TagTextFailure(reason: BackendFailureReason.apiError);
+    }
+    final boundedText = trimmed.length > tagTextMaxLength
+        ? trimmed.substring(0, tagTextMaxLength)
+        : trimmed;
+
+    try {
+      final deviceId = await preferencesRepository.getDeviceId();
+      final response = await generatedClient.tagText(
+        xDeviceId: deviceId,
+        tagRequest: TagRequest(text: boundedText, tags: tags),
+      );
+
+      if (response is GeneratedApiSuccess<TagResponse>) {
+        return TagTextSuccess(
+          tags: response.data.tags
+              .map(
+                (item) => TagProbabilityResult(
+                  tag: item.tag,
+                  probability: item.probability,
+                ),
+              )
+              .toList(growable: false),
+        );
+      }
+
+      final failure = response as GeneratedApiFailure<TagResponse>;
+      return TagTextFailure(reason: _mapHttpFailureReason(failure.statusCode));
+    } on DioException catch (error) {
+      return TagTextFailure(reason: _mapDioFailureReason(error));
+    } on FormatException {
+      return const TagTextFailure(reason: BackendFailureReason.apiError);
     }
   }
 

@@ -7,6 +7,7 @@ import '../../domain/usecase/app_launch_work_use_case.dart';
 import '../../domain/usecase/retry_pending_drafts_use_case.dart';
 import '../api/backend_providers.dart';
 import '../entries/entry_providers.dart';
+import '../entries/tag_providers.dart';
 import '../transcription/transcription_providers.dart';
 
 final appLaunchWorkWarningLoggerProvider = Provider<AppLaunchWorkWarningLogger>(
@@ -96,6 +97,13 @@ final retryPendingDraftsUseCaseProvider = Provider<RetryPendingDraftsUseCase>((
       ref.read(sessionRecordQuotaStateProvider.notifier).setQuota(quota);
     },
     logWarning: ref.watch(retryPendingDraftsWarningLoggerProvider),
+    autoTagUseCase: ref.watch(autoTagUseCaseProvider),
+    tagText: ({required String text, required List<String> tags}) {
+      return ref
+          .read(wraitBackendClientProvider)
+          .tagText(text: text, tags: tags);
+    },
+    tagRepository: ref.watch(tagRepositoryProvider),
   );
 });
 

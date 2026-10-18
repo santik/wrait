@@ -611,6 +611,234 @@ void main() {
         expect(headers.value('X-Proxy-Secret'), 'proxy-secret');
       },
     );
+
+    group('tagText', () {
+      test('200 success maps tag probabilities', () async {
+        generatedClient.tagTextResponses.add(
+          const GeneratedApiSuccess<TagResponse>(
+            statusCode: 200,
+            data: TagResponse(
+              tags: <TagProbabilityItem>[
+                TagProbabilityItem(tag: 'work', probability: 0.9),
+                TagProbabilityItem(tag: 'family', probability: 0.25),
+              ],
+            ),
+          ),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'Had a long day at the office',
+          tags: <String>['work', 'family'],
+        );
+
+        expect(result, isA<TagTextSuccess>());
+        final tags = (result as TagTextSuccess).tags;
+        expect(tags, hasLength(2));
+        expect(tags[0].tag, 'work');
+        expect(tags[0].probability, 0.9);
+        expect(tags[1].tag, 'family');
+        expect(tags[1].probability, 0.25);
+        expect(generatedClient.tagTextCallCount, 1);
+        expect(generatedClient.lastTagRequest?.tags, <String>[
+          'work',
+          'family',
+        ]);
+      });
+
+      test('empty text after trim returns api error without a call', () async {
+        final result = await backendClient.tagText(
+          text: '   \n\t ',
+          tags: <String>['work'],
+        );
+
+        expect(
+          result,
+          isA<TagTextFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.apiError,
+          ),
+        );
+        expect(generatedClient.tagTextCallCount, 0);
+      });
+
+      test('text longer than the max length is truncated', () async {
+        generatedClient.tagTextResponses.add(
+          const GeneratedApiSuccess<TagResponse>(
+            statusCode: 200,
+            data: TagResponse(tags: <TagProbabilityItem>[]),
+          ),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'a' * (tagTextMaxLength + 500),
+          tags: <String>['work'],
+        );
+
+        expect(result, isA<TagTextSuccess>());
+        expect(generatedClient.lastTagRequest?.text.length, tagTextMaxLength);
+        expect(tagTextMaxLength, 10000);
+      });
+
+      test('400 maps to api error', () async {
+        generatedClient.tagTextResponses.add(
+          const GeneratedApiFailure<TagResponse>(
+            statusCode: 400,
+            data: <String, dynamic>{'error': 'bad request'},
+          ),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'hello diary',
+          tags: <String>['work'],
+        );
+
+        expect(
+          result,
+          isA<TagTextFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.apiError,
+          ),
+        );
+      });
+
+      test('401 maps to proxy auth failure', () async {
+        generatedClient.tagTextResponses.add(
+          const GeneratedApiFailure<TagResponse>(
+            statusCode: 401,
+            data: <String, dynamic>{'error': 'unauthorized'},
+          ),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'hello diary',
+          tags: <String>['work'],
+        );
+
+        expect(
+          result,
+          isA<TagTextFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.proxyAuthFailed,
+          ),
+        );
+      });
+
+      test('502 maps to backend unavailable', () async {
+        generatedClient.tagTextResponses.add(
+          const GeneratedApiFailure<TagResponse>(
+            statusCode: 502,
+            data: <String, dynamic>{'error': 'upstream exploded'},
+          ),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'hello diary',
+          tags: <String>['work'],
+        );
+
+        expect(
+          result,
+          isA<TagTextFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.backendUnavailable,
+          ),
+        );
+      });
+
+      test('504 maps to backend unavailable', () async {
+        generatedClient.tagTextResponses.add(
+          const GeneratedApiFailure<TagResponse>(
+            statusCode: 504,
+            data: <String, dynamic>{'error': 'upstream timeout'},
+          ),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'hello diary',
+          tags: <String>['work'],
+        );
+
+        expect(
+          result,
+          isA<TagTextFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.backendUnavailable,
+          ),
+        );
+      });
+
+      test('DioException timeout maps to timeout', () async {
+        generatedClient.tagTextResponses.add(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/tag'),
+            type: DioExceptionType.receiveTimeout,
+          ),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'hello diary',
+          tags: <String>['work'],
+        );
+
+        expect(
+          result,
+          isA<TagTextFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.timeout,
+          ),
+        );
+      });
+
+      test('DioException connection error maps to no internet', () async {
+        generatedClient.tagTextResponses.add(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/tag'),
+            type: DioExceptionType.connectionError,
+            error: const SocketException('offline'),
+          ),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'hello diary',
+          tags: <String>['work'],
+        );
+
+        expect(
+          result,
+          isA<TagTextFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.noInternet,
+          ),
+        );
+      });
+
+      test('FormatException maps to api error', () async {
+        generatedClient.tagTextResponses.add(
+          const FormatException('malformed tag response'),
+        );
+
+        final result = await backendClient.tagText(
+          text: 'hello diary',
+          tags: <String>['work'],
+        );
+
+        expect(
+          result,
+          isA<TagTextFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.apiError,
+          ),
+        );
+      });
+    });
   });
 }
 
@@ -618,9 +846,12 @@ class _FakeGeneratedBackendApiClient implements GeneratedBackendApiClient {
   final List<Object> registerResponses = <Object>[];
   final List<Object> transcribeResponses = <Object>[];
   final List<Object> cleanupResponses = <Object>[];
+  final List<Object> tagTextResponses = <Object>[];
 
   int registerCallCount = 0;
   int transcribeCallCount = 0;
+  int tagTextCallCount = 0;
+  TagRequest? lastTagRequest;
   String? lastTranscriptionLanguage;
 
   @override
@@ -653,13 +884,23 @@ class _FakeGeneratedBackendApiClient implements GeneratedBackendApiClient {
     );
   }
 
+  @override
+  Future<GeneratedApiResponse<TagResponse>> tagText({
+    required String xDeviceId,
+    required TagRequest tagRequest,
+  }) async {
+    tagTextCallCount += 1;
+    lastTagRequest = tagRequest;
+    return _takeNext<GeneratedApiResponse<TagResponse>>(tagTextResponses);
+  }
+
   Future<T> _takeNext<T>(List<Object> values) async {
     if (values.isEmpty) {
       throw StateError('No queued response left for fake generated client.');
     }
 
     final next = values.removeAt(0);
-    if (next is DioException) {
+    if (next is Exception) {
       throw next;
     }
 

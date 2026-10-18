@@ -39,6 +39,11 @@ abstract interface class GeneratedBackendApiClient {
     required String xDeviceId,
     required CleanupRequest cleanupRequest,
   });
+
+  Future<GeneratedApiResponse<TagResponse>> tagText({
+    required String xDeviceId,
+    required TagRequest tagRequest,
+  });
 }
 
 class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
@@ -142,6 +147,38 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
     }
 
     return GeneratedApiFailure<CleanupResponse>(
+      statusCode: response.statusCode ?? 0,
+      data: normalizedData,
+    );
+  }
+
+  @override
+  Future<GeneratedApiResponse<TagResponse>> tagText({
+    required String xDeviceId,
+    required TagRequest tagRequest,
+  }) async {
+    final response = await _dio.request<dynamic>(
+      '/api/tag',
+      data: tagRequest.toJson(),
+      options: Options(
+        method: 'POST',
+        responseType: ResponseType.json,
+        validateStatus: (_) => true,
+        headers: <String, dynamic>{'X-Device-Id': xDeviceId},
+      ),
+    );
+
+    final normalizedData = _normalizeResponseData(response.data);
+    if (response.statusCode == 200) {
+      return GeneratedApiSuccess<TagResponse>(
+        statusCode: response.statusCode ?? 200,
+        data: TagResponse.fromJson(
+          _asJsonMap(normalizedData, 'tagText success body'),
+        ),
+      );
+    }
+
+    return GeneratedApiFailure<TagResponse>(
       statusCode: response.statusCode ?? 0,
       data: normalizedData,
     );
@@ -272,6 +309,48 @@ class CleanupResponse {
       quota: parsed.quota == null
           ? null
           : RecordQuota.fromOpenApi(parsed.quota!),
+    );
+  }
+}
+
+class TagRequest {
+  const TagRequest({required this.text, required this.tags});
+
+  final String text;
+  final List<String> tags;
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{'text': text, 'tags': tags};
+  }
+}
+
+class TagProbabilityItem {
+  const TagProbabilityItem({required this.tag, required this.probability});
+
+  final String tag;
+  final double probability;
+}
+
+class TagResponse {
+  const TagResponse({required this.tags});
+
+  final List<TagProbabilityItem> tags;
+
+  factory TagResponse.fromJson(Map<String, dynamic> json) {
+    final parsed = _deserializeGenerated<openapi.TagResponse>(
+      openapi.TagResponse.serializer,
+      json,
+      'TagResponse',
+    );
+    return TagResponse(
+      tags: parsed.tags
+          .map(
+            (item) => TagProbabilityItem(
+              tag: item.tag,
+              probability: item.probability.toDouble(),
+            ),
+          )
+          .toList(growable: false),
     );
   }
 }

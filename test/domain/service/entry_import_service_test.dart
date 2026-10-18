@@ -765,6 +765,9 @@ class _FakeTagRepository implements TagRepository {
   @override
   Stream<List<Tag>> watchTagsForEntry(int entryId) =>
       const Stream<List<Tag>>.empty();
+
+  @override
+  Future<List<Tag>> getTagsForEntry(int entryId) async => const <Tag>[];
 }
 
 String _csvWithTags() {

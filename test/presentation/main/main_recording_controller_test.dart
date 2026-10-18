@@ -9,12 +9,16 @@ import 'package:wrait/data/api/record_quota_state.dart';
 import 'package:wrait/data/audio/audio_recording_providers.dart';
 import 'package:wrait/data/audio/microphone_permission_service.dart';
 import 'package:wrait/data/entries/entry_providers.dart';
+import 'package:wrait/data/entries/tag_providers.dart';
 import 'package:wrait/data/preferences/preferences_providers.dart';
 import 'package:wrait/data/transcription/transcription_providers.dart';
 import 'package:wrait/data/transcription/transcription_service.dart';
 import 'package:wrait/domain/model/entry.dart';
+import 'package:wrait/domain/model/tag.dart';
 import 'package:wrait/domain/repository/entry_repository.dart';
 import 'package:wrait/domain/repository/preferences_repository.dart';
+import 'package:wrait/domain/repository/tag_repository.dart';
+import 'package:wrait/domain/usecase/auto_tag_use_case.dart';
 import 'package:wrait/domain/usecase/cleanup_transcript_use_case.dart';
 import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
@@ -27,6 +31,9 @@ void main() {
   late _FakeEntryRepository entryRepository;
   late _FakePreferencesRepository preferencesRepository;
   late _FakeMicrophonePermissionService microphonePermissionService;
+  late _FakeTagRepository tagRepository;
+  late _FakeTagTextCallback tagTextCallback;
+  late _FakeAutoTagUseCase autoTagUseCase;
   late FakeMonotonicClock monotonicClock;
   late List<String> logMessages;
   late List<Object?> logErrors;
@@ -44,6 +51,9 @@ void main() {
     entryRepository = _FakeEntryRepository();
     preferencesRepository = _FakePreferencesRepository();
     microphonePermissionService = _FakeMicrophonePermissionService();
+    tagRepository = _FakeTagRepository();
+    tagTextCallback = _FakeTagTextCallback();
+    autoTagUseCase = _FakeAutoTagUseCase(tagRepository);
     monotonicClock = FakeMonotonicClock(0);
     logMessages = <String>[];
     logErrors = <Object?>[];
@@ -57,6 +67,9 @@ void main() {
         microphonePermissionServiceProvider.overrideWithValue(
           microphonePermissionService,
         ),
+        tagRepositoryProvider.overrideWithValue(tagRepository),
+        tagTextCallbackProvider.overrideWithValue(tagTextCallback.call),
+        autoTagUseCaseProvider.overrideWithValue(autoTagUseCase),
         monotonicClockProvider.overrideWithValue(monotonicClock),
         recordingFeedbackDelaysProvider.overrideWithValue(feedbackDelays),
         recordingResumePermissionTimeoutProvider.overrideWithValue(
@@ -1167,6 +1180,138 @@ void main() {
       );
     },
   );
+
+  group('auto-tag detection', () {
+    const twoTags = <Tag>[
+      Tag(id: 1, name: 'work'),
+      Tag(id: 2, name: 'family'),
+    ];
+
+    test(
+      'cleanup success with auto-tag success invokes auto-tag use case and publishes Saved',
+      () async {
+        tagRepository.tags = twoTags;
+        tagTextCallback.nextResult = const backend.TagTextSuccess(
+          tags: [backend.TagProbabilityResult(tag: 'work', probability: 0.9)],
+        );
+
+        await driveSuccessfulSave(entryId: 77);
+
+        expect(tagTextCallback.calls, hasLength(1));
+        expect(tagTextCallback.calls.single.text, 'raw transcript');
+        expect(tagTextCallback.calls.single.tags, ['work', 'family']);
+        expect(autoTagUseCase.calls, hasLength(1));
+        expect(autoTagUseCase.calls.single.entryId, 77);
+        expect(autoTagUseCase.calls.single.userTags, twoTags);
+        final tagResult = await autoTagUseCase.calls.single.tagResultFuture;
+        expect(tagResult, isA<backend.TagTextSuccess>());
+        expect(
+          container.read(mainRecordingControllerProvider).recordingState,
+          RecordingSaved(entryId: 77, detectedLanguage: 'en-US'),
+        );
+      },
+    );
+
+    test(
+      'cleanup success with auto-tag failure still publishes Saved',
+      () async {
+        tagRepository.tags = twoTags;
+        tagTextCallback.nextResult = const backend.TagTextFailure(
+          reason: backend.BackendFailureReason.apiError,
+        );
+
+        await driveSuccessfulSave(entryId: 78);
+
+        expect(tagTextCallback.calls, hasLength(1));
+        expect(autoTagUseCase.calls, hasLength(1));
+        final tagResult = await autoTagUseCase.calls.single.tagResultFuture;
+        expect(tagResult, isA<backend.TagTextFailure>());
+        expect(
+          container.read(mainRecordingControllerProvider).recordingState,
+          RecordingSaved(entryId: 78, detectedLanguage: 'en-US'),
+        );
+      },
+    );
+
+    test('cleanup failure does not run auto-tag use case', () async {
+      tagRepository.tags = twoTags;
+      cleanupUseCase.nextResult = const CleanupTranscriptFailure(
+        entryId: 5,
+        reason: backend.BackendFailureReason.apiError,
+      );
+      transcriptionService.nextStopResult = const TranscriptionSuccess(
+        transcript: 'raw transcript',
+        detectedLanguage: 'en-US',
+      );
+
+      await container
+          .read(mainRecordingControllerProvider.notifier)
+          .onMainButtonTapped();
+      monotonicClock.advance(const Duration(seconds: 6));
+      await container
+          .read(mainRecordingControllerProvider.notifier)
+          .onMainButtonTapped();
+
+      expect(autoTagUseCase.calls, isEmpty);
+      expect(
+        container.read(mainRecordingControllerProvider).recordingState,
+        isA<RecordingErrorState>(),
+      );
+    });
+
+    test('fewer than two tags makes no tag API call', () async {
+      tagRepository.tags = const [Tag(id: 1, name: 'work')];
+
+      await driveSuccessfulSave(entryId: 79);
+
+      expect(tagTextCallback.calls, isEmpty);
+      expect(autoTagUseCase.calls, isEmpty);
+      expect(
+        container.read(mainRecordingControllerProvider).recordingState,
+        RecordingSaved(entryId: 79, detectedLanguage: 'en-US'),
+      );
+    });
+
+    test(
+      'whitespace-only transcript is rejected before cleanup and makes no tag API call',
+      () async {
+        tagRepository.tags = twoTags;
+        transcriptionService.nextStopResult = const TranscriptionSuccess(
+          transcript: '   ',
+          detectedLanguage: 'en-US',
+        );
+
+        await container
+            .read(mainRecordingControllerProvider.notifier)
+            .onMainButtonTapped();
+        monotonicClock.advance(const Duration(seconds: 6));
+        await container
+            .read(mainRecordingControllerProvider.notifier)
+            .onMainButtonTapped();
+
+        expect(cleanupUseCase.calls, isEmpty);
+        expect(tagTextCallback.calls, isEmpty);
+        expect(autoTagUseCase.calls, isEmpty);
+        expect(
+          container.read(mainRecordingControllerProvider).recordingState,
+          const RecordingErrorState(RecordingError.noMatch),
+        );
+      },
+    );
+
+    test('tag repository failure does not block the save flow', () async {
+      tagRepository.getAllTagsError = StateError('db unavailable');
+
+      await driveSuccessfulSave(entryId: 80);
+
+      expect(tagTextCallback.calls, isEmpty);
+      expect(autoTagUseCase.calls, isEmpty);
+      expect(
+        container.read(mainRecordingControllerProvider).recordingState,
+        RecordingSaved(entryId: 80, detectedLanguage: 'en-US'),
+      );
+    });
+  });
 }
 
 class _CleanupCall {
@@ -1431,4 +1576,100 @@ class _FakePreferencesRepository implements PreferencesRepository {
     }
     hasEverRecorded = value;
   }
+}
+
+class _TagTextCall {
+  const _TagTextCall({required this.text, required this.tags});
+
+  final String text;
+  final List<String> tags;
+}
+
+class _FakeTagTextCallback {
+  backend.TagTextResult nextResult = const backend.TagTextSuccess(tags: []);
+  final List<_TagTextCall> calls = <_TagTextCall>[];
+
+  Future<backend.TagTextResult> call({
+    required String text,
+    required List<String> tags,
+  }) async {
+    calls.add(_TagTextCall(text: text, tags: tags));
+    return nextResult;
+  }
+}
+
+class _AutoTagCall {
+  const _AutoTagCall({
+    required this.entryId,
+    required this.tagResultFuture,
+    required this.userTags,
+  });
+
+  final int entryId;
+  final Future<backend.TagTextResult> tagResultFuture;
+  final List<Tag> userTags;
+}
+
+class _FakeAutoTagUseCase extends AutoTagUseCase {
+  _FakeAutoTagUseCase(TagRepository tagRepository)
+    : super(
+        tagRepository: tagRepository,
+        logWarning: (_, {error, stackTrace}) {},
+      );
+
+  final List<_AutoTagCall> calls = <_AutoTagCall>[];
+
+  @override
+  Future<void> call({
+    required int entryId,
+    required Future<backend.TagTextResult> tagResultFuture,
+    required List<Tag> userTags,
+  }) async {
+    calls.add(
+      _AutoTagCall(
+        entryId: entryId,
+        tagResultFuture: tagResultFuture,
+        userTags: userTags,
+      ),
+    );
+  }
+}
+
+class _FakeTagRepository implements TagRepository {
+  List<Tag> tags = const <Tag>[];
+  Object? getAllTagsError;
+
+  @override
+  Future<List<Tag>> getAllTags() async {
+    if (getAllTagsError case final error?) {
+      throw error;
+    }
+    return tags;
+  }
+
+  @override
+  Stream<List<Tag>> watchAllTags() => throw UnimplementedError();
+
+  @override
+  Stream<List<Tag>> watchTagsForEntry(int entryId) =>
+      throw UnimplementedError();
+
+  @override
+  Future<List<Tag>> getTagsForEntry(int entryId) => throw UnimplementedError();
+
+  @override
+  Future<Map<int, int>> getTagCounts() => throw UnimplementedError();
+
+  @override
+  Future<Tag> createTag(String name) => throw UnimplementedError();
+
+  @override
+  Future<Tag?> findTagByName(String name) => throw UnimplementedError();
+
+  @override
+  Future<void> deleteTag(int id) => throw UnimplementedError();
+
+  @override
+  Future<void> setTagsForEntry(int entryId, List<int> tagIds) =>
+      throw UnimplementedError();
 }

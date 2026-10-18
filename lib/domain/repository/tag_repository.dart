@@ -6,6 +6,7 @@ abstract interface class TagRepository {
 
   Stream<List<Tag>> watchAllTags();
   Stream<List<Tag>> watchTagsForEntry(int entryId);
+  Future<List<Tag>> getTagsForEntry(int entryId);
   Future<List<Tag>> getAllTags();
   Future<Map<int, int>> getTagCounts();
   Future<Tag> createTag(String name);

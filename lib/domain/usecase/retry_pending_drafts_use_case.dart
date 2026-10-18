@@ -1,12 +1,21 @@
 import '../../data/transcription/transcription_service.dart';
+import '../../data/api/backend_results.dart' show TagTextResult;
 import '../../data/api/record_quota_state.dart';
 import '../model/entry.dart';
+import '../model/tag.dart';
 import '../repository/entry_repository.dart';
+import '../repository/tag_repository.dart';
+import 'auto_tag_use_case.dart';
 import 'cleanup_transcript_use_case.dart';
 
 typedef ValidateDraftAudioPathCallback = Future<String?> Function(String path);
 typedef DeleteRetainedAudioCallback = Future<void> Function(String path);
 typedef SetRetryQuotaCallback = void Function(RecordQuotaState quota);
+typedef RetryTagTextCallback =
+    Future<TagTextResult> Function({
+      required String text,
+      required List<String> tags,
+    });
 typedef RetryPendingDraftsWarningLogger = void Function(
   String message, {
   Object? error,
@@ -24,6 +33,9 @@ class RetryPendingDraftsUseCase {
     required this.deleteRetainedAudio,
     required this.setRecordQuota,
     required this.logWarning,
+    required this.autoTagUseCase,
+    required this.tagText,
+    required this.tagRepository,
   });
 
   final EntryRepository entryRepository;
@@ -33,6 +45,9 @@ class RetryPendingDraftsUseCase {
   final DeleteRetainedAudioCallback deleteRetainedAudio;
   final SetRetryQuotaCallback setRecordQuota;
   final RetryPendingDraftsWarningLogger logWarning;
+  final AutoTagUseCase autoTagUseCase;
+  final RetryTagTextCallback tagText;
+  final TagRepository tagRepository;
 
   Future<void>? _inFlight;
 
@@ -161,6 +176,12 @@ class RetryPendingDraftsUseCase {
     required String audioPath,
     required TranscriptionSuccess transcriptionResult,
   }) async {
+    final tags = await tagRepository.getAllTags();
+    final tagFuture = _startTagFutureIfEligible(
+      transcriptionResult.transcript,
+      tags,
+    );
+
     final cleanupResult = await cleanupTranscriptUseCase(
       entryId: draftId,
       rawTranscript: transcriptionResult.transcript,
@@ -174,6 +195,13 @@ class RetryPendingDraftsUseCase {
           audioPath,
           logContext: 'successful draft finalization',
         );
+        if (tagFuture != null) {
+          await autoTagUseCase(
+            entryId: draftId,
+            tagResultFuture: tagFuture,
+            userTags: tags,
+          );
+        }
         return;
       case CleanupTranscriptFailure():
         final refreshedEntry = await _safeGetEntryById(draftId);
@@ -194,6 +222,9 @@ class RetryPendingDraftsUseCase {
   }
 
   Future<void> _retryTextDraft(Entry draft) async {
+    final tags = await tagRepository.getAllTags();
+    final tagFuture = _startTagFutureIfEligible(draft.rawTranscript, tags);
+
     final cleanupResult = await cleanupTranscriptUseCase(
       entryId: draft.id,
       rawTranscript: draft.rawTranscript,
@@ -206,6 +237,26 @@ class RetryPendingDraftsUseCase {
         '${reason.name}.',
       );
     }
+
+    if (cleanupResult case CleanupTranscriptSuccess(
+      entryId: final entryId?,
+    ) when entryId > 0 && tagFuture != null) {
+      await autoTagUseCase(
+        entryId: entryId,
+        tagResultFuture: tagFuture,
+        userTags: tags,
+      );
+    }
+  }
+
+  Future<TagTextResult>? _startTagFutureIfEligible(
+    String rawTranscript,
+    List<Tag> tags,
+  ) {
+    if (tags.length < 2) return null;
+    final trimmed = rawTranscript.trim();
+    if (trimmed.isEmpty) return null;
+    return tagText(text: trimmed, tags: tags.map((t) => t.name).toList());
   }
 
   Future<void> _deleteMalformedAudioDraft(int draftId) async {
