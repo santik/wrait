@@ -36,6 +36,7 @@ class RetryPendingDraftsUseCase {
     required this.autoTagUseCase,
     required this.tagText,
     required this.tagRepository,
+    required this.autoTagEnabled,
   });
 
   final EntryRepository entryRepository;
@@ -48,6 +49,7 @@ class RetryPendingDraftsUseCase {
   final AutoTagUseCase autoTagUseCase;
   final RetryTagTextCallback tagText;
   final TagRepository tagRepository;
+  final bool autoTagEnabled;
 
   Future<void>? _inFlight;
 
@@ -176,11 +178,15 @@ class RetryPendingDraftsUseCase {
     required String audioPath,
     required TranscriptionSuccess transcriptionResult,
   }) async {
-    final tags = await tagRepository.getAllTags();
-    final tagFuture = _startTagFutureIfEligible(
-      transcriptionResult.transcript,
-      tags,
-    );
+    var tags = const <Tag>[];
+    Future<TagTextResult>? tagFuture;
+    if (autoTagEnabled) {
+      tags = await tagRepository.getAllTags();
+      tagFuture = _startTagFutureIfEligible(
+        transcriptionResult.transcript,
+        tags,
+      );
+    }
 
     final cleanupResult = await cleanupTranscriptUseCase(
       entryId: draftId,
@@ -222,8 +228,12 @@ class RetryPendingDraftsUseCase {
   }
 
   Future<void> _retryTextDraft(Entry draft) async {
-    final tags = await tagRepository.getAllTags();
-    final tagFuture = _startTagFutureIfEligible(draft.rawTranscript, tags);
+    var tags = const <Tag>[];
+    Future<TagTextResult>? tagFuture;
+    if (autoTagEnabled) {
+      tags = await tagRepository.getAllTags();
+      tagFuture = _startTagFutureIfEligible(draft.rawTranscript, tags);
+    }
 
     final cleanupResult = await cleanupTranscriptUseCase(
       entryId: draft.id,

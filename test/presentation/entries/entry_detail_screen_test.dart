@@ -484,7 +484,7 @@ void main() {
         tester,
         entryRepository: entryRepository,
         shareService: shareService,
-        debugDeviceMode: true,
+        isDebugDevice: true,
       );
 
       expect(find.byKey(rawTranscriptKey), findsOneWidget);
@@ -526,7 +526,7 @@ void main() {
         tester,
         entryRepository: entryRepository,
         shareService: shareService,
-        debugDeviceMode: true,
+        isDebugDevice: true,
       );
 
       expect(find.byKey(rawTranscriptKey), findsNothing);
@@ -546,7 +546,7 @@ void main() {
         tester,
         entryRepository: entryRepository,
         shareService: shareService,
-        debugDeviceMode: true,
+        isDebugDevice: true,
       );
 
       expect(find.byKey(rawTranscriptKey), findsNothing);
@@ -566,7 +566,7 @@ void main() {
         tester,
         entryRepository: entryRepository,
         shareService: shareService,
-        debugDeviceMode: true,
+        isDebugDevice: true,
       );
 
       expect(find.byKey(rawTranscriptKey), findsNothing);
@@ -581,7 +581,7 @@ Future<void> _pumpEntryDetailApp(
   String initialLocation = '/entry/1',
   Duration autoSaveDelay = const Duration(milliseconds: 1),
   bool settle = true,
-  bool debugDeviceMode = false,
+  bool isDebugDevice = false,
 }) async {
   final sharedPreferences = await SharedPreferences.getInstance();
 
@@ -599,7 +599,7 @@ Future<void> _pumpEntryDetailApp(
           buildAppRouter(initialLocation: initialLocation),
         ),
         appLockEnabledProvider.overrideWithValue(false),
-        debugDeviceModeProvider.overrideWith((ref) async => debugDeviceMode),
+        isDebugDeviceProvider.overrideWithValue(isDebugDevice),
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         preferencesRepositoryProvider.overrideWithValue(
           const _TestPreferencesRepository(),

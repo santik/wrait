@@ -386,21 +386,24 @@ class MainRecordingController extends Notifier<RecordingControllerState> {
     // or affect the cleanup/save flow, so any failure here is swallowed.
     var tags = const <Tag>[];
     Future<backend.TagTextResult>? tagFuture;
-    try {
-      tags = await ref.read(tagRepositoryProvider).getAllTags();
-      if (tags.length >= 2 && result.transcript.trim().isNotEmpty) {
-        tagFuture = ref.read(tagTextCallbackProvider)(
-          text: result.transcript,
-          tags: tags.map((t) => t.name).toList(),
+    final isDebugDevice = ref.read(isDebugDeviceProvider);
+    if (isDebugDevice) {
+      try {
+        tags = await ref.read(tagRepositoryProvider).getAllTags();
+        if (tags.length >= 2 && result.transcript.trim().isNotEmpty) {
+          tagFuture = ref.read(tagTextCallbackProvider)(
+            text: result.transcript,
+            tags: tags.map((t) => t.name).toList(),
+          );
+        }
+      } catch (error, stackTrace) {
+        tagFuture = null;
+        _logWarning(
+          'Failed to start auto-tag detection.',
+          error: error,
+          stackTrace: stackTrace,
         );
       }
-    } catch (error, stackTrace) {
-      tagFuture = null;
-      _logWarning(
-        'Failed to start auto-tag detection.',
-        error: error,
-        stackTrace: stackTrace,
-      );
     }
 
     final cleanupResult = await _cleanupTranscriptUseCase(

@@ -152,3 +152,4 @@ final autoTagUseCaseProvider = Provider<AutoTagUseCase>((ref) {
     logWarning: ref.watch(autoTagWarningLoggerProvider),
   );
 });
+

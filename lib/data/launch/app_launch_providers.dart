@@ -8,6 +8,7 @@ import '../../domain/usecase/retry_pending_drafts_use_case.dart';
 import '../api/backend_providers.dart';
 import '../entries/entry_providers.dart';
 import '../entries/tag_providers.dart';
+import '../preferences/preferences_providers.dart';
 import '../transcription/transcription_providers.dart';
 
 final appLaunchWorkWarningLoggerProvider = Provider<AppLaunchWorkWarningLogger>(
@@ -104,6 +105,7 @@ final retryPendingDraftsUseCaseProvider = Provider<RetryPendingDraftsUseCase>((
           .tagText(text: text, tags: tags);
     },
     tagRepository: ref.watch(tagRepositoryProvider),
+    autoTagEnabled: ref.watch(isDebugDeviceProvider),
   );
 });
 
