@@ -34,6 +34,10 @@ final debugDeviceModeProvider = FutureProvider<bool>((ref) async {
   return deviceId == debugDeviceId;
 });
 
+final isDebugDeviceProvider = Provider<bool>((ref) {
+  return ref.watch(debugDeviceModeProvider).value ?? false;
+});
+
 final transcriptionLanguagePreferencesRepositoryProvider =
     Provider<TranscriptionLanguagePreferencesRepository>((ref) {
       final repository = ref.watch(preferencesRepositoryProvider);

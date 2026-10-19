@@ -120,6 +120,7 @@ void main() {
         return tagTextCallback(text: text, tags: tags);
       },
       tagRepository: tagRepository,
+      autoTagEnabled: true,
     );
   });
 
@@ -559,6 +560,49 @@ void main() {
 
       await useCase();
 
+      expect(tagRepository.setTagsCalls, isEmpty);
+    });
+
+    test('autoTagEnabled false -> tag call is not made even with tags', () async {
+      tagRepository.allTags = [workTag, healthTag];
+      entryRepository.seedEntry(
+        Entry(
+          rawTranscript: 'meeting with my team',
+          type: EntryType.draft,
+          language: 'en-US',
+          createdAt: currentTimeMs,
+          wordCount: 4,
+        ),
+      );
+      cleanupCallback = ({required transcript, required language}) async {
+        return const backend.CleanupSuccess(cleanedText: 'Cleaned');
+      };
+      final disabledUseCase = RetryPendingDraftsUseCase(
+        entryRepository: entryRepository,
+        transcriptionService: transcriptionService,
+        cleanupTranscriptUseCase: cleanupUseCase,
+        validateDraftAudioPath: validateAudioPath,
+        deleteRetainedAudio: deleteRetainedAudio,
+        setRecordQuota: (quota) => currentQuota = quota,
+        logWarning: (message, {error, stackTrace}) {
+          logMessages.add(message);
+          logErrors.add(error);
+        },
+        autoTagUseCase: AutoTagUseCase(
+          tagRepository: tagRepository,
+          logWarning: (message, {error, stackTrace}) {},
+        ),
+        tagText: ({required text, required tags}) {
+          tagTextCalls.add(tags);
+          return tagTextCallback(text: text, tags: tags);
+        },
+        tagRepository: tagRepository,
+        autoTagEnabled: false,
+      );
+
+      await disabledUseCase();
+
+      expect(tagTextCalls, isEmpty);
       expect(tagRepository.setTagsCalls, isEmpty);
     });
 

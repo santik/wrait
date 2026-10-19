@@ -185,6 +185,7 @@ class _Harness {
     tagText: ({required text, required tags}) =>
         container.read(tagTextCallbackProvider)(text: text, tags: tags),
     tagRepository: container.read(tagRepositoryProvider),
+    autoTagEnabled: true,
   )();
 
   /// Creates tags and returns a name -> id map.

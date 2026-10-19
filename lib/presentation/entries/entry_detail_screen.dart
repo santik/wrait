@@ -88,8 +88,7 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                 createdAt: entry.createdAt,
                 locale: Localizations.localeOf(context),
               );
-              final isDebugDevice =
-                  ref.watch(debugDeviceModeProvider).value ?? false;
+              final isDebugDevice = ref.watch(isDebugDeviceProvider);
               final showRawTranscript =
                   isDebugDevice &&
                   entry.type == EntryType.saved &&

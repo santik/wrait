@@ -45,6 +45,7 @@ void main() {
       errorAndDeletedAutoClear: Duration(milliseconds: 1),
     ),
     Duration resumePermissionTimeout = const Duration(seconds: 2),
+    bool isDebugDevice = true,
   }) {
     transcriptionService = _FakeTranscriptionService();
     cleanupUseCase = _FakeCleanupTranscriptUseCase();
@@ -83,6 +84,7 @@ void main() {
           logMessages.add(message);
           logErrors.add(error);
         }),
+        isDebugDeviceProvider.overrideWithValue(isDebugDevice),
       ],
     );
   }
