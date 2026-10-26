@@ -1,5 +1,7 @@
 {
   "@@locale": "ru",
+  "statusRateLimited": "сейчас большая нагрузка · повторите позже",
+  "statusRateLimitedDraft": "сейчас большая нагрузка · сохранено как черновик, повторите позже",
   "bootstrapTitle": "открываем wrait",
   "bootstrapSubtitle": "загрузка локального дневника",
   "bootstrapErrorTitle": "не удалось открыть wrait",

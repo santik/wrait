@@ -23,6 +23,7 @@ RESOLVED_WIREDASH_PROJECT_ID=""
 RESOLVED_WIREDASH_SECRET=""
 RESOLVED_WIREDASH_ENVIRONMENT=""
 RESOLVED_DEBUG_DEVICE_ID=""
+RESOLVED_BACKEND_URL=""
 
 fail() {
   printf 'error: %s\n' "$*" >&2
@@ -167,6 +168,12 @@ load_and_validate_debug_config() {
   )"
   if [[ -n "$RESOLVED_DEBUG_DEVICE_ID" && ! "$RESOLVED_DEBUG_DEVICE_ID" =~ ^[0-9a-f]{64}$ ]]; then
     warn "DEBUG_DEVICE_ID is not a valid SHA-256 hex hash (expected 64 lowercase hex characters)"
+  fi
+
+  # BACKEND_URL: env var wins, else local.properties, else unset (app default).
+  RESOLVED_BACKEND_URL="${BACKEND_URL:-$(optional_trimmed_property "$DEBUG_LOCAL_PROPERTIES_PATH" "BACKEND_URL")}"
+  if [[ -n "$RESOLVED_BACKEND_URL" && ! "$RESOLVED_BACKEND_URL" =~ ^https?:// ]]; then
+    fail "BACKEND_URL must be an absolute http(s) URL (got: $RESOLVED_BACKEND_URL)"
   fi
 
   validate_proxy_secret "$RESOLVED_PROXY_SECRET"
@@ -616,6 +623,12 @@ main() {
     flutter_build_args+=(
       "--dart-define=DEBUG_DEVICE_ID=$RESOLVED_DEBUG_DEVICE_ID"
     )
+  fi
+  if [[ -n "$RESOLVED_BACKEND_URL" ]]; then
+    flutter_build_args+=(
+      "--dart-define=BACKEND_URL=$RESOLVED_BACKEND_URL"
+    )
+    printf 'Using backend URL: %s\n' "$RESOLVED_BACKEND_URL"
   fi
 
   printf 'Building Flutter debug APK...\n'

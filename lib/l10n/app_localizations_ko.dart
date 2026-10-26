@@ -102,6 +102,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get statusServiceUnavailableDraft => '서비스 이용 불가 · 임시 저장됨';
 
   @override
+  String get statusRateLimitedDraft => '지금 혼잡해요 · 임시저장했어요, 잠시 후 다시 시도';
+
+  @override
+  String get statusRateLimited => '지금 혼잡해요 · 잠시 후 다시 시도';
+
+  @override
   String get statusServerConfigErrorDraft => '서버 설정 오류 · 임시 저장됨';
 
   @override

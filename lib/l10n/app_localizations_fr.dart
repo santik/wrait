@@ -106,6 +106,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'service indisponible · enregistré en brouillon';
 
   @override
+  String get statusRateLimitedDraft =>
+      'ça coince un peu · enregistré en brouillon, réessaie bientôt';
+
+  @override
+  String get statusRateLimited => 'ça coince un peu · réessaie bientôt';
+
+  @override
   String get statusServerConfigErrorDraft =>
       'erreur de config serveur · enregistré en brouillon';
 

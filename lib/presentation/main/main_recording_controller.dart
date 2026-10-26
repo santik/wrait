@@ -530,6 +530,7 @@ class MainRecordingController extends Notifier<RecordingControllerState> {
         RecordingError.backendUnavailable,
       TranscriptionFailureReason.proxyAuthFailed =>
         RecordingError.proxyAuthFailed,
+      TranscriptionFailureReason.rateLimited => RecordingError.rateLimited,
       TranscriptionFailureReason.speechNotRecognized =>
         RecordingError.speechNotRecognized,
       TranscriptionFailureReason.apiError => RecordingError.apiFailed,
@@ -570,8 +571,10 @@ class MainRecordingController extends Notifier<RecordingControllerState> {
       backend.BackendFailureReason.noInternet => RecordingError.noInternet,
       backend.BackendFailureReason.backendUnavailable =>
         RecordingError.backendUnavailable,
-      backend.BackendFailureReason.proxyAuthFailed =>
+      backend.BackendFailureReason.proxyAuthFailed ||
+      backend.BackendFailureReason.credentialRejected =>
         RecordingError.proxyAuthFailed,
+      backend.BackendFailureReason.rateLimited => RecordingError.rateLimited,
       backend.BackendFailureReason.requestTooLarge ||
       backend.BackendFailureReason.quotaExceeded ||
       backend.BackendFailureReason.speechNotRecognized ||

@@ -407,6 +407,28 @@ Full process: see [`docs/spec-driven-workflow.md`](docs/spec-driven-workflow.md)
   launcher verification, inspect packaged APK resources with `aapt` and
   `unzip -l` instead of relying only on overview screenshots.
 
+### Device token auth guidance
+
+Feature 059 introduced server-issued device tokens for quota-protected backend
+calls.
+
+- Quota-protected calls (`/transcribe`, `/cleanup`, `/tag`) authenticate with
+  `X-Device-Token`, attached by `AuthInterceptor`
+  (`lib/data/api/auth_interceptor.dart`) on the main backend Dio. `/register`
+  still authenticates with `X-Device-Id` (plus the optional stored token).
+- The token lives in `DeviceTokenStore` (secure storage); unreadable/empty means
+  "no token" and prompts a transparent re-registration.
+- 403 recovery is centralized in the interceptor: single-flight re-register once
+  and retry once (second 403 terminal). Re-registration runs on an
+  interceptor-free registrar Dio (`deviceRegistrarProvider`). **Never let
+  `backendDioProvider` depend on `wraitBackendClientProvider`** — it recreates a
+  provider cycle that throws at the moment re-registration runs. Clone a
+  `FormData` body before retrying it.
+- Do not log token values; the token-handling files are audited by
+  `test/data/api/device_token_log_audit_test.dart`.
+- Full context: `specs/059-quota-abuse-protection/` and
+  `docs/agent-findings.md` ("Backend and Generation").
+
 ## Backend API generation guidance
 
 US-005 introduced a build-time OpenAPI generation prerequisite for the Flutter

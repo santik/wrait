@@ -104,6 +104,13 @@ class AppLocalizationsTr extends AppLocalizations {
       'servis kullanılamıyor · taslak olarak kaydedildi';
 
   @override
+  String get statusRateLimitedDraft =>
+      'şu an yoğun · taslak olarak kaydedildi, birazdan tekrar dene';
+
+  @override
+  String get statusRateLimited => 'şu an yoğun · birazdan tekrar dene';
+
+  @override
   String get statusServerConfigErrorDraft =>
       'sunucu yapılandırma hatası · taslak olarak kaydedildi';
 

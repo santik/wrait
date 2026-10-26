@@ -6,12 +6,27 @@ enum BackendFailureReason {
   requestTooLarge,
   quotaExceeded,
   proxyAuthFailed,
+
+  /// The device token was missing/rejected and re-registration did not
+  /// recover it. Terminal; presented with the existing auth-failure UX.
+  credentialRejected,
+
+  /// Registration (needed to obtain a device token) was rate limited.
+  /// Retriable; distinct from [quotaExceeded].
+  rateLimited,
   backendUnavailable,
   speechNotRecognized,
   apiError,
 }
 
-enum RegistrationFailureReason { transient, proxyAuthFailed, apiError }
+enum RegistrationFailureReason {
+  transient,
+  proxyAuthFailed,
+
+  /// Registration was rate limited (HTTP 429). Retriable.
+  rateLimited,
+  apiError,
+}
 
 sealed class RegistrationResult {
   const RegistrationResult();

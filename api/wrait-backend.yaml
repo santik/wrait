@@ -21,6 +21,7 @@ paths:
         - ProxySecretHeader: []
       parameters:
         - $ref: '#/components/parameters/DeviceIdHeader'
+        - $ref: '#/components/parameters/DeviceTokenHeaderOptional'
       responses:
         '201':
           description: Device registered successfully
@@ -34,6 +35,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
+        '429':
+          $ref: '#/components/responses/RegistrationRateLimited'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/transcribe:
@@ -57,7 +60,7 @@ paths:
       security:
         - ProxySecretHeader: []
       parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
+        - $ref: '#/components/parameters/DeviceTokenHeader'
         - $ref: '#/components/parameters/TranscriptionLanguage'
       requestBody:
         required: true
@@ -86,6 +89,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
         '413':
@@ -114,7 +119,7 @@ paths:
       security:
         - ProxySecretHeader: []
       parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
+        - $ref: '#/components/parameters/DeviceTokenHeader'
       requestBody:
         required: true
         content:
@@ -132,6 +137,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
         '413':
@@ -159,7 +166,7 @@ paths:
       security:
         - ProxySecretHeader: []
       parameters:
-        - $ref: '#/components/parameters/DeviceIdHeader'
+        - $ref: '#/components/parameters/DeviceTokenHeader'
       requestBody:
         required: true
         content:
@@ -177,6 +184,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '405':
           $ref: '#/components/responses/MethodNotAllowed'
         '413':
@@ -208,6 +217,20 @@ components:
       schema:
         type: string
         pattern: '^[a-fA-F0-9]{64}$'
+    DeviceTokenHeader:
+      name: X-Device-Token
+      in: header
+      required: true
+      description: Signed device token issued by /api/register.
+      schema:
+        type: string
+    DeviceTokenHeaderOptional:
+      name: X-Device-Token
+      in: header
+      required: false
+      description: Previously issued signed device token, if the client holds one.
+      schema:
+        type: string
     TranscriptionLanguage:
       name: language
       in: query
@@ -340,6 +363,18 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Missing or invalid device token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RegistrationRateLimited:
+      description: Too many registrations from this network origin
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
     MethodNotAllowed:
       description: Unsupported HTTP method
       content:
@@ -448,6 +483,9 @@ components:
         ok:
           type: boolean
           enum: [true]
+        token:
+          type: string
+          description: Signed device token to present as X-Device-Token on quota-protected calls. Present when a token is issued.
         quota:
           allOf:
             - $ref: '#/components/schemas/RecordQuota'

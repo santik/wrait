@@ -33,7 +33,7 @@ void main() {
     await useCase(
       entryId: entryId,
       tagResultFuture: Future.value(
-        _success([('work', 0.8), ('health', 0.6), ('travel', 0.3)]),
+        _success([('work', 0.8), ('health', 0.9), ('travel', 0.3)]),
       ),
       userTags: userTags,
     );
@@ -56,11 +56,11 @@ void main() {
     expect(tagRepository.setTagsCalled, isFalse);
   });
 
-  test('tag with exactly 0.5 probability is not assigned', () async {
+  test('tag exactly at the threshold is not assigned', () async {
     await useCase(
       entryId: entryId,
       tagResultFuture: Future.value(
-        _success([('work', autoTagProbabilityThreshold), ('health', 0.51)]),
+        _success([('work', autoTagProbabilityThreshold), ('health', 0.76)]),
       ),
       userTags: userTags,
     );
@@ -69,10 +69,12 @@ void main() {
     expect(tagRepository.setTagsCalls.single.tagIds, [2]);
   });
 
-  test('only a 0.5 tag results in no assignment', () async {
+  test('only an at-threshold tag results in no assignment', () async {
     await useCase(
       entryId: entryId,
-      tagResultFuture: Future.value(_success([('work', 0.5)])),
+      tagResultFuture: Future.value(
+        _success([('work', autoTagProbabilityThreshold)]),
+      ),
       userTags: userTags,
     );
 
@@ -125,7 +127,7 @@ void main() {
     await useCase(
       entryId: entryId,
       tagResultFuture: Future.value(
-        _success([('deleted_tag', 0.9), ('travel', 0.7)]),
+        _success([('deleted_tag', 0.9), ('travel', 0.8)]),
       ),
       userTags: userTags,
     );
@@ -182,7 +184,7 @@ void main() {
   test('assigns tag with probability just above threshold', () async {
     await useCase(
       entryId: entryId,
-      tagResultFuture: Future.value(_success([('work', 0.5000001)])),
+      tagResultFuture: Future.value(_success([('work', 0.7500001)])),
       userTags: userTags,
     );
 

@@ -1,5 +1,7 @@
 {
   "@@locale": "ko",
+  "statusRateLimited": "지금 혼잡해요 · 잠시 후 다시 시도",
+  "statusRateLimitedDraft": "지금 혼잡해요 · 임시저장했어요, 잠시 후 다시 시도",
   "bootstrapTitle": "wrait 여는 중",
   "bootstrapSubtitle": "내 기기의 일기를 불러오는 중",
   "bootstrapErrorTitle": "wrait을 열 수 없어요",

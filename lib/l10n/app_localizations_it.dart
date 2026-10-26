@@ -105,6 +105,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'servizio non disponibile · salvato come bozza';
 
   @override
+  String get statusRateLimitedDraft =>
+      'troppo traffico · salvato come bozza, riprova tra poco';
+
+  @override
+  String get statusRateLimited => 'troppo traffico · riprova tra poco';
+
+  @override
   String get statusServerConfigErrorDraft =>
       'errore di configurazione del server · salvato come bozza';
 

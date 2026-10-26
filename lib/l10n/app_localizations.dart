@@ -285,6 +285,18 @@ abstract class AppLocalizations {
   /// **'service unavailable · saved as draft'**
   String get statusServiceUnavailableDraft;
 
+  /// No description provided for @statusRateLimitedDraft.
+  ///
+  /// In en, this message translates to:
+  /// **'busy right now · saved as draft, try again soon'**
+  String get statusRateLimitedDraft;
+
+  /// No description provided for @statusRateLimited.
+  ///
+  /// In en, this message translates to:
+  /// **'busy right now · try again soon'**
+  String get statusRateLimited;
+
   /// No description provided for @statusServerConfigErrorDraft.
   ///
   /// In en, this message translates to:

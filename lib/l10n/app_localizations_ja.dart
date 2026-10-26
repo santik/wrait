@@ -102,6 +102,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get statusServiceUnavailableDraft => 'サービス利用不可 · 下書きとして保存';
 
   @override
+  String get statusRateLimitedDraft => '混み合っています · 下書きを保存しました。少し後でもう一度';
+
+  @override
+  String get statusRateLimited => '混み合っています · 少し後でもう一度';
+
+  @override
   String get statusServerConfigErrorDraft => 'サーバー設定エラー · 下書きとして保存';
 
   @override

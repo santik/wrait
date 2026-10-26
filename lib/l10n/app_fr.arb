@@ -1,5 +1,7 @@
 {
   "@@locale": "fr",
+  "statusRateLimited": "ça coince un peu · réessaie bientôt",
+  "statusRateLimitedDraft": "ça coince un peu · enregistré en brouillon, réessaie bientôt",
   "bootstrapTitle": "ouverture de wrait",
   "bootstrapSubtitle": "chargement de votre journal local",
   "bootstrapErrorTitle": "impossible d’ouvrir wrait",

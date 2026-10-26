@@ -168,6 +168,7 @@ enum RecordingError {
   noInternet,
   backendUnavailable,
   proxyAuthFailed,
+  rateLimited,
   speechNotRecognized,
   apiFailed,
 }

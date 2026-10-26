@@ -1,5 +1,7 @@
 {
   "@@locale": "pt",
+  "statusRateLimited": "muito movimento agora · tente em breve",
+  "statusRateLimitedDraft": "muito movimento agora · salvo como rascunho, tente em breve",
   "bootstrapTitle": "abrindo o wrait",
   "bootstrapSubtitle": "carregando seu diário local",
   "bootstrapErrorTitle": "não foi possível abrir o wrait",

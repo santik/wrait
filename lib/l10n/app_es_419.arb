@@ -1,5 +1,7 @@
 {
   "@@locale": "es_419",
+  "statusRateLimited": "ocupado en este momento · inténtalo pronto",
+  "statusRateLimitedDraft": "ocupado en este momento · guardado como borrador, inténtalo pronto",
   "bootstrapTitle": "abriendo wrait",
   "bootstrapSubtitle": "cargando tu diario local",
   "bootstrapErrorTitle": "no se pudo abrir wrait",

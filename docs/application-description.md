@@ -374,6 +374,17 @@ Current runtime behavior on top of that generated client:
   rendering
 - successful registration can seed the current in-memory quota state for later
   quota-aware flows in the same app session
+- quota-protected calls are gated by a server-issued device token: the app
+  obtains it at launch registration (and on demand when missing), stores it
+  securely, and presents it on every transcribe/cleanup/tag call
+- credential problems recover transparently: a rejected token triggers a single
+  re-registration and one automatic retry, with no user-visible interruption on
+  the happy path
+- when registration is rate-limited by the backend, the app surfaces a distinct,
+  retriable recording status rather than a generic failure
+- existing users upgrading from a device-identifier-only build migrate
+  transparently — the issued token is bound to their existing device identifier
+  so accrued quota carries over and no local data or drafts are lost
 - proxy-authenticated debug deployments require `PROXY_SECRET` to be present so
   the app can send the expected `X-Proxy-Secret` request header during launch
   registration and later backend calls
