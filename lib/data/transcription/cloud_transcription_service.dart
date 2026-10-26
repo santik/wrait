@@ -341,8 +341,11 @@ class CloudTranscriptionService implements TranscriptionService {
         TranscriptionFailureReason.network,
       backend.BackendFailureReason.backendUnavailable =>
         TranscriptionFailureReason.backendUnavailable,
-      backend.BackendFailureReason.proxyAuthFailed =>
+      backend.BackendFailureReason.proxyAuthFailed ||
+      backend.BackendFailureReason.credentialRejected =>
         TranscriptionFailureReason.proxyAuthFailed,
+      backend.BackendFailureReason.rateLimited =>
+        TranscriptionFailureReason.rateLimited,
       backend.BackendFailureReason.speechNotRecognized =>
         TranscriptionFailureReason.speechNotRecognized,
       backend.BackendFailureReason.requestTooLarge ||

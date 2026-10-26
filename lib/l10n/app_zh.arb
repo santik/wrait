@@ -1,5 +1,7 @@
 {
   "@@locale": "zh",
+  "statusRateLimited": "当前繁忙 · 请稍后再试",
+  "statusRateLimitedDraft": "当前繁忙 · 已存为草稿，请稍后再试",
   "bootstrapTitle": "正在打开 wrait",
   "bootstrapSubtitle": "正在加载你的本地日记",
   "bootstrapErrorTitle": "无法打开 wrait",

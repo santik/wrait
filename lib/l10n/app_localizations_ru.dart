@@ -105,6 +105,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'сервис недоступен · сохранено как черновик';
 
   @override
+  String get statusRateLimitedDraft =>
+      'сейчас большая нагрузка · сохранено как черновик, повторите позже';
+
+  @override
+  String get statusRateLimited => 'сейчас большая нагрузка · повторите позже';
+
+  @override
   String get statusServerConfigErrorDraft =>
       'ошибка конфигурации сервера · сохранено как черновик';
 

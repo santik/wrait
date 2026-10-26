@@ -57,6 +57,7 @@ enum TranscriptionFailureReason {
   timeout,
   backendUnavailable,
   proxyAuthFailed,
+  rateLimited,
   speechNotRecognized,
   apiError,
 }

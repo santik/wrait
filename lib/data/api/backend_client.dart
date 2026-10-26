@@ -5,7 +5,9 @@ import 'package:path/path.dart' as path;
 
 import '../../domain/repository/preferences_repository.dart';
 import '../../domain/model/supported_language.dart';
+import 'auth_interceptor.dart';
 import 'backend_results.dart';
+import 'device_token_store.dart';
 import 'generated/backend_api_generated.dart';
 import 'record_quota_state.dart';
 
@@ -16,26 +18,54 @@ const tagTextMaxLength = 10000;
 class WraitBackendClient {
   WraitBackendClient({
     required this.generatedClient,
+    required this.registrarClient,
     required this.preferencesRepository,
+    required this.deviceTokenStore,
     DelayFunction? delay,
   }) : _delay = delay ?? Future<void>.delayed;
 
   static const maxRegisterAttempts = 3;
   static const baseRegisterRetryDelay = Duration(seconds: 1);
 
+  /// Used for quota-protected calls; its Dio has the [AuthInterceptor] that
+  /// attaches the token and recovers from 403s.
   final GeneratedBackendApiClient generatedClient;
+
+  /// Used only for [register]; its Dio has no interceptor, so re-registration
+  /// invoked from inside the interceptor can't deadlock.
+  final GeneratedBackendApiClient registrarClient;
+
   final PreferencesRepository preferencesRepository;
+  final DeviceTokenStore deviceTokenStore;
   final DelayFunction _delay;
 
   Future<RegistrationResult> register() async {
-    final deviceId = await preferencesRepository.getDeviceId();
+    // Independent reads — fetch concurrently off the launch critical path. The
+    // backend picks verify-and-keep for a valid token and issue-new otherwise,
+    // so a single call is always enough.
+    final (deviceId, storedToken) =
+        await (preferencesRepository.getDeviceId(), deviceTokenStore.read()).wait;
 
     for (var attempt = 0; attempt < maxRegisterAttempts; attempt += 1) {
       try {
-        final response = await generatedClient.registerDevice(
+        final response = await registrarClient.registerDevice(
           xDeviceId: deviceId,
+          xDeviceToken: storedToken,
         );
         if (response is GeneratedApiSuccess<RegisterResponse>) {
+          final issuedToken = response.data.token;
+          if (issuedToken != null && issuedToken.isNotEmpty) {
+            try {
+              await deviceTokenStore.write(issuedToken);
+            } catch (_) {
+              // Intentionally emit no diagnostics here: the files that handle
+              // the device token stay free of any logging sink (enforced by
+              // device_token_log_audit_test) so the token can never leak.
+              // Trade-off: a persistent secure-storage write failure means a
+              // fresh token is issued on each call; the backend's per-IP Mode A
+              // rate limit is the backstop against that becoming a loop.
+            }
+          }
           return RegistrationSuccess(
             quota: response.data.quota?.toValidatedStateOrNull(),
           );
@@ -45,6 +75,12 @@ class WraitBackendClient {
         if (failure.statusCode == 401) {
           return const RegistrationFailure(
             RegistrationFailureReason.proxyAuthFailed,
+          );
+        }
+
+        if (failure.statusCode == 429) {
+          return const RegistrationFailure(
+            RegistrationFailureReason.rateLimited,
           );
         }
 
@@ -87,11 +123,11 @@ class WraitBackendClient {
       return const TranscriptionFailure(reason: BackendFailureReason.apiError);
     }
     try {
-      final deviceId = await preferencesRepository.getDeviceId();
+      final audioBytes = await audioFile.readAsBytes();
+      final audioFilename = path.basename(audioFile.path);
       final response = await generatedClient.transcribeAudio(
-        xDeviceId: deviceId,
-        audioBytes: await audioFile.readAsBytes(),
-        audioFilename: path.basename(audioFile.path),
+        audioBytes: audioBytes,
+        audioFilename: audioFilename,
         language: language,
       );
 
@@ -127,9 +163,7 @@ class WraitBackendClient {
     required String language,
   }) async {
     try {
-      final deviceId = await preferencesRepository.getDeviceId();
       final response = await generatedClient.cleanupTranscript(
-        xDeviceId: deviceId,
         cleanupRequest: CleanupRequest(
           transcript: transcript,
           language: language,
@@ -176,9 +210,7 @@ class WraitBackendClient {
         : trimmed;
 
     try {
-      final deviceId = await preferencesRepository.getDeviceId();
       final response = await generatedClient.tagText(
-        xDeviceId: deviceId,
         tagRequest: TagRequest(text: boundedText, tags: tags),
       );
 
@@ -233,8 +265,8 @@ class WraitBackendClient {
     if (statusCode == 401) {
       return BackendFailureReason.proxyAuthFailed;
     }
-    if (statusCode == 502 || statusCode == 504) {
-      return BackendFailureReason.backendUnavailable;
+    if (statusCode == 403) {
+      return BackendFailureReason.credentialRejected;
     }
     if (statusCode >= 500) {
       return BackendFailureReason.backendUnavailable;
@@ -243,6 +275,11 @@ class WraitBackendClient {
   }
 
   BackendFailureReason _mapDioFailureReason(DioException error) {
+    // The AuthInterceptor rejects unrecoverable auth failures with this sentinel
+    // so the precise reason survives to here.
+    if (error.error is AuthFailure) {
+      return (error.error as AuthFailure).reason;
+    }
     if (_isTimeout(error)) {
       return BackendFailureReason.timeout;
     }

@@ -3,25 +3,38 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:wrait/data/api/auth_interceptor.dart';
 import 'package:wrait/data/api/backend_client.dart';
 import 'package:wrait/data/api/backend_results.dart';
+import 'package:wrait/data/api/device_token_store.dart';
 import 'package:wrait/data/api/generated/backend_api_generated.dart';
+import 'package:wrait/data/entries/database_key_store.dart';
 import 'package:wrait/domain/repository/preferences_repository.dart';
+
+import '../../test_doubles/fake_secure_storage.dart';
 
 void main() {
   group('WraitBackendClient', () {
     late _FakePreferencesRepository preferencesRepository;
     late _FakeGeneratedBackendApiClient generatedClient;
     late List<Duration> delayCalls;
+    late FakeSecureKeyValueStore secureStorage;
+    late DeviceTokenStore tokenStore;
     late WraitBackendClient backendClient;
 
     setUp(() {
       preferencesRepository = _FakePreferencesRepository();
       generatedClient = _FakeGeneratedBackendApiClient();
       delayCalls = <Duration>[];
+      secureStorage = FakeSecureKeyValueStore(<String, String>{
+        DeviceTokenStore.storageKey: 'stored-token',
+      });
+      tokenStore = DeviceTokenStore(secureStorage);
       backendClient = WraitBackendClient(
         generatedClient: generatedClient,
+        registrarClient: generatedClient,
         preferencesRepository: preferencesRepository,
+        deviceTokenStore: tokenStore,
         delay: (duration) async => delayCalls.add(duration),
       );
     });
@@ -591,16 +604,19 @@ void main() {
           await request.response.close();
         }());
 
-        final realClient = WraitBackendClient(
-          generatedClient: DioGeneratedBackendApiClient(
-            Dio(
-              BaseOptions(
-                baseUrl: 'http://${server.address.host}:${server.port}',
-                headers: <String, dynamic>{'X-Proxy-Secret': 'proxy-secret'},
-              ),
+        final realGenerated = DioGeneratedBackendApiClient(
+          Dio(
+            BaseOptions(
+              baseUrl: 'http://${server.address.host}:${server.port}',
+              headers: <String, dynamic>{'X-Proxy-Secret': 'proxy-secret'},
             ),
           ),
+        );
+        final realClient = WraitBackendClient(
+          generatedClient: realGenerated,
+          registrarClient: realGenerated,
           preferencesRepository: preferencesRepository,
+          deviceTokenStore: tokenStore,
         );
 
         final result = await realClient.register();
@@ -609,8 +625,211 @@ void main() {
         final headers = await requestSeen.future;
         expect(headers.value('X-Device-Id'), preferencesRepository.deviceId);
         expect(headers.value('X-Proxy-Secret'), 'proxy-secret');
+        expect(headers.value('X-Device-Token'), 'stored-token');
       },
     );
+
+    group('device token', () {
+      GeneratedApiSuccess<RegisterResponse> registered({String? token}) =>
+          GeneratedApiSuccess<RegisterResponse>(
+            statusCode: 201,
+            data: RegisterResponse(
+              ok: true,
+              token: token,
+              quota: RecordQuota(
+                limit: 5,
+                count: 1,
+                remaining: 4,
+                resetAt: DateTime.utc(2026, 6, 10),
+              ),
+            ),
+          );
+
+      const forbidden = GeneratedApiFailure<TranscribeResponse>(
+        statusCode: 403,
+        data: <String, dynamic>{'error': 'Forbidden'},
+      );
+
+      test(
+        'Mode A: no stored token registers, stores token and quota',
+        () async {
+          await tokenStore.clear();
+          generatedClient.registerResponses.add(registered(token: 'new-token'));
+
+          final result = await backendClient.register();
+
+          expect(generatedClient.registerTokens, <String?>[null]);
+          expect(result, isA<RegistrationSuccess>());
+          expect((result as RegistrationSuccess).quota?.remaining, 4);
+          expect(await tokenStore.read(), 'new-token');
+        },
+      );
+
+      test(
+        'upgrade from a device-id-only build binds a token to that device id',
+        () async {
+          // Simulates a user upgrading from a build that stored no token: the
+          // first launch presents the existing device id with no token, and the
+          // server binds a freshly issued token to it so accrued quota carries
+          // over. The device id must be forwarded for that binding to happen.
+          await tokenStore.clear();
+          generatedClient.registerResponses.add(
+            registered(token: 'migrated-token'),
+          );
+
+          final result = await backendClient.register();
+
+          expect(generatedClient.registerTokens, <String?>[null]);
+          expect(generatedClient.registerDeviceIds, <String>[
+            _FakePreferencesRepository().deviceId,
+          ]);
+          expect(result, isA<RegistrationSuccess>());
+          expect((result as RegistrationSuccess).quota?.remaining, 4);
+          expect(await tokenStore.read(), 'migrated-token');
+        },
+      );
+
+      test(
+        'Mode B: stored token is sent and kept when none is issued',
+        () async {
+          generatedClient.registerResponses.add(registered());
+
+          final result = await backendClient.register();
+
+          expect(generatedClient.registerTokens, <String?>['stored-token']);
+          expect((result as RegistrationSuccess).quota?.remaining, 4);
+          expect(await tokenStore.read(), 'stored-token');
+        },
+      );
+
+      test('register maps 429 to rateLimited without retrying', () async {
+        generatedClient.registerResponses.add(
+          const GeneratedApiFailure<RegisterResponse>(
+            statusCode: 429,
+            data: <String, dynamic>{'error': 'Too many requests'},
+          ),
+        );
+
+        final result = await backendClient.register();
+
+        expect(
+          result,
+          isA<RegistrationFailure>().having(
+            (value) => value.reason,
+            'reason',
+            RegistrationFailureReason.rateLimited,
+          ),
+        );
+        expect(generatedClient.registerCallCount, 1);
+        expect(delayCalls, isEmpty);
+      });
+
+      // Recovery (token attach, re-register on 403, retry) now lives in
+      // AuthInterceptor — see auth_interceptor_test.dart. The client just maps
+      // the outcome it is handed.
+
+      test(
+        'a direct 403 maps to credentialRejected (no recovery in the client)',
+        () async {
+          generatedClient.transcribeResponses.add(forbidden);
+
+          final result = await backendClient.transcribeAudio(
+            await _createTempAudioFile('direct-403'),
+          );
+
+          expect(
+            result,
+            isA<TranscriptionFailure>().having(
+              (value) => value.reason,
+              'reason',
+              BackendFailureReason.credentialRejected,
+            ),
+          );
+          expect(generatedClient.transcribeCallCount, 1);
+          expect(generatedClient.registerCallCount, 0);
+        },
+      );
+
+      test('an interceptor AuthFailure surfaces as its mapped reason', () async {
+        // The interceptor rejects unrecoverable auth failures with a
+        // DioException carrying AuthFailure(reason); the client decodes it.
+        generatedClient.transcribeResponses.add(
+          DioException(
+            requestOptions: RequestOptions(path: '/api/transcribe'),
+            error: const AuthFailure(BackendFailureReason.rateLimited),
+          ),
+        );
+
+        final result = await backendClient.transcribeAudio(
+          await _createTempAudioFile('auth-failure'),
+        );
+
+        expect(
+          result,
+          isA<TranscriptionFailure>().having(
+            (value) => value.reason,
+            'reason',
+            BackendFailureReason.rateLimited,
+          ),
+        );
+      });
+
+      test(
+        'quota 429 is not a credential failure and does not re-register',
+        () async {
+          generatedClient.transcribeResponses.add(
+            const GeneratedApiFailure<TranscribeResponse>(
+              statusCode: 429,
+              data: <String, dynamic>{'error': 'Daily record limit exceeded'},
+            ),
+          );
+
+          final result = await backendClient.transcribeAudio(
+            await _createTempAudioFile('quota-429'),
+          );
+
+          expect(
+            result,
+            isA<TranscriptionFailure>().having(
+              (value) => value.reason,
+              'reason',
+              BackendFailureReason.quotaExceeded,
+            ),
+          );
+          expect(generatedClient.registerCallCount, 0);
+          expect(generatedClient.transcribeCallCount, 1);
+        },
+      );
+
+      test('token value never appears in results', () async {
+        generatedClient.transcribeResponses.add(forbidden);
+
+        final result = await backendClient.transcribeAudio(
+          await _createTempAudioFile('no-leak'),
+        );
+
+        expect(result.toString(), isNot(contains('stored-token')));
+      });
+
+      test(
+        'secure-storage write failure during registration still succeeds',
+        () async {
+          final client = WraitBackendClient(
+            generatedClient: generatedClient,
+            registrarClient: generatedClient,
+            preferencesRepository: preferencesRepository,
+            deviceTokenStore: DeviceTokenStore(_WriteFailingKeyValueStore()),
+            delay: (duration) async => delayCalls.add(duration),
+          );
+          generatedClient.registerResponses.add(registered(token: 'issued'));
+
+          final result = await client.register();
+
+          // A failed persist must not fail registration.
+          expect(result, isA<RegistrationSuccess>());
+        },
+      );
+    });
 
     group('tagText', () {
       test('200 success maps tag probabilities', () async {
@@ -848,6 +1067,10 @@ class _FakeGeneratedBackendApiClient implements GeneratedBackendApiClient {
   final List<Object> cleanupResponses = <Object>[];
   final List<Object> tagTextResponses = <Object>[];
 
+  final List<String?> registerTokens = <String?>[];
+  final List<String> registerDeviceIds = <String>[];
+  void Function()? onRegister;
+
   int registerCallCount = 0;
   int transcribeCallCount = 0;
   int tagTextCallCount = 0;
@@ -856,7 +1079,6 @@ class _FakeGeneratedBackendApiClient implements GeneratedBackendApiClient {
 
   @override
   Future<GeneratedApiResponse<CleanupResponse>> cleanupTranscript({
-    required String xDeviceId,
     required CleanupRequest cleanupRequest,
   }) async {
     return _takeNext<GeneratedApiResponse<CleanupResponse>>(cleanupResponses);
@@ -865,14 +1087,17 @@ class _FakeGeneratedBackendApiClient implements GeneratedBackendApiClient {
   @override
   Future<GeneratedApiResponse<RegisterResponse>> registerDevice({
     required String xDeviceId,
+    String? xDeviceToken,
   }) async {
     registerCallCount += 1;
+    registerTokens.add(xDeviceToken);
+    registerDeviceIds.add(xDeviceId);
+    onRegister?.call();
     return _takeNext<GeneratedApiResponse<RegisterResponse>>(registerResponses);
   }
 
   @override
   Future<GeneratedApiResponse<TranscribeResponse>> transcribeAudio({
-    required String xDeviceId,
     required List<int> audioBytes,
     required String audioFilename,
     String? language,
@@ -886,7 +1111,6 @@ class _FakeGeneratedBackendApiClient implements GeneratedBackendApiClient {
 
   @override
   Future<GeneratedApiResponse<TagResponse>> tagText({
-    required String xDeviceId,
     required TagRequest tagRequest,
   }) async {
     tagTextCallCount += 1;
@@ -928,3 +1152,18 @@ Future<File> _createTempAudioFile(String name) async {
   await file.writeAsString('audio-data-$name');
   return file;
 }
+
+class _WriteFailingKeyValueStore implements SecureKeyValueStore {
+  final Map<String, String> _values = <String, String>{};
+
+  @override
+  Future<String?> read(String key) async => _values[key];
+
+  @override
+  Future<void> write(String key, String value) async =>
+      throw StateError('keystore write failed');
+
+  @override
+  Future<void> delete(String key) async => _values.remove(key);
+}
+

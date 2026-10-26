@@ -105,6 +105,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'serviço indisponível · salvo como rascunho';
 
   @override
+  String get statusRateLimitedDraft =>
+      'muito movimento agora · salvo como rascunho, tente em breve';
+
+  @override
+  String get statusRateLimited => 'muito movimento agora · tente em breve';
+
+  @override
   String get statusServerConfigErrorDraft =>
       'erro de configuração do servidor · salvo como rascunho';
 

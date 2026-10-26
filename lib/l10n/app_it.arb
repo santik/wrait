@@ -1,5 +1,7 @@
 {
   "@@locale": "it",
+  "statusRateLimited": "troppo traffico · riprova tra poco",
+  "statusRateLimitedDraft": "troppo traffico · salvato come bozza, riprova tra poco",
   "bootstrapTitle": "apertura di wrait",
   "bootstrapSubtitle": "caricamento del tuo diario locale",
   "bootstrapErrorTitle": "impossibile aprire wrait",

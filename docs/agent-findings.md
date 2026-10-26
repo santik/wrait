@@ -227,13 +227,33 @@ this file as supporting implementation memory.
 - Backend base URL comes from `AppConfig.backendUrl`.
 - Proxy authentication comes from `AppConfig.proxySecret` through
   `X-Proxy-Secret`.
-- Device identity comes from `PreferencesRepository.getDeviceId()` through
-  `X-Device-Id`.
+- Quota-protected calls (`/transcribe`, `/cleanup`, `/tag`) authenticate with a
+  server-issued device token sent as `X-Device-Token`, attached by
+  `AuthInterceptor` on the main backend Dio — not with `X-Device-Id`. Only
+  `/register` sends `X-Device-Id` (plus the optional stored token).
+- The token is held in `DeviceTokenStore` (secure storage, key
+  `wrait_device_token`); an unreadable or empty value is treated as "no token",
+  which triggers a transparent re-registration on the next call.
+- Credential recovery lives in `AuthInterceptor`
+  (`lib/data/api/auth_interceptor.dart`), not in the client methods: on a 403 it
+  re-registers once (single-flight across concurrent calls) and retries once; a
+  second 403 is terminal. Re-registration runs on a separate, interceptor-free
+  registrar Dio (`deviceRegistrarProvider`) — this both avoids re-entering the
+  interceptor and breaks the Riverpod provider cycle
+  backendDio → wraitBackendClient → generatedClient → backendDio. **Never make
+  `backendDioProvider` depend (even transitively) on `wraitBackendClientProvider`.**
+- A `FormData` (multipart) body is single-use; the interceptor clones it before
+  the retry, or Dio throws "already finalized". Keep that clone when touching
+  retry logic.
+- Token values must never be logged. The token-handling files
+  (`device_token_store.dart`, `backend_client.dart`, `auth_interceptor.dart`,
+  the generated bridge) are audited by `test/data/api/device_token_log_audit_test.dart`.
 - Keep app-specific backend policy in the handwritten adapter layer; do not
   leak generated package types into feature code.
 - Current app-facing backend failures are intentionally narrower than transport
-  errors: proxy auth failed, request too large, quota exceeded, backend
-  unavailable, no internet, timeout, and generic API error.
+  errors: proxy auth failed, credential rejected, request too large, quota
+  exceeded, rate limited, backend unavailable, no internet, timeout, and generic
+  API error.
 - Shared session quota has one owner: `sessionRecordQuotaStateProvider`.
   Quota-aware work should update or read that provider instead of adding a
   parallel cache.

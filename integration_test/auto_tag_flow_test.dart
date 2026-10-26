@@ -28,7 +28,7 @@ void main() {
         tagResult: const backend.TagTextSuccess(
           tags: [
             backend.TagProbabilityResult(tag: 'work', probability: 0.85),
-            backend.TagProbabilityResult(tag: 'health', probability: 0.6),
+            backend.TagProbabilityResult(tag: 'health', probability: 0.9),
             backend.TagProbabilityResult(tag: 'travel', probability: 0.3),
           ],
         ),

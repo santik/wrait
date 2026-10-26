@@ -106,6 +106,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'dienst nicht verfügbar · als Entwurf gespeichert';
 
   @override
+  String get statusRateLimitedDraft =>
+      'gerade viel los · als Entwurf gespeichert, gleich nochmal';
+
+  @override
+  String get statusRateLimited => 'gerade viel los · versuch\'s gleich nochmal';
+
+  @override
   String get statusServerConfigErrorDraft =>
       'serverkonfigurationsfehler · als Entwurf gespeichert';
 

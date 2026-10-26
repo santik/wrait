@@ -102,6 +102,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get statusServiceUnavailableDraft => '服务不可用 · 已存为草稿';
 
   @override
+  String get statusRateLimitedDraft => '当前繁忙 · 已存为草稿，请稍后再试';
+
+  @override
+  String get statusRateLimited => '当前繁忙 · 请稍后再试';
+
+  @override
   String get statusServerConfigErrorDraft => '服务器配置错误 · 已存为草稿';
 
   @override

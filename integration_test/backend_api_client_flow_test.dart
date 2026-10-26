@@ -4,7 +4,10 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:wrait/data/api/auth_interceptor.dart';
 import 'package:wrait/data/api/backend_client.dart';
+import 'package:wrait/data/api/device_token_store.dart';
+import 'package:wrait/data/entries/database_key_store.dart';
 import 'package:wrait/data/api/backend_results.dart';
 import 'package:wrait/data/api/generated/backend_api_generated.dart';
 import 'package:wrait/domain/repository/preferences_repository.dart';
@@ -22,16 +25,26 @@ void main() {
     final serverFuture = _serveBackend(server, requests);
 
     final audioFile = await _createTempAudioFile();
-    final client = WraitBackendClient(
-      generatedClient: DioGeneratedBackendApiClient(
-        Dio(
-          BaseOptions(
-            baseUrl: 'http://${server.address.host}:${server.port}',
-            headers: <String, dynamic>{'X-Proxy-Secret': 'proxy-secret'},
-          ),
-        ),
+    BaseOptions buildOptions() => BaseOptions(
+      baseUrl: 'http://${server.address.host}:${server.port}',
+      headers: <String, dynamic>{'X-Proxy-Secret': 'proxy-secret'},
+    );
+    final tokenStore = DeviceTokenStore(_MemorySecureStore());
+    final mainDio = Dio(buildOptions());
+    final registrarClient = DioGeneratedBackendApiClient(Dio(buildOptions()));
+    late final WraitBackendClient client;
+    mainDio.interceptors.add(
+      AuthInterceptor(
+        dio: mainDio,
+        deviceTokenStore: tokenStore,
+        reRegister: () => client.register(),
       ),
+    );
+    client = WraitBackendClient(
+      generatedClient: DioGeneratedBackendApiClient(mainDio),
+      registrarClient: registrarClient,
       preferencesRepository: _FakePreferencesRepository(),
+      deviceTokenStore: tokenStore,
     );
 
     final registration = await client.register();
@@ -86,8 +99,13 @@ void main() {
     expect(requests[3].path, '/api/tag');
 
     for (final request in requests) {
-      expect(request.deviceId, _FakePreferencesRepository.deviceId);
       expect(request.proxySecret, 'proxy-secret');
+    }
+    // Register identifies by device id; quota-protected calls by token only.
+    expect(requests[0].deviceId, _FakePreferencesRepository.deviceId);
+    for (final request in requests.skip(1)) {
+      expect(request.deviceId, isNull);
+      expect(request.deviceToken, 'issued-token');
     }
 
     expect(requests[1].contentType, contains('multipart/form-data'));
@@ -124,6 +142,7 @@ Future<void> _serveBackend(
       path: request.uri.path,
       queryParameters: request.uri.queryParameters,
       deviceId: request.headers.value('X-Device-Id'),
+      deviceToken: request.headers.value('X-Device-Token'),
       proxySecret: request.headers.value('X-Proxy-Secret'),
       contentType: request.headers.contentType?.mimeType,
       body: bodyText,
@@ -140,7 +159,7 @@ Future<void> _serveBackend(
         request.response
           ..statusCode = 201
           ..write(
-            '{"ok":true,"quota":{"limit":5,"count":1,"remaining":4,"resetAt":"2026-06-10T00:00:00Z"}}',
+            '{"ok":true,"token":"issued-token","quota":{"limit":5,"count":1,"remaining":4,"resetAt":"2026-06-10T00:00:00Z"}}',
           );
         break;
       case '/api/transcribe':
@@ -179,6 +198,7 @@ class _ObservedRequest {
     required this.path,
     required this.queryParameters,
     required this.deviceId,
+    required this.deviceToken,
     required this.proxySecret,
     required this.contentType,
     required this.body,
@@ -188,6 +208,7 @@ class _ObservedRequest {
   final String path;
   final Map<String, String> queryParameters;
   final String? deviceId;
+  final String? deviceToken;
   final String? proxySecret;
   final String? contentType;
   final String body;
@@ -213,4 +234,17 @@ Future<File> _createTempAudioFile() async {
   final file = File('${directory.path}/clip.m4a');
   await file.writeAsString('audio-body');
   return file;
+}
+
+class _MemorySecureStore implements SecureKeyValueStore {
+  final Map<String, String> _values = <String, String>{};
+
+  @override
+  Future<void> delete(String key) async => _values.remove(key);
+
+  @override
+  Future<String?> read(String key) async => _values[key];
+
+  @override
+  Future<void> write(String key, String value) async => _values[key] = value;
 }

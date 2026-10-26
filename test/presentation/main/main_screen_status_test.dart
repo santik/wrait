@@ -66,6 +66,36 @@ void main() {
     expect(presentation.savedEntryId, 14);
   });
 
+  test('maps the rate limit error to the retriable status (no draft)', () {
+    final presentation = resolveMainScreenStatus(
+      controllerState: const RecordingControllerState(
+        recordingState: RecordingErrorState(RecordingError.rateLimited),
+      ),
+      hasEverRecorded: true,
+      l10n: l10n,
+    );
+
+    expect(presentation.statusText, 'busy right now · try again soon');
+  });
+
+  test('maps the rate limit error to the draft-preserved status', () {
+    final presentation = resolveMainScreenStatus(
+      controllerState: const RecordingControllerState(
+        recordingState: RecordingErrorState(
+          RecordingError.rateLimited,
+          preservedDraft: true,
+        ),
+      ),
+      hasEverRecorded: true,
+      l10n: l10n,
+    );
+
+    expect(
+      presentation.statusText,
+      'busy right now · saved as draft, try again soon',
+    );
+  });
+
   test('returns approved draft-preserved copy by error category', () {
     final cases = <RecordingState, String>{
       const RecordingErrorState(

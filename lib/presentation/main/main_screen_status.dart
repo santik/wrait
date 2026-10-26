@@ -95,6 +95,14 @@ MainScreenStatusPresentation resolveMainScreenStatus({
         statusText: l10n.statusServerConfigErrorDraft,
       ),
     RecordingErrorState(
+      error: RecordingError.rateLimited,
+      preservedDraft: true,
+    ) =>
+      MainScreenStatusPresentation(
+        buttonLabel: buttonLabel,
+        statusText: l10n.statusRateLimitedDraft,
+      ),
+    RecordingErrorState(
       error: RecordingError.speechNotRecognized,
       preservedDraft: true,
     ) =>
@@ -150,6 +158,11 @@ MainScreenStatusPresentation resolveMainScreenStatus({
       MainScreenStatusPresentation(
         buttonLabel: buttonLabel,
         statusText: l10n.statusServerConfigError,
+      ),
+    RecordingErrorState(error: RecordingError.rateLimited) =>
+      MainScreenStatusPresentation(
+        buttonLabel: buttonLabel,
+        statusText: l10n.statusRateLimited,
       ),
     RecordingErrorState(error: RecordingError.speechNotRecognized) =>
       MainScreenStatusPresentation(

@@ -1,5 +1,7 @@
 {
   "@@locale": "tr",
+  "statusRateLimited": "şu an yoğun · birazdan tekrar dene",
+  "statusRateLimitedDraft": "şu an yoğun · taslak olarak kaydedildi, birazdan tekrar dene",
   "bootstrapTitle": "wrait açılıyor",
   "bootstrapSubtitle": "yerel günlüğün yükleniyor",
   "bootstrapErrorTitle": "wrait açılamadı",

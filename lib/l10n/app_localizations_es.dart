@@ -106,6 +106,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'servicio no disponible · guardado como borrador';
 
   @override
+  String get statusRateLimitedDraft =>
+      'ocupado ahora mismo · guardado como borrador, inténtalo pronto';
+
+  @override
+  String get statusRateLimited => 'ocupado ahora mismo · inténtalo pronto';
+
+  @override
   String get statusServerConfigErrorDraft =>
       'error de configuración del servidor · guardado como borrador';
 
@@ -798,6 +805,13 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
   @override
   String get statusServiceUnavailableDraft =>
       'servicio no disponible · guardado como borrador';
+
+  @override
+  String get statusRateLimitedDraft =>
+      'ocupado en este momento · guardado como borrador, inténtalo pronto';
+
+  @override
+  String get statusRateLimited => 'ocupado en este momento · inténtalo pronto';
 
   @override
   String get statusServerConfigErrorDraft =>

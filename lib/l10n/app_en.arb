@@ -62,6 +62,8 @@
   "statusDeleted": "deleted",
   "statusNoConnectionDraft": "no connection · saved as draft",
   "statusServiceUnavailableDraft": "service unavailable · saved as draft",
+  "statusRateLimitedDraft": "busy right now · saved as draft, try again soon",
+  "statusRateLimited": "busy right now · try again soon",
   "statusServerConfigErrorDraft": "server config error · saved as draft",
   "statusSpeechNotRecognizedDraft": "not recognized · saved as draft",
   "statusSpeechNotRecognized": "not recognized",

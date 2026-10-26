@@ -26,22 +26,22 @@ final class GeneratedApiFailure<T> extends GeneratedApiResponse<T> {
 abstract interface class GeneratedBackendApiClient {
   Future<GeneratedApiResponse<RegisterResponse>> registerDevice({
     required String xDeviceId,
+    String? xDeviceToken,
   });
 
+  // Note: the device token is attached by AuthInterceptor on the Dio instance,
+  // not passed per call, so the quota methods below take no xDeviceToken.
   Future<GeneratedApiResponse<TranscribeResponse>> transcribeAudio({
-    required String xDeviceId,
     required List<int> audioBytes,
     required String audioFilename,
     String? language,
   });
 
   Future<GeneratedApiResponse<CleanupResponse>> cleanupTranscript({
-    required String xDeviceId,
     required CleanupRequest cleanupRequest,
   });
 
   Future<GeneratedApiResponse<TagResponse>> tagText({
-    required String xDeviceId,
     required TagRequest tagRequest,
   });
 }
@@ -54,6 +54,7 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
   @override
   Future<GeneratedApiResponse<RegisterResponse>> registerDevice({
     required String xDeviceId,
+    String? xDeviceToken,
   }) async {
     final response = await _dio.request<dynamic>(
       '/api/register',
@@ -61,7 +62,12 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
         method: 'POST',
         responseType: ResponseType.json,
         validateStatus: (_) => true,
-        headers: <String, dynamic>{'X-Device-Id': xDeviceId},
+        headers: <String, dynamic>{
+          'X-Device-Id': xDeviceId,
+          // Dart 3 null-aware element: the entry is omitted entirely when
+          // xDeviceToken is null, so no empty X-Device-Token header is sent.
+          'X-Device-Token': ?xDeviceToken,
+        },
       ),
     );
 
@@ -83,7 +89,6 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
 
   @override
   Future<GeneratedApiResponse<TranscribeResponse>> transcribeAudio({
-    required String xDeviceId,
     required List<int> audioBytes,
     required String audioFilename,
     String? language,
@@ -100,7 +105,6 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
         method: 'POST',
         responseType: ResponseType.json,
         validateStatus: (_) => true,
-        headers: <String, dynamic>{'X-Device-Id': xDeviceId},
       ),
     );
 
@@ -122,7 +126,6 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
 
   @override
   Future<GeneratedApiResponse<CleanupResponse>> cleanupTranscript({
-    required String xDeviceId,
     required CleanupRequest cleanupRequest,
   }) async {
     final response = await _dio.request<dynamic>(
@@ -132,7 +135,6 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
         method: 'POST',
         responseType: ResponseType.json,
         validateStatus: (_) => true,
-        headers: <String, dynamic>{'X-Device-Id': xDeviceId},
       ),
     );
 
@@ -154,7 +156,6 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
 
   @override
   Future<GeneratedApiResponse<TagResponse>> tagText({
-    required String xDeviceId,
     required TagRequest tagRequest,
   }) async {
     final response = await _dio.request<dynamic>(
@@ -164,7 +165,6 @@ class DioGeneratedBackendApiClient implements GeneratedBackendApiClient {
         method: 'POST',
         responseType: ResponseType.json,
         validateStatus: (_) => true,
-        headers: <String, dynamic>{'X-Device-Id': xDeviceId},
       ),
     );
 
@@ -255,9 +255,10 @@ class RecordQuota {
 }
 
 class RegisterResponse {
-  const RegisterResponse({required this.ok, this.quota});
+  const RegisterResponse({required this.ok, this.token, this.quota});
 
   final bool ok;
+  final String? token;
   final RecordQuota? quota;
 
   factory RegisterResponse.fromJson(Map<String, dynamic> json) {
@@ -268,6 +269,7 @@ class RegisterResponse {
     );
     return RegisterResponse(
       ok: parsed.ok,
+      token: parsed.token,
       quota: parsed.quota == null
           ? null
           : RecordQuota.fromOpenApi(parsed.quota!),

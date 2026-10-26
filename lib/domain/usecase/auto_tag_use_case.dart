@@ -2,7 +2,7 @@ import '../../data/api/backend_results.dart';
 import '../model/tag.dart';
 import '../repository/tag_repository.dart';
 
-const autoTagProbabilityThreshold = 0.5;
+const autoTagProbabilityThreshold = 0.75;
 
 typedef AutoTagWarningLogger =
     void Function(String message, {Object? error, StackTrace? stackTrace});

@@ -1,5 +1,7 @@
 {
   "@@locale": "ja",
+  "statusRateLimited": "混み合っています · 少し後でもう一度",
+  "statusRateLimitedDraft": "混み合っています · 下書きを保存しました。少し後でもう一度",
   "bootstrapTitle": "wrait を開いています",
   "bootstrapSubtitle": "ローカルの日記を読み込み中",
   "bootstrapErrorTitle": "wrait を開けませんでした",

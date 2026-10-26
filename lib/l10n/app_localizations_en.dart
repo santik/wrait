@@ -103,6 +103,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'service unavailable · saved as draft';
 
   @override
+  String get statusRateLimitedDraft =>
+      'busy right now · saved as draft, try again soon';
+
+  @override
+  String get statusRateLimited => 'busy right now · try again soon';
+
+  @override
   String get statusServerConfigErrorDraft =>
       'server config error · saved as draft';
 

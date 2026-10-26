@@ -1,5 +1,7 @@
 {
   "@@locale": "de",
+  "statusRateLimited": "gerade viel los · versuch's gleich nochmal",
+  "statusRateLimitedDraft": "gerade viel los · als Entwurf gespeichert, gleich nochmal",
   "bootstrapTitle": "wrait wird geöffnet",
   "bootstrapSubtitle": "Ihr lokales Tagebuch wird geladen",
   "bootstrapErrorTitle": "wrait konnte nicht geöffnet werden",
