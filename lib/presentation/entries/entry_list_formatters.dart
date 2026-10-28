@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../domain/model/entry.dart';
 import '../../domain/model/supported_language.dart';
 import '../../l10n/app_localizations.dart';
+import 'locale_date_format.dart';
 
 class EntryListTimestampLabel {
   const EntryListTimestampLabel({
@@ -24,21 +25,21 @@ EntryListTimestampLabel formatEntryListTimestamp({
   required Locale locale,
 }) {
   final dateTime = DateTime.fromMillisecondsSinceEpoch(createdAt).toLocal();
-  final localeName = locale.toLanguageTag();
 
-  return _tryFormatEntryListTimestamp(dateTime, localeName) ??
-      _tryFormatEntryListTimestamp(dateTime, locale.languageCode) ??
-      _tryFormatEntryListTimestamp(dateTime, null)!;
+  return formatWithLocaleFallback(
+    locale,
+    (localeName) => EntryListTimestampLabel(
+      shortWeekday: DateFormat('EEE', localeName).format(dateTime),
+      date: DateFormat.yMd(localeName).format(dateTime),
+      time: DateFormat.jm(localeName).format(dateTime),
+    ),
+  );
 }
 
 String entryListPreviewText(Entry entry, AppLocalizations l10n) {
-  final preferredText = entry.cleanedText;
-  if (preferredText != null && preferredText.trim().isNotEmpty) {
-    return _firstNonBlankLine(preferredText);
-  }
-
-  if (entry.rawTranscript.trim().isNotEmpty) {
-    return _firstNonBlankLine(entry.rawTranscript);
+  final body = entry.displayText;
+  if (body.isNotEmpty) {
+    return _firstNonBlankLine(body);
   }
 
   if (entryListIsAudioOnlyDraft(entry)) {
@@ -70,23 +71,4 @@ String _firstNonBlankLine(String text) {
   }
 
   return '';
-}
-
-EntryListTimestampLabel? _tryFormatEntryListTimestamp(
-  DateTime dateTime,
-  String? localeName,
-) {
-  final formattedLocale = localeName == null || localeName.trim().isEmpty
-      ? null
-      : localeName;
-
-  try {
-    return EntryListTimestampLabel(
-      shortWeekday: DateFormat('EEE', formattedLocale).format(dateTime),
-      date: DateFormat.yMd(formattedLocale).format(dateTime),
-      time: DateFormat.jm(formattedLocale).format(dateTime),
-    );
-  } catch (_) {
-    return null;
-  }
 }

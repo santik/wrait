@@ -29,6 +29,7 @@ import 'package:wrait/presentation/main/recording_state.dart';
 
 import '../test/test_doubles/fake_secure_storage.dart';
 import 'support/managed_audio_files.dart';
+import 'support/microphone_test_overrides.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -721,6 +722,7 @@ Future<_Harness> _createHarness({
 
   final container = ProviderContainer(
     overrides: [
+      ...grantedMicrophoneOverrides,
       appConfigProvider.overrideWithValue(
         const AppConfig(
           backendUrl: 'https://wrait-backend.vercel.app',

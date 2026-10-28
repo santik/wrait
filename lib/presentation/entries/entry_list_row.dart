@@ -133,9 +133,7 @@ class _EntryListRowState extends State<EntryListRow>
                       borderRadius: BorderRadius.circular(
                         WraitRadiusTokens.card,
                       ),
-                      onTap: _isRevealFlowActive
-                          ? null
-                          : isAudioDraft
+                      onTap: (_isRevealFlowActive || isAudioDraft)
                           ? null
                           : () => widget.onTap(widget.entry.id),
                       child: Padding(

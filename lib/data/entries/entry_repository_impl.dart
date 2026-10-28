@@ -7,6 +7,7 @@ import '../../core/time/system_clock.dart';
 import '../../domain/model/entry.dart';
 import '../../domain/model/supported_language.dart';
 import '../../domain/repository/entry_repository.dart';
+import '../../domain/usecase/cleanup_transcript_use_case.dart' show countWords;
 import 'draft_audio_path_codec.dart';
 import 'local_entry_database.dart';
 import 'tag_repository_impl.dart';
@@ -148,7 +149,7 @@ class EntryRepositoryImpl implements EntryRepository {
         type: EntryType.draft.name,
         language: canonicalLanguage,
         createdAt: clock.now(),
-        wordCount: Value(_countWords(transcript)),
+        wordCount: Value(countWords(transcript)),
       ),
     );
   }
@@ -163,7 +164,7 @@ class EntryRepositoryImpl implements EntryRepository {
         type: EntryType.saved.name,
         language: canonicalLanguage,
         createdAt: clock.now(),
-        wordCount: Value(_countWords(transcript)),
+        wordCount: Value(countWords(transcript)),
       ),
     );
   }
@@ -201,7 +202,7 @@ class EntryRepositoryImpl implements EntryRepository {
     final affectedRows = await entryDao.updateEditedCleanedText(
       id,
       cleanedText,
-      _countWords(cleanedText),
+      countWords(cleanedText),
     );
     _throwIfMissing(id, affectedRows);
   }
@@ -361,14 +362,6 @@ class EntryRepositoryImpl implements EntryRepository {
       'language',
       'must resolve to a supported BCP-47 language code',
     );
-  }
-
-  int _countWords(String text) {
-    return text
-        .trim()
-        .split(RegExp(r'\s+'))
-        .where((part) => part.isNotEmpty)
-        .length;
   }
 
   Future<void> _deleteFileIfPresent(String? filePath) async {

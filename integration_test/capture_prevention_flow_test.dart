@@ -17,6 +17,8 @@ import 'package:wrait/presentation/main/main_screen_test_keys.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
 import 'package:wrait/presentation/settings/settings_test_keys.dart';
 
+import 'support/microphone_test_overrides.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -52,6 +54,7 @@ Widget _buildTestApp() {
 
   return ProviderScope(
     overrides: [
+      ...grantedMicrophoneOverrides,
       appConfigProvider.overrideWithValue(
         const AppConfig(
           backendUrl: 'https://wrait-backend.vercel.app',

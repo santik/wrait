@@ -34,6 +34,8 @@ import 'package:wrait/presentation/theme/design_tokens.dart';
 import '../test/test_doubles/fake_monotonic_clock.dart';
 import '../test/test_doubles/fake_secure_storage.dart';
 
+import 'support/microphone_test_overrides.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
@@ -554,6 +556,7 @@ Future<_Harness> _createHarness({
 
   final container = ProviderContainer(
     overrides: [
+      ...grantedMicrophoneOverrides,
       appConfigProvider.overrideWithValue(
         const AppConfig(
           backendUrl: 'https://wrait-backend.vercel.app',

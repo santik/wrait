@@ -219,12 +219,8 @@ class CloudTranscriptionService implements TranscriptionService {
         return null;
       }
 
-      final handle = await file.open(mode: FileMode.read);
-      try {
-        // Open the file to prove it is readable before upload.
-      } finally {
-        await handle.close();
-      }
+      // Open and immediately close the file to prove it is readable.
+      await (await file.open(mode: FileMode.read)).close();
 
       if (await file.length() <= 0) {
         _logWarning(

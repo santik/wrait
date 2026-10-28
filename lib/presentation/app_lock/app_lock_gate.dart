@@ -89,7 +89,12 @@ class _AppLockGateState extends ConsumerState<AppLockGate>
   }
 
   Future<void> _handleForegroundReady() async {
-    if (!mounted || _lifecycleState != AppLifecycleState.resumed) {
+    // Prompt whenever the app is in the foreground, not only when strictly
+    // `resumed`. On iOS a cold launch can settle in `inactive` (a foreground,
+    // visible state — same class `_shouldLockForLifecycleExit` already treats as
+    // not-backgrounded) without ever emitting a `resumed` event, which would
+    // otherwise leave the user stranded on the lock screen with no prompt.
+    if (!mounted || _shouldLockForLifecycleExit(_lifecycleState)) {
       return;
     }
     if (!ref.read(appLockBuildEnabledProvider)) {

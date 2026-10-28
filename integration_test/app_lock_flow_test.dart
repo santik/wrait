@@ -40,6 +40,29 @@ void main() {
     expect(find.byType(FlutterLogo), findsNothing);
   });
 
+  testWidgets('cold launch in the inactive foreground state still auto-unlocks', (
+    tester,
+  ) async {
+    // Reproduces an iOS cold launch that settles in `inactive` (a foreground,
+    // visible state) without ever emitting a `resumed` event. The gate must
+    // still authenticate; a `resumed`-only trigger strands the user on the
+    // lock screen. Seeded explicitly so the regression is caught on every
+    // platform, not just whichever one happens to launch inactive.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.inactive);
+    final harness = await _buildHarness(
+      authResults: <AppLockAuthResult>[AppLockAuthResult.success],
+    );
+
+    await tester.pumpWidget(harness.app);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(appLockOverlayKey), findsNothing);
+    expect(harness.authenticator.authenticateCallCount, 1);
+
+    // Restore the default so later tests launch from a clean lifecycle.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+  });
+
   testWidgets('background and resume re-locks then auto-prompts again', (
     tester,
   ) async {

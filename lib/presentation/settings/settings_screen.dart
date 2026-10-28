@@ -64,7 +64,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   }
 
   @override
-  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _languageFocusNode.dispose();
@@ -148,12 +147,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     if (language == null) {
       return AppLocalizations.of(context).settingsAutomaticDetection;
     }
-    for (final supported in supportedLanguages) {
-      if (supported.code == language) {
-        return supported.displayName;
-      }
-    }
-    return '';
+    return supportedLanguageDisplayName(language) ?? '';
   }
 
   void _scheduleLanguageFocusIfNeeded() {

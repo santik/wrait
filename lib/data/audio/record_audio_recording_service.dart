@@ -231,8 +231,6 @@ class RecordAudioRecordingService implements AudioRecordingService {
 
     try {
       await probeFile.writeAsBytes(const <int>[]);
-    } on FileSystemException {
-      rethrow;
     } finally {
       if (await probeFile.exists()) {
         await probeFile.delete();

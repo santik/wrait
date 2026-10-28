@@ -12,6 +12,7 @@ import 'package:wrait/data/audio/audio_recording_service.dart';
 import 'package:wrait/data/audio/record_audio_recording_service.dart';
 
 import '../test/test_doubles/fake_monotonic_clock.dart';
+import 'support/microphone_test_overrides.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,19 @@ void main() {
   testWidgets('native recorder produces a nonempty AAC/M4A file', (
     tester,
   ) async {
+    // The iOS Simulator has no microphone input: capture yields silence and an
+    // empty (~28-byte) container, so this native-capture smoke test only makes
+    // sense on a real device or the Android emulator (which synthesizes input).
+    // Running it on the iOS Simulator either fails on the empty file or, when
+    // permission is undetermined, blocks the whole suite on the native mic
+    // permission dialog the test harness cannot dismiss.
+    if (_isIosSimulator()) {
+      markTestSkipped(
+        'Skipped on the iOS Simulator: no microphone input is available.',
+      );
+      return;
+    }
+
     await tester.runAsync(() async {
       final directory = await Directory.systemTemp.createTemp(
         'wrait-native-audio',
@@ -68,6 +82,12 @@ void main() {
           ),
           monotonicClockProvider.overrideWithValue(monotonicClock),
           recorderAdapterProvider.overrideWithValue(recorder),
+          // Keep these graph tests off the native microphone permission path:
+          // with only the recorder faked, startRecording() would call the real
+          // PermissionHandler service and block on the OS permission dialog the
+          // test harness cannot dismiss. A granted fake makes them deterministic
+          // and self-contained.
+          ...grantedMicrophoneOverrides,
         ],
       );
       addTearDown(container.dispose);
@@ -110,6 +130,12 @@ void main() {
           ),
           monotonicClockProvider.overrideWithValue(monotonicClock),
           recorderAdapterProvider.overrideWithValue(recorder),
+          // Keep these graph tests off the native microphone permission path:
+          // with only the recorder faked, startRecording() would call the real
+          // PermissionHandler service and block on the OS permission dialog the
+          // test harness cannot dismiss. A granted fake makes them deterministic
+          // and self-contained.
+          ...grantedMicrophoneOverrides,
         ],
       );
       addTearDown(container.dispose);
@@ -151,6 +177,12 @@ void main() {
           ),
           monotonicClockProvider.overrideWithValue(monotonicClock),
           recorderAdapterProvider.overrideWithValue(recorder),
+          // Keep these graph tests off the native microphone permission path:
+          // with only the recorder faked, startRecording() would call the real
+          // PermissionHandler service and block on the OS permission dialog the
+          // test harness cannot dismiss. A granted fake makes them deterministic
+          // and self-contained.
+          ...grantedMicrophoneOverrides,
         ],
       );
       addTearDown(container.dispose);
@@ -170,6 +202,20 @@ void main() {
       expect(service.isRecording, isFalse);
     },
   );
+}
+
+// On the iOS Simulator the app sandbox lives under a
+// `.../CoreSimulator/Devices/<udid>/...` path, so the temp/home paths contain
+// "CoreSimulator"; a real device's sandbox never does. This tells the two apart
+// without pulling in a device-info dependency.
+bool _isIosSimulator() {
+  if (!Platform.isIOS) {
+    return false;
+  }
+  const marker = 'CoreSimulator';
+  return Directory.systemTemp.path.contains(marker) ||
+      (Platform.environment['HOME']?.contains(marker) ?? false) ||
+      Platform.environment.containsKey('SIMULATOR_UDID');
 }
 
 Future<String> _stopAtHardCap({
