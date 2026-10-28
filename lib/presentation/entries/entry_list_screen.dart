@@ -205,63 +205,36 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
     final l10n = AppLocalizations.of(context);
     final selectedTagId = ref.watch(entryListTagFilterProvider);
     if (allEntries.isEmpty) {
-      return Center(
-        child: Text(
-          l10n.entryListEmpty,
-          key: const ValueKey('entryListEmptyState'),
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: theme.colorScheme.secondary,
-          ),
-          textAlign: TextAlign.center,
-        ),
+      return _emptyState(
+        theme: theme,
+        text: l10n.entryListEmpty,
+        textKey: const ValueKey('entryListEmptyState'),
       );
     }
 
     if (hasActiveQuery && filteredEntries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.entryListNoResults,
-              key: const ValueKey('entryListNoSearchResults'),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.secondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: WraitSpacingTokens.sm),
-            TextButton(
-              key: const ValueKey('entryListNoResultsClearButton'),
-              onPressed: _clearSearch,
-              child: Text(l10n.entryListClearSearch),
-            ),
-          ],
+      return _emptyState(
+        theme: theme,
+        text: l10n.entryListNoResults,
+        textKey: const ValueKey('entryListNoSearchResults'),
+        action: TextButton(
+          key: const ValueKey('entryListNoResultsClearButton'),
+          onPressed: _clearSearch,
+          child: Text(l10n.entryListClearSearch),
         ),
       );
     }
 
     if (selectedTagId != null && filteredEntries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.tagsNoEntriesWithTag,
-              key: const ValueKey('entryListNoTagResults'),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.secondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: WraitSpacingTokens.sm),
-            TextButton(
-              key: const ValueKey('entryListNoTagResultsClearButton'),
-              onPressed: () =>
-                  ref.read(entryListTagFilterProvider.notifier).clear(),
-              child: Text(l10n.tagsFilterClear),
-            ),
-          ],
+      return _emptyState(
+        theme: theme,
+        text: l10n.tagsNoEntriesWithTag,
+        textKey: const ValueKey('entryListNoTagResults'),
+        action: TextButton(
+          key: const ValueKey('entryListNoTagResultsClearButton'),
+          onPressed: () =>
+              ref.read(entryListTagFilterProvider.notifier).clear(),
+          child: Text(l10n.tagsFilterClear),
         ),
       );
     }
@@ -281,6 +254,35 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
           onDeleteRequested: (entryId) => _confirmDelete(context, entryId),
         );
       },
+    );
+  }
+
+  Widget _emptyState({
+    required ThemeData theme,
+    required String text,
+    required ValueKey<String> textKey,
+    Widget? action,
+  }) {
+    final label = Text(
+      text,
+      key: textKey,
+      style: theme.textTheme.labelLarge?.copyWith(
+        color: theme.colorScheme.secondary,
+      ),
+      textAlign: TextAlign.center,
+    );
+
+    return Center(
+      child: action == null
+          ? label
+          : Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                label,
+                const SizedBox(height: WraitSpacingTokens.sm),
+                action,
+              ],
+            ),
     );
   }
 

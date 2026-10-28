@@ -20,6 +20,8 @@ import 'package:wrait/domain/usecase/app_launch_work_use_case.dart';
 import 'package:wrait/main.dart';
 import 'package:wrait/presentation/main/main_screen_test_keys.dart';
 
+import 'support/microphone_test_overrides.dart';
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
@@ -62,6 +64,7 @@ void main() {
         ),
         sharedPreferences: sharedPreferences,
         overrides: [
+          ...grantedMicrophoneOverrides,
           appLockEnabledProvider.overrideWithValue(false),
           platformDeviceIdProvider.overrideWithValue(
             const _FakePlatformDeviceIdProvider('platform-device-id'),
@@ -146,6 +149,7 @@ void main() {
         ),
         sharedPreferences: sharedPreferences,
         overrides: [
+          ...grantedMicrophoneOverrides,
           appLockEnabledProvider.overrideWithValue(false),
           platformDeviceIdProvider.overrideWithValue(
             const _FakePlatformDeviceIdProvider('first-platform-device'),
@@ -191,6 +195,7 @@ void main() {
         ),
         sharedPreferences: sharedPreferences,
         overrides: [
+          ...grantedMicrophoneOverrides,
           appLockEnabledProvider.overrideWithValue(false),
           platformDeviceIdProvider.overrideWithValue(
             const _FakePlatformDeviceIdProvider('second-platform-device'),
@@ -263,6 +268,7 @@ void main() {
         ),
         sharedPreferences: sharedPreferences,
         overrides: [
+          ...grantedMicrophoneOverrides,
           appLockEnabledProvider.overrideWithValue(false),
           platformDeviceIdProvider.overrideWithValue(
             const _FakePlatformDeviceIdProvider('platform-device-id'),

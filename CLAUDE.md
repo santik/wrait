@@ -31,6 +31,18 @@ flutter test --name 'test name regex'  # single test by name
 
 ### Integration tests (require a connected device or emulator)
 
+Prefer the wrapper, which grants microphone access (so the native permission
+dialog never hangs the run) and kills any silently-wedged run:
+
+```bash
+tool/run_integration_tests.sh                       # every booted sim/emulator
+tool/run_integration_tests.sh emulator-5554         # one device
+tool/run_integration_tests.sh <id> -- integration_test/entry_list_flow_test.dart
+```
+
+Running `flutter test` directly works too, but on Android the real-capture test
+hangs on the microphone permission dialog without the grant the wrapper applies:
+
 ```bash
 flutter test -d <device-id> integration_test/entry_list_flow_test.dart
 ```

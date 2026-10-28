@@ -40,6 +40,16 @@ class Entry {
   final String? audioPath;
   final List<Tag> tags;
 
+  /// Body text to display: the cleaned transcript when present, otherwise the
+  /// raw transcript, or an empty string when neither has content.
+  String get displayText {
+    final cleaned = cleanedText;
+    if (cleaned != null && cleaned.trim().isNotEmpty) {
+      return cleaned;
+    }
+    return rawTranscript.trim().isNotEmpty ? rawTranscript : '';
+  }
+
   Entry copyWith({
     int? id,
     String? rawTranscript,
