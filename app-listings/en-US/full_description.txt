@@ -1,0 +1,42 @@
+Wrait turns your voice into a private, searchable diary. Just speak — AI transcription turns your words into organized text entries. Your thoughts stay encrypted on your device, never uploaded to the cloud.
+
+KEY FEATURES
+
+• Voice-to-Text Diary: Record your thoughts and get instant AI transcription powered by Deepgram and OpenAI. Your spoken words become clean, readable diary entries.
+
+• Strong Local Encryption: Every entry is encrypted with SQLCipher before it touches storage. Your encryption key is generated on your device and never leaves it.
+
+• 60+ Languages: Record and transcribe in over 60 languages including English, Spanish, German, French, Portuguese, Japanese, Korean, Arabic, Hindi, Chinese, Russian, and many more. Cloud mode detects your language automatically.
+
+• App Lock: Protect your journal with fingerprint, face unlock, or your device PIN. No one reads your diary without your permission.
+
+• Export Your Data: Download all your entries as CSV. Your data belongs to you.
+
+• Clean, Modern Design: Built with Material Design for a smooth, native Android experience. No clutter, no ads.
+
+HOW IT WORKS
+
+1. Tap the button and speak your thoughts
+2. AI transcribes your voice to text automatically
+3. Review, edit, and save your encrypted diary entry
+
+No account required. No sign-up. Just open and start talking.
+
+YOUR PRIVACY COMES FIRST
+
+Unlike other diary apps, Wrait was built for privacy from the ground up:
+• All entries are encrypted before being stored
+• Your encryption key is generated on-device and never shared
+• No cloud backup — your diary exists only on your phone
+• Screenshot protection prevents screen captures of your entries
+• No ads, no tracking
+
+WHO IS WRAIT FOR?
+
+• Daily journalers who prefer speaking over typing
+• People who want a private, secure diary without cloud storage
+• Commuters who capture thoughts hands-free
+• Multilingual users who journal in different languages
+• Anyone who values genuine privacy in a personal journal
+
+Download Wrait and start your private voice diary today.

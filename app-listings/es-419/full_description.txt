@@ -1,0 +1,42 @@
+Wrait convierte tu voz en un diario personal privado y organizado. Solo habla: la transcripción con IA transforma tus palabras en entradas de texto limpias y fáciles de buscar. Todo queda cifrado en tu celular, sin subirse a la nube.
+
+FUNCIONES PRINCIPALES
+
+• Diario de voz con IA: Graba tus pensamientos y obtén una transcripción automática con Deepgram y OpenAI. Tus notas de voz se convierten en entradas de diario claras y bien redactadas.
+
+• Cifrado local seguro: Cada entrada se cifra con SQLCipher antes de guardarse. Tu clave de cifrado se genera en tu dispositivo y nunca sale de él.
+
+• Más de 60 idiomas: Graba y transcribe en más de 60 idiomas, incluyendo español, inglés, alemán, francés, portugués, japonés, coreano, árabe, hindi, chino, ruso y muchos más. En modo nube, el idioma se detecta automáticamente.
+
+• Bloqueo de app: Protege tu diario con huella digital, reconocimiento facial o el PIN de tu dispositivo. Nadie lee tu diario sin tu permiso.
+
+• Exporta tus datos: Descarga todas tus entradas en formato CSV. Tus datos son tuyos.
+
+• Diseño limpio y moderno: Construida con Material Design para una experiencia nativa en Android. Sin desorden, sin anuncios.
+
+CÓMO FUNCIONA
+
+1. Toca el botón y di lo que piensas
+2. La IA transcribe tu voz a texto automáticamente
+3. Revisa, edita y guarda tu entrada cifrada
+
+No necesitas cuenta. No necesitas registrarte. Solo abre la app y empieza a hablar.
+
+TU PRIVACIDAD ES LO PRIMERO
+
+A diferencia de otras apps de diario personal, Wrait fue diseñada para la privacidad desde cero:
+• Todas las entradas se cifran antes de almacenarse
+• Tu clave de cifrado se genera en el dispositivo y nunca se comparte
+• Sin respaldo en la nube: tu diario existe solo en tu celular
+• Protección contra capturas de pantalla de tus entradas
+• Sin anuncios, sin rastreo, sin seguimiento
+
+¿PARA QUIÉN ES WRAIT?
+
+• Personas que prefieren hablar en vez de escribir su diario
+• Quienes buscan un diario privado y seguro, sin almacenamiento en la nube
+• Gente que quiere capturar ideas mientras se mueve, con las manos libres
+• Usuarios que escriben su journal en varios idiomas
+• Cualquiera que valore la privacidad real en una grabadora de notas de voz personal
+
+Descarga Wrait y comienza tu diario de voz privado hoy.

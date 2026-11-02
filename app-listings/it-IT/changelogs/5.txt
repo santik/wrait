@@ -1,0 +1,5 @@
+• Scegli la lingua di registrazione tra 61 lingue supportate oppure lascia che Wrait la rilevi automaticamente
+• Indicatore della lingua nella schermata principale per accedere rapidamente alle impostazioni della lingua
+• Interfaccia completamente localizzata: l'app ora parla inglese e russo
+• Statistiche delle voci migliorate, con plurali corretti
+• Le impostazioni sono ora bloccate durante la registrazione per evitare modifiche accidentali

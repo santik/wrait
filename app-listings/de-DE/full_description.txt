@@ -1,0 +1,42 @@
+Wrait verwandelt deine Stimme in ein privates, durchsuchbares Tagebuch. Einfach sprechen – die KI-Transkription macht aus deinen Worten geordnete Texteinträge. Dein Sprachtagebuch bleibt verschlüsselt auf deinem Gerät. Ohne Cloud, ohne Konto, ohne Kompromisse.
+
+FUNKTIONEN
+
+• Sprache zu Text: Sprich deine Gedanken ein und erhalte sofort eine KI-gestützte Transkription. Deepgram und OpenAI verwandeln deine Sprachnotizen in saubere, lesbare Tagebucheinträge.
+
+• Starke lokale Verschlüsselung: Jeder Eintrag wird mit SQLCipher verschlüsselt, bevor er gespeichert wird. Dein Schlüssel wird auf dem Gerät erzeugt und verlässt es nie.
+
+• 60+ Sprachen: Transkribiere in über 60 Sprachen, darunter Deutsch, Englisch, Spanisch, Französisch, Portugiesisch, Japanisch, Koreanisch, Arabisch, Hindi, Chinesisch, Russisch und viele weitere. Im Online-Modus wird die Sprache automatisch erkannt.
+
+• App-Sperre: Schütze dein Journal mit Fingerabdruck, Gesichtserkennung oder Geräte-PIN. Niemand liest dein Tagebuch ohne deine Erlaubnis.
+
+• CSV-Export: Lade alle Einträge als CSV-Datei herunter. Deine Daten gehören dir.
+
+• Klares Design: Gebaut mit Material Design für ein reibungsloses, natives Android-Erlebnis. Keine Ablenkung, keine Werbung.
+
+SO FUNKTIONIERT ES
+
+1. Tippe auf den Button und sprich deine Gedanken
+2. Die KI transkribiert deine Stimme automatisch in Text
+3. Prüfe, bearbeite und speichere deinen verschlüsselten Tagebucheintrag
+
+Kein Konto nötig. Keine Registrierung. Einfach öffnen und lossprechen.
+
+DEINE PRIVATSPHÄRE AN ERSTER STELLE
+
+Anders als andere Tagebuch-Apps wurde Wrait von Grund auf für Datenschutz entwickelt:
+• Alle Einträge werden vor dem Speichern verschlüsselt
+• Dein Verschlüsselungsschlüssel wird auf dem Gerät erzeugt und nie weitergegeben
+• Keine Cloud-Sicherung – dein Tagebuch existiert nur auf deinem Telefon
+• Screenshot-Schutz verhindert Bildschirmaufnahmen deiner Einträge
+• Keine Werbung, kein Tracking
+
+FÜR WEN IST WRAIT?
+
+• Tagebuchschreiber, die lieber sprechen als tippen
+• Menschen, die ein privates, sicheres Tagebuch ohne Cloud wollen
+• Pendler, die Gedanken freihändig festhalten
+• Mehrsprachige Nutzer, die in verschiedenen Sprachen journalen
+• Alle, die echten Datenschutz in einem persönlichen Journal schätzen
+
+Lade Wrait herunter und starte dein privates Sprachtagebuch noch heute.

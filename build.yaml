@@ -1,0 +1,8 @@
+targets:
+  $default:
+    sources:
+      - "$package$"
+      - "lib/**"
+      - "test/**"
+      - "integration_test/**"
+      - "pubspec.yaml"

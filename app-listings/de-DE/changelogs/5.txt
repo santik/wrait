@@ -1,0 +1,5 @@
+• Aufnahmesprache aus 61 unterstützten Sprachen wählen oder automatisch erkennen lassen
+• Sprachanzeige auf dem Hauptbildschirm für schnellen Zugriff auf die Spracheinstellungen
+• Vollständige UI-Lokalisierung — die App unterstützt jetzt Englisch und Russisch
+• Verbesserte Eintragsstatistiken mit korrekter Pluralbildung
+• Einstellungen werden während aktiver Aufnahme gesperrt

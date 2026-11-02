@@ -1,0 +1,5 @@
+• Choose your recording language from 61 supported languages or let Wrait detect it automatically
+• Language indicator on the main screen for quick access to language settings
+• Full UI localization — the app now speaks English and Russian
+• Improved entry statistics with proper pluralization
+• Settings are now locked during active recording to prevent accidental changes

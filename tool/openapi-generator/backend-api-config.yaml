@@ -1,0 +1,11 @@
+generatorName: dart-dio
+inputSpec: api/wrait-backend.yaml
+outputDir: tool/openapi-generator/output/backend_api
+additionalProperties:
+  pubName: wrait_backend_api
+  pubDescription: Generated Wrait backend client.
+  pubVersion: 1.0.0
+  sourceFolder: lib
+  serializationLibrary: built_value
+  dateLibrary: core
+  enumUnknownDefaultCase: false

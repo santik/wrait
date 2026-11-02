@@ -1,0 +1,13 @@
+{
+  "private": true,
+  "name": "wrait-openapi-tooling",
+  "version": "1.0.0",
+  "description": "Tooling for generating the Flutter backend client from OpenAPI.",
+  "scripts": {
+    "build": "npm run generate:backend-api",
+    "generate:backend-api": "openapi-generator-cli generate -g dart-dio -i api/wrait-backend.yaml -c tool/openapi-generator/backend-api-config.yaml -o tool/openapi-generator/output/backend_api && cd tool/openapi-generator/output/backend_api && dart pub get && dart run build_runner build && dart fix --apply --code=unused_import,duplicate_import"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "2.25.0"
+  }
+}

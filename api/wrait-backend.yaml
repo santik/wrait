@@ -1,0 +1,666 @@
+openapi: 3.0.3
+info:
+  title: Wrait Backend API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    url: https://wrait.app
+  description: |
+    Consumer-facing API contract for device registration, transcription proxying,
+    and transcript cleanup.
+servers:
+  - url: /
+    description: Relative server URL for deployed or local environments
+paths:
+  /api/register:
+    post:
+      operationId: registerDevice
+      summary: Register a device
+      description: Registers or upserts a device using the hashed device identifier.
+      security:
+        - ProxySecretHeader: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceIdHeader'
+        - $ref: '#/components/parameters/DeviceTokenHeaderOptional'
+      responses:
+        '201':
+          description: Device registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '429':
+          $ref: '#/components/responses/RegistrationRateLimited'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /api/transcribe:
+    post:
+      operationId: transcribeAudio
+      summary: Proxy audio transcription
+      description: |
+        Accepts an audio upload as multipart form data, applies backend defaults
+        for the upstream Deepgram request, and returns the normalized backend JSON
+        payload. When language is omitted, the provider detects it automatically.
+        When language is supplied, automatic detection is disabled and that value
+        is used for transcription. Unsupported language values return 400. If the
+        provider rejects an accepted value, the request is not retried with
+        automatic detection. Exactly one provider request is made per accepted
+        request. If the provider succeeds but returns an empty transcript (for
+        example silence, or speech in a language other than the one requested),
+        the response is 422 with reason `speech_not_recognized`, no successful
+        transcription is counted, and no quota is returned. Clients may change the
+        language or use automatic detection and retry. A 200 response always
+        carries a non-empty transcript.
+      security:
+        - ProxySecretHeader: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceTokenHeader'
+        - $ref: '#/components/parameters/TranscriptionLanguage'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - audio
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: Audio recording file to transcribe.
+            encoding:
+              audio:
+                contentType: audio/mp4, audio/m4a, audio/wav, audio/webm
+      responses:
+        '200':
+          description: Transcription completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TranscribeResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '413':
+          $ref: '#/components/responses/RequestTooLarge'
+        '422':
+          $ref: '#/components/responses/SpeechNotRecognized'
+        '429':
+          $ref: '#/components/responses/DailyRecordLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: Upstream service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpstreamErrorResponse'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+  /api/cleanup:
+    post:
+      operationId: cleanupTranscript
+      summary: Clean up a transcript
+      description: |
+        Accepts a raw transcript plus the speaker language and returns cleaned
+        diary-ready text.
+      security:
+        - ProxySecretHeader: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceTokenHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CleanupRequest'
+      responses:
+        '200':
+          description: Cleanup completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CleanupResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '413':
+          $ref: '#/components/responses/RequestTooLarge'
+        '429':
+          $ref: '#/components/responses/DailyRecordLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: Upstream service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+  /api/tag:
+    post:
+      operationId: tagText
+      summary: Classify text with tags
+      description: |
+        Accepts a text and a list of tags, returns each tag with its probability
+        of being relevant to the text. Uses the TypeSafe AI Choice primitive for
+        classification. Stateless — no text, tags, or results are persisted.
+      security:
+        - ProxySecretHeader: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceTokenHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagRequest'
+      responses:
+        '200':
+          description: Classification completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '405':
+          $ref: '#/components/responses/MethodNotAllowed'
+        '413':
+          $ref: '#/components/responses/RequestTooLarge'
+        '429':
+          $ref: '#/components/responses/DailyRecordLimitExceeded'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: Upstream service error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          $ref: '#/components/responses/UpstreamTimeout'
+components:
+  securitySchemes:
+    ProxySecretHeader:
+      type: apiKey
+      in: header
+      name: X-Proxy-Secret
+  parameters:
+    DeviceIdHeader:
+      name: X-Device-Id
+      in: header
+      required: true
+      description: 64-character hex-encoded device identifier.
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{64}$'
+    DeviceTokenHeader:
+      name: X-Device-Token
+      in: header
+      required: true
+      description: Signed device token issued by /api/register.
+      schema:
+        type: string
+    DeviceTokenHeaderOptional:
+      name: X-Device-Token
+      in: header
+      required: false
+      description: Previously issued signed device token, if the client holds one.
+      schema:
+        type: string
+    TranscriptionLanguage:
+      name: language
+      in: query
+      required: false
+      description: |
+        Language supported by the `nova-3-general` model. Accepts one value from
+        this enum. Empty, unsupported, malformed, whitespace-containing, or repeated
+        values return 400. `multi` enables multilingual transcription. All other
+        client query parameters are ignored. Source:
+        https://developers.deepgram.com/docs/models-languages-overview/
+      schema:
+        type: string
+        enum:
+          - multi
+          - af
+          - af-ZA
+          - ar
+          - ar-AE
+          - ar-SA
+          - ar-QA
+          - ar-KW
+          - ar-SY
+          - ar-LB
+          - ar-PS
+          - ar-JO
+          - ar-EG
+          - ar-SD
+          - ar-TD
+          - ar-MA
+          - ar-DZ
+          - ar-TN
+          - ar-IQ
+          - ar-IR
+          - hy
+          - as
+          - as-IN
+          - be
+          - bn
+          - bs
+          - bg
+          - ca
+          - zh-HK
+          - zh
+          - zh-CN
+          - zh-Hans
+          - zh-TW
+          - zh-Hant
+          - hr
+          - cs
+          - cs-CZ
+          - da
+          - da-DK
+          - nl
+          - en
+          - en-US
+          - en-AU
+          - en-GB
+          - en-IN
+          - en-NZ
+          - et
+          - fi
+          - nl-BE
+          - fr
+          - fr-CA
+          - ka
+          - ka-GE
+          - de
+          - de-CH
+          - el
+          - gu
+          - gu-IN
+          - he
+          - hi
+          - hu
+          - id
+          - it
+          - ja
+          - kn
+          - kk
+          - kk-KZ
+          - ko
+          - ko-KR
+          - lv
+          - lt
+          - mk
+          - ms
+          - mr
+          - mn
+          - ne
+          - no
+          - ps
+          - ps-AF
+          - fa
+          - pl
+          - pt
+          - pt-BR
+          - pt-PT
+          - pa
+          - pa-IN
+          - ro
+          - ru
+          - sr
+          - sk
+          - sl
+          - es
+          - es-419
+          - sv
+          - sv-SE
+          - tl
+          - ta
+          - te
+          - th
+          - th-TH
+          - tr
+          - tr-TR
+          - uk
+          - ur
+          - vi
+        example: it
+  responses:
+    BadRequest:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Missing or invalid proxy secret
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Missing or invalid device token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RegistrationRateLimited:
+      description: Too many registrations from this network origin
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    MethodNotAllowed:
+      description: Unsupported HTTP method
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RequestTooLarge:
+      description: Request body exceeded the supported size limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    DailyRecordLimitExceeded:
+      description: Device has reached its daily completed-record limit
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DailyRecordLimitExceededResponse'
+    SpeechNotRecognized:
+      description: |
+        The provider responded successfully but the transcript was empty. The
+        cause is unknown (silence or a language mismatch cannot be told apart).
+        Not counted as a successful transcription.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SpeechNotRecognizedResponse'
+    InternalServerError:
+      description: Internal backend error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UpstreamTimeout:
+      description: Upstream provider request timed out
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+    SpeechNotRecognizedResponse:
+      type: object
+      required:
+        - error
+        - reason
+      properties:
+        error:
+          type: string
+          enum:
+            - Speech could not be recognized
+        reason:
+          type: string
+          enum:
+            - speech_not_recognized
+        language:
+          type: string
+          description: The requested language. Omitted when automatic detection was used.
+    DailyRecordLimitExceededResponse:
+      type: object
+      required:
+        - error
+        - quota
+      properties:
+        error:
+          type: string
+          enum:
+            - Daily record limit exceeded
+        quota:
+          $ref: '#/components/schemas/RecordQuota'
+    RecordQuota:
+      type: object
+      required:
+        - limit
+        - count
+        - remaining
+        - resetAt
+      properties:
+        limit:
+          type: integer
+          minimum: 0
+          description: Effective completed-record limit for the current UTC day.
+        count:
+          type: integer
+          minimum: 0
+          description: Completed records already counted for the current UTC day.
+        remaining:
+          type: integer
+          minimum: 0
+          description: Remaining completed records available before the next UTC reset.
+        resetAt:
+          type: string
+          format: date-time
+          description: Next UTC midnight when the daily record quota resets.
+    RegisterResponse:
+      type: object
+      required:
+        - ok
+      properties:
+        ok:
+          type: boolean
+          enum: [true]
+        token:
+          type: string
+          description: Signed device token to present as X-Device-Token on quota-protected calls. Present when a token is issued.
+        quota:
+          allOf:
+            - $ref: '#/components/schemas/RecordQuota'
+          description: Current cleanup quota for the device on the active UTC day. Omitted if quota lookup fails after registration succeeds.
+    CleanupRequest:
+      type: object
+      required:
+        - transcript
+        - language
+      properties:
+        transcript:
+          type: string
+          minLength: 10
+          description: Raw transcript text to clean up.
+        language:
+          type: string
+          enum:
+            - en
+            - en-US
+            - en-GB
+            - en-AU
+            - en-NZ
+            - en-IN
+            - nl
+            - nl-NL
+            - nl-BE
+            - de
+            - de-DE
+            - de-AT
+            - de-CH
+            - fr
+            - fr-FR
+            - fr-BE
+            - fr-CA
+            - fr-CH
+            - es
+            - es-ES
+            - es-MX
+            - es-AR
+            - es-US
+            - es-419
+            - it
+            - it-IT
+            - pt
+            - pt-PT
+            - pt-BR
+            - ja
+            - ja-JP
+            - zh
+            - zh-CN
+            - zh-TW
+            - zh-HK
+            - ko
+            - ko-KR
+            - ru
+            - ru-RU
+            - pl
+            - pl-PL
+            - tr
+            - tr-TR
+            - sv
+            - sv-SE
+            - da
+            - da-DK
+            - fi
+            - fi-FI
+            - nb
+            - nb-NO
+            - 'no'
+            - ar
+            - ar-SA
+            - ar-AE
+            - hi
+            - hi-IN
+            - id
+            - id-ID
+            - ms
+            - ms-MY
+            - th
+            - th-TH
+            - uk
+            - uk-UA
+            - cs
+            - cs-CZ
+            - sk
+            - sk-SK
+            - ro
+            - ro-RO
+            - hu
+            - hu-HU
+            - bg
+            - bg-BG
+            - hr
+            - hr-HR
+            - el
+            - el-GR
+            - he
+            - he-IL
+            - vi
+            - vi-VN
+            - ca
+            - ca-ES
+    CleanupResponse:
+      type: object
+      required:
+        - cleanedText
+        - wasTruncated
+      properties:
+        cleanedText:
+          type: string
+        wasTruncated:
+          type: boolean
+        quota:
+          allOf:
+            - $ref: '#/components/schemas/RecordQuota'
+          description: Updated cleanup quota after the successful cleanup is counted. Omitted if quota persistence fails after cleanup succeeds.
+    TranscribeResponse:
+      type: object
+      required:
+        - transcript
+        - detected_language
+      properties:
+        transcript:
+          type: string
+          minLength: 1
+          description: Non-empty transcript. An empty provider transcript is reported as 422.
+        detected_language:
+          type: string
+          description: Provider-detected language when automatic detection is used, or the requested language in explicit mode.
+        quota:
+          allOf:
+            - $ref: '#/components/schemas/RecordQuota'
+          description: Current cleanup quota for the device on the active UTC day. Omitted if quota lookup fails after transcription succeeds.
+    TagRequest:
+      type: object
+      required:
+        - text
+        - tags
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: Text to classify.
+        tags:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          minItems: 2
+          maxItems: 50
+          uniqueItems: true
+          description: List of 2–50 unique non-empty tag strings.
+    TagResponse:
+      type: object
+      required:
+        - tags
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/TagProbability'
+    TagProbability:
+      type: object
+      required:
+        - tag
+        - probability
+      properties:
+        tag:
+          type: string
+        probability:
+          type: number
+          minimum: 0
+          maximum: 1
+    UpstreamErrorResponse:
+      type: object
+      additionalProperties: true

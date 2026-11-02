@@ -1,0 +1,132 @@
+/* Wrait app screens, recreated in plain HTML/CSS from real_screenshots/android.
+   Units are Android dp: the design viewport is 411.43 x 914.29 (a 1080x2400
+   phone at 2.625x). Colors come from lib/presentation/theme/wrait_colors.dart
+   (dark scheme). */
+@import url('../node_modules/@fontsource/roboto/400.css');
+@import url('../node_modules/@fontsource/roboto/500.css');
+
+:root {
+  --bg: #0F0F0D;
+  --bg-end: #252422;
+  --surface: #1A1917;
+  --surface-hi: #2A2926;
+  --text: #EDE9E3;
+  --text-mid: #A8A4A0;
+  --text-low: #6E6B67;
+  --primary: #E8E4DD;
+  --on-primary: #1A1917;
+  --pulse: 0;      /* 0..1, pulse ring growth (listening screen) */
+  --progress: .9;  /* 0..1, countdown arc (listening screen) */
+  --scrim: rgba(0,0,0,.55);
+  --track: rgba(232,228,221,.14);
+  --ring-rgb: 232,228,221;
+  --ring-alpha: .5;
+  --ring-glow: rgba(232,228,221,.25);
+  --nav: #2D2D2D;
+  --nav-icon: #E8E8E8;
+  /* Viewport in dp; phone by default, overridden for tablets (?w=800&h=1280). */
+  --w: 411.43px;
+  --h: 914.29px;
+  /* AdaptiveButtonSize.forWidth: 56% of the 520dp-capped, padded width, 160..280 */
+  --btn: clamp(160px, calc((min(var(--w), 520px) - 48px) * .56), 280px);
+  --cy: calc(var(--h) * .46867);
+}
+
+/* Light scheme: wraitLightColorScheme. Selected with ?theme=light (app.js). */
+:root[data-theme="light"] {
+  --bg: #FAF9F7;
+  --bg-end: #E6E3DE;
+  --surface: #F0EDE8;
+  --surface-hi: #E8E4DD;
+  --text: #1A1917;
+  --text-mid: #5C5953;
+  --text-low: #8C8983;
+  --primary: #2C2B27;
+  --on-primary: #FAF9F7;
+  --scrim: rgba(0,0,0,.5);
+  --track: rgba(44,43,39,.16);
+  --ring-rgb: 120,118,112;
+  --ring-alpha: .72;
+  --ring-glow: rgba(60,58,52,.28);
+  --nav: #F7F6F4;
+  --nav-icon: #6A6864;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: var(--w); height: var(--h); overflow: hidden; background: var(--bg); }
+body { font-family: Roboto, 'Noto Sans', system-ui, sans-serif; color: var(--text); -webkit-font-smoothing: antialiased; }
+
+.screen { position: relative; width: var(--w); height: var(--h); overflow: hidden;
+          background: linear-gradient(var(--bg), var(--bg-end) calc(var(--h) - 48.29px)); }
+.screen.flat { background: var(--bg); }
+.abs { position: absolute; }
+.cx { left: 0; right: 0; text-align: center; transform: translateY(-50%); }
+.icon { position: absolute; width: 24px; height: 24px; fill: currentColor; transform: translate(-50%, -50%); }
+.stroke { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---- main / listening ---- */
+.quota { top: calc(var(--cy) - var(--btn) / 2 - 50px); font-size: 14px; font-weight: 500; color: var(--text-mid); }
+.btn { left: calc(50% - var(--btn) / 2); top: calc(var(--cy) - var(--btn) / 2); width: var(--btn); height: var(--btn); border-radius: 50%; background: var(--primary);
+       color: var(--on-primary); display: grid; place-items: center; font-size: 20px; font-weight: 500; }
+.status { top: calc(var(--cy) + var(--btn) / 2 + 44px); font-size: 16px; letter-spacing: .1px; color: var(--text); }
+.stats { top: calc(var(--cy) + var(--btn) / 2 + 109px); font-size: 13.5px; font-weight: 500; color: var(--text); }
+.top-icon { top: 78px; color: var(--text-mid); }
+
+.countdown { left: calc(50% - (var(--btn) + 18px) / 2); top: calc(var(--cy) - (var(--btn) + 18px) / 2); width: calc(var(--btn) + 18px); height: calc(var(--btn) + 18px); transform: rotate(-90deg); }
+.countdown circle { fill: none; stroke-width: 3; }
+.countdown .track { stroke: var(--track); }
+.countdown .arc { stroke: var(--primary); stroke-linecap: round;
+                  stroke-dasharray: calc(var(--progress) * 683px) 683px; }
+.pulse { border-radius: 50%; left: 50%; top: var(--cy); transform: translate(-50%, -50%);
+         width: calc(var(--btn) * 1.705 + var(--pulse) * var(--btn) * .576); height: calc(var(--btn) * 1.705 + var(--pulse) * var(--btn) * .576);
+         border: calc(5px - var(--pulse) * 1.5px) solid rgba(var(--ring-rgb), calc(var(--ring-alpha) - var(--pulse) * .05));
+         background: rgba(var(--ring-rgb), .035); box-shadow: 0 0 18px var(--ring-glow), inset 0 0 18px rgba(var(--ring-rgb), .07); }
+
+/* ---- settings ---- */
+.appbar-title { left: 72px; top: 80px; font-size: 20px; font-weight: 500; transform: translateY(-50%); }
+.h { left: 24px; font-size: 22px; transform: translateY(-50%); white-space: nowrap; }
+.row-title { left: 24px; top: 186px; font-size: 16px; transform: translateY(-50%); }
+.desc { left: 24px; font-size: 14px; line-height: 20px; letter-spacing: .25px; color: var(--text-mid); }
+.desc.on { color: var(--text); }
+.switch { left: calc(100% - 80.4px); top: 190px; width: 52px; height: 32px; border-radius: 16px; border: 2px solid var(--text-low); background: var(--surface-hi); }
+.switch::after { content: ''; position: absolute; left: 6px; top: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-low); }
+.select { left: 24px; top: 371px; width: calc(100% - 48px); height: 55px; border: 1px solid var(--text-low); border-radius: 4px; }
+.select .legend { position: absolute; left: 12px; top: -9px; padding: 0 4px; background: var(--bg); font-size: 12px; color: var(--text-mid); line-height: 16px; }
+.select .value { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+
+/* ---- entries ---- */
+.search-line { left: 56px; top: 130px; width: calc(100% - 160.4px); height: 1px; background: var(--text-low); }
+.search-text { left: 108px; top: 101px; font-size: 16px; color: var(--text-mid); transform: translateY(-50%); }
+.list { left: 24px; top: 146px; width: calc(100% - 48px); height: calc(var(--h) - 219.3px); overflow: hidden; }
+.card { height: 90px; margin-bottom: 8px; border-radius: 12px; background: var(--surface); padding: 14px 16px 0; }
+.card .date { letter-spacing: .4px; font-size: 11.5px; line-height: 16px; color: var(--text-mid); }
+.card .text { margin-top: 8px; font-size: 13.5px; line-height: 20px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card .lang { margin-top: 4px; letter-spacing: .4px; font-size: 12px; line-height: 16px; color: var(--text-mid); }
+
+/* ---- feedback sheet ---- */
+.scrim { inset: 0; background: var(--scrim); }
+.sheet { left: 0; top: 50px; width: 100%; height: 442px; background: var(--surface); border-radius: 0 0 28px 28px; }
+.sheet .t { left: 24px; font-size: 22px; transform: translateY(-50%); }
+.chip { top: 137px; height: 35px; border-radius: 8px; border: 1px solid var(--surface-hi); background: var(--bg);
+        display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--text-mid); }
+.chip.sel { background: var(--surface-hi); border-color: var(--surface-hi); color: var(--text); }
+.chip svg { width: 18px; height: 18px; }
+.label.focus { color: var(--text); }
+.label { left: 24px; font-size: 12px; color: var(--text-mid); transform: translateY(-50%); }
+.field { left: 24px; font-size: 16px; transform: translateY(-50%); }
+.rule { left: 24px; width: calc(100% - 48px); height: 1px; background: var(--text-low); }
+.rule.focus { height: 2px; background: var(--primary); }
+.counter { right: 24px; top: 365px; font-size: 11px; color: var(--text-mid); transform: translateY(-50%); }
+.privacy { left: 24px; top: 387px; width: calc(100% - 48px); letter-spacing: .4px; font-size: 11px; line-height: 14px; color: var(--text); }
+.cancel { top: 464px; font-size: 13.5px; font-weight: 500; transform: translate(-50%, -50%); }
+.submit { left: calc(100% - 113.4px); top: 444px; width: 89px; height: 40px; border-radius: 20px; background: var(--primary); color: var(--on-primary);
+          font-size: 13.5px; font-weight: 500; display: grid; place-items: center; }
+
+/* ---- system bars (only for comparing against real screenshots: ?system=1) ---- */
+.sys { display: none; }
+body.system .sys { display: block; }
+.sys-top { color: var(--text); position: absolute; left: 0; top: 0; width: 100%; height: 48px; font-size: 18px; font-weight: 500; padding: 14px 0 0 35px; }
+.sys-nav { position: absolute; left: 0; top: 866px; width: 100%; height: 48.29px; background: var(--nav); }
+.sys-nav i { position: absolute; top: 16px; width: 16px; height: 16px; background: var(--nav-icon); }
+.sys-nav .back { left: 82px; clip-path: polygon(100% 0, 100% 100%, 0 50%); }
+.sys-nav .home { left: 197px; border-radius: 50%; }

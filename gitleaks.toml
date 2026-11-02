@@ -1,0 +1,36 @@
+# gitleaks config for open-source readiness scan (spec 060).
+# --no-git ignores .gitignore, so exclude vendored / build / generated paths
+# that are never part of the published source.
+
+title = "write-flutter OSS readiness scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Non-published / vendored / generated paths"
+paths = [
+  '''node_modules/''',
+  '''build/''',
+  '''\.dart_tool/''',
+  '''ios/Pods/''',
+  '''ios/\.symlinks/''',
+  '''android/\.gradle/''',
+  '''\.flutter-plugins-dependencies''',
+  '''pubspec\.lock''',
+  '''package-lock\.json''',
+  '''tool/openapi-generator/output/''',
+  '''gitleaks\.toml''',
+  # gitignored / excluded-from-publish
+  '''flutter_.*\.log''',
+  '''/specs/''',
+  '''android/local\.properties''',
+  # deploy-script test suites use intentional dummy fixtures (release-* / *.example.test)
+  '''test/deploy_.*_script_test\.sh''',
+]
+# Shell empty-string var inits (e.g. RESOLVED_PROXY_SECRET="") are not secrets.
+# Match against the whole line, not the captured value.
+regexTarget = "line"
+regexes = [
+  '''RESOLVED_[A-Z_]+=""''',
+]

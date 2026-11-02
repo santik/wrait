@@ -1,0 +1,85 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+
+# Signing
+*.jks
+*.keystore
+play-service-account.json
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+node_modules
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# OpenAPI generator output
+/tool/openapi-generator/output/backend_api/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+/wrait-android
+/codebase-analysis-docs/
+specs/**/plan.md
+specs/**/implementation.md
+specs/**/review.md
+specs/**/tasks.md
+specs/**/analysis.md
+reports
+research_notes
+
+# --- Open-source: internal docs & SDD history (kept local, not published) ---
+AGENTS.md
+CLAUDE.md
+CONSTITUTION.md
+full-scan-prompt.md
+BETA_TESTER_GUIDE.md
+docs/agent-findings.md
+docs/agent-findings-history.md
+docs/application-description.md
+docs/play-store-release-playbook.md
+docs/spec-driven-workflow.md
+docs/PRIVACY.md
+/plan/
+/specs/
+# --- scratch / OS cruft ---
+flutter_*.log
+.DS_Store
+/reports/
+/research_notes/
+/entries/

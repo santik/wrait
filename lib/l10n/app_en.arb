@@ -1,0 +1,341 @@
+{
+  "@@locale": "en",
+  "bootstrapTitle": "opening wrait",
+  "bootstrapSubtitle": "loading your local journal",
+  "bootstrapErrorTitle": "could not open wrait",
+  "bootstrapErrorSubtitle": "try again",
+  "bootstrapRetryButton": "retry",
+  "mainSettingsTooltip": "Settings",
+  "mainFeedbackTooltip": "Send feedback",
+  "mainLanguageLabel": "Language: {displayName}",
+  "@mainLanguageLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "mainLanguageUnavailable": "Language unavailable · try again",
+  "mainFeedbackSent": "feedback sent",
+  "mainFeedbackUnavailable": "feedback is unavailable right now",
+  "mainFeedbackFailed": "feedback could not be sent. try again",
+  "mainLanguageSemanticsLabel": "Selected transcription language {displayName}. Opens transcription language settings.",
+  "@mainLanguageSemanticsLabel": {
+    "placeholders": {
+      "displayName": {
+        "type": "String"
+      }
+    }
+  },
+  "mainSettingsSemanticsLabel": "Settings",
+  "mainFeedbackSemanticsLabel": "Send feedback",
+  "mainQuotaSemanticsLabel": "Recording quota {limit} total and {remaining} left.",
+  "@mainQuotaSemanticsLabel": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      },
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "mainQuotaText": "{limit} total / {remaining} left",
+  "@mainQuotaText": {
+    "placeholders": {
+      "limit": {
+        "type": "int"
+      },
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "mainButtonStop": "stop",
+  "mainButtonWrait": "wrait",
+  "statusTapToWrite": "tap button to write",
+  "statusWrait": "wrait",
+  "statusListening": "listening...",
+  "statusProcessing": "processing...",
+  "statusCleaningUp": "cleaning up...",
+  "statusSavedTapToRead": "saved, tap to read",
+  "statusDeleted": "deleted",
+  "statusNoConnectionDraft": "no connection · saved as draft",
+  "statusServiceUnavailableDraft": "service unavailable · saved as draft",
+  "statusRateLimitedDraft": "busy right now · saved as draft, try again soon",
+  "statusRateLimited": "busy right now · try again soon",
+  "statusServerConfigErrorDraft": "server config error · saved as draft",
+  "statusSpeechNotRecognizedDraft": "not recognized · saved as draft",
+  "statusSpeechNotRecognized": "not recognized",
+  "statusApiFailedDraft": "saved as draft · will retry",
+  "statusTooShort": "too short · keep talking",
+  "statusNothingCaught": "nothing caught · too quiet?",
+  "statusMicNeeded": "mic needed · tap again",
+  "statusMicBlocked": "mic blocked · tap settings",
+  "statusNoConnection": "no connection",
+  "statusServiceUnavailable": "service unavailable",
+  "statusServerConfigError": "server config error",
+  "statusSomethingWentWrong": "something went wrong",
+  "statusMicNeededSemanticsLabel": "Microphone access is required to start recording.",
+  "statusMicNeededSemanticsHint": "Double tap to request microphone access again.",
+  "statusMicBlockedSemanticsLabel": "Microphone access is blocked for Wrait.",
+  "statusMicBlockedSemanticsHint": "Double tap to open app settings.",
+  "statusDefaultSemanticsLabel": "Status message {statusText}.",
+  "@statusDefaultSemanticsLabel": {
+    "placeholders": {
+      "statusText": {
+        "type": "String"
+      }
+    }
+  },
+  "statsEntryCount": "{count, plural, one{{count} entry} other{{count} entries}}",
+  "@statsEntryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statsActiveDays": "{count, plural, one{{count} day} other{{count} days}}",
+  "@statsActiveDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "statsDisplay": "{entries} - {days}",
+  "@statsDisplay": {
+    "placeholders": {
+      "entries": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      }
+    }
+  },
+  "statsSemanticsLabel": "Entry stats {displayText}. Opens the entry list.",
+  "@statsSemanticsLabel": {
+    "placeholders": {
+      "displayText": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsTitle": "Settings",
+  "settingsBack": "Back",
+  "settingsPrivacy": "Privacy",
+  "settingsAppLock": "App lock",
+  "settingsAppLockDescription": "Use your device's screen lock when you open or return to Wrait.",
+  "settingsAppLockUnavailable": "App lock is unavailable in this validation build.",
+  "settingsAppLockNoSecurity": "Set up a device screen lock before enabling app lock.",
+  "settingsAppLockTemporarilyUnavailable": "Device authentication is temporarily unavailable. Try again.",
+  "settingsAppLockUnavailableDevice": "Device authentication is unavailable on this device.",
+  "settingsAppLockSaveFailed": "Could not save the app-lock setting. Try again.",
+  "settingsAppLockSettingsFailed": "Could not open device security settings.",
+  "settingsOpenDeviceSettings": "Open device settings",
+  "settingsAppearance": "Appearance",
+  "settingsTheme": "Theme",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsThemeSaveFailed": "Could not save theme. Try again.",
+  "settingsReminders": "Reminders",
+  "settingsRemindersToggle": "Daily reminders",
+  "settingsRemindersDescription": "Get reminded to journal in the morning and evening",
+  "settingsRemindersPermissionDenied": "Notification permission is required for reminders. Please enable it in your device settings.",
+  "reminderMorningTitle": "wrait",
+  "reminderMorningBody": "Start your day with a reflection",
+  "reminderEveningTitle": "wrait",
+  "reminderEveningBody": "You still have recordings left today",
+  "settingsTranscriptionLanguage": "Transcription language",
+  "settingsTranscriptionLanguageDescription": "Choose the language you speak to improve transcription. Automatic detection is used when no language is selected.",
+  "settingsAutomaticDetection": "Automatic detection",
+  "settingsLoading": "Loading…",
+  "settingsTranscriptionLanguageLoadFailed": "Could not load the transcription language.",
+  "settingsTranscriptionLanguageSaveFailed": "Could not save language. Try again.",
+  "settingsTryAgain": "Try again",
+  "settingsActivityMessage": "Finish the current recording or transcription before changing settings.",
+  "entryListBack": "Back",
+  "entryListBackSemanticsLabel": "Back to main screen",
+  "entryListSearchLabel": "Search entries",
+  "entryListClearSearch": "Clear search",
+  "entryListImportCsv": "Import CSV",
+  "entryListExportCsv": "Export CSV",
+  "entryListImporting": "Importing CSV",
+  "entryListExporting": "Exporting CSV",
+  "entryListImportingSemanticsLabel": "Importing entries",
+  "entryListExportingSemanticsLabel": "Exporting entries",
+  "entryListImportSemanticsLabel": "Import entries",
+  "entryListExportSemanticsLabel": "Export entries",
+  "entryListEmpty": "no entries yet",
+  "entryListNoResults": "No matching entries",
+  "entryListExportSuccess": "Exported {fileName} to {pathLabel}.",
+  "@entryListExportSuccess": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      },
+      "pathLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "entryListExportFailed": "Could not export entries.",
+  "entryListImportSuccess": "Imported {count} {count, plural, =1{record} other{records}} from {fileName}.",
+  "@entryListImportSuccess": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "entryListImportFailed": "Could not import entries.",
+  "entryListImportInvalidFormat": "Selected CSV is not a valid Wrait export.",
+  "entryListImportUnreadableFile": "Could not read the selected CSV file.",
+  "entryListImportFileTooLarge": "Selected CSV is too large to import.",
+  "entryListImportStorageFailure": "Could not save imported entries.",
+  "entryListAudioDraftPreview": "pending · will retry",
+  "entryListAudioDraftStateDescription": "Audio draft, not yet transcribed",
+  "entryListDeleteActionLabel": "Delete entry",
+  "entryListRowSemanticsLabel": "Entry {timestamp}. {languageLabel}.",
+  "@entryListRowSemanticsLabel": {
+    "placeholders": {
+      "timestamp": {
+        "type": "String"
+      },
+      "languageLabel": {
+        "type": "String"
+      }
+    }
+  },
+  "entryListRowSwipeHint": "Swipe right to delete.",
+  "entryListRowOpenHint": "Double tap to open. Swipe right to delete.",
+  "entryListRowDraftBadge": "draft",
+  "entryListRowDraftValue": "draft",
+  "entryListRowAudioDraftValue": "draft, {description}",
+  "@entryListRowAudioDraftValue": {
+    "placeholders": {
+      "description": {
+        "type": "String"
+      }
+    }
+  },
+  "entryDetailSaving": "Saving changes...",
+  "entryDetailSaveFailed": "Could not save your changes.",
+  "entryDetailLoadFailed": "Could not load this entry.",
+  "entryDetailEditSemanticsLabel": "Edit entry text",
+  "entryDetailEditHint": "Edit your entry",
+  "entryDetailTapToEditHint": "Tap to edit entry",
+  "entryDetailBackSemanticsLabel": "Back to entries",
+  "entryDetailBack": "Back",
+  "entryDetailFinishEditingSemanticsLabel": "Finish editing",
+  "entryDetailEditEntrySemanticsLabel": "Edit entry",
+  "entryDetailDone": "Done",
+  "entryDetailEdit": "Edit",
+  "entryDetailShareSemanticsLabel": "Share entry",
+  "entryDetailShare": "Share",
+  "entryDetailDeleteSemanticsLabel": "Delete entry",
+  "entryDetailDelete": "Delete",
+  "entryDetailShareFailed": "Could not share this entry.",
+  "wordCount": "{count, plural, =1{1 word} other{{count} words}}",
+  "@wordCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteDialogTitle": "Delete entry?",
+  "deleteDialogBody": "This entry will be permanently removed.",
+  "deleteCancel": "Cancel",
+  "deleteConfirm": "Delete",
+  "deleteCancelSemanticsLabel": "Cancel deletion",
+  "deleteCancelSemanticsHint": "Keeps this entry in the list.",
+  "deleteConfirmSemanticsLabel": "Delete entry permanently",
+  "deleteConfirmSemanticsHint": "Removes this entry from the list.",
+  "appLockTitle": "wrait is locked",
+  "appLockSemanticsLabel": "Wrait is locked.",
+  "appLockUnlock": "Unlock",
+  "appLockOpenSettings": "Open settings",
+  "appLockContinueWithout": "Continue without lock",
+  "appLockStillLocked": "still locked",
+  "appLockSetUpSecurity": "set up device security to protect Wrait",
+  "appLockUnavailableTryAgain": "unlock unavailable · try again",
+  "appLockUnlockToContinue": "Unlock Wrait to continue.",
+  "appLockSettingsWarning": "Your diary will be visible until you set up device security.",
+  "appLockSemanticsHintUnlock": "Double tap Unlock to authenticate and continue.",
+  "appLockSemanticsHintSettings": "Double tap Unlock to try again, or open settings to configure device security.",
+  "appLockSemanticsHintAuthInProgress": "Authentication is in progress.",
+  "appLockPreferenceLoadFailed": "Wrait could not load your privacy setting.",
+  "appLockPreferenceLoading": "loading privacy settings",
+  "appLockPreferenceRetry": "Try again",
+  "feedbackTitle": "send feedback",
+  "feedbackPrompt": "What would you like to share?",
+  "feedbackContactLabel": "reply contact (optional)",
+  "feedbackContactHint": "any contact information",
+  "feedbackMessageLabel": "feedback",
+  "feedbackMessageHint": "what would you like to share?",
+  "feedbackPrivacyCopy": "Do not include private journal content unless you choose to type it into your message.",
+  "feedbackCancel": "cancel",
+  "feedbackSubmit": "submit",
+  "feedbackDismissLabel": "Dismiss feedback",
+  "feedbackCategoryBug": "Bug",
+  "feedbackCategoryIdea": "Idea",
+  "feedbackCategoryConfusing": "Confusing",
+  "feedbackCategoryPraise": "Praise",
+  "tagsTitle": "Tags",
+  "tagsManage": "Manage tags",
+  "tagsAdd": "Add tag",
+  "tagsAddHint": "Tag name",
+  "tagsEmpty": "No tags yet",
+  "tagsLimitReached": "Tag limit reached ({max})",
+  "@tagsLimitReached": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsDeleteConfirmTitle": "Delete tag?",
+  "tagsDeleteConfirmBody": "This tag will be removed from all entries.",
+  "tagsDeleteConfirm": "Delete",
+  "tagsDeleteCancel": "Cancel",
+  "tagsNameTooLong": "Tag name must be {max} characters or fewer",
+  "@tagsNameTooLong": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsNameDuplicate": "This tag already exists",
+  "tagsCreateFailed": "Could not create tag",
+  "tagsDeleteFailed": "Could not delete tag",
+  "tagsFilterAll": "All",
+  "tagsFilterClear": "Clear filter",
+  "tagsNoEntriesWithTag": "No entries with this tag",
+  "tagsAssign": "Tags",
+  "tagsAssignDone": "Done",
+  "tagsAssignCreate": "Create \"{name}\"",
+  "@tagsAssignCreate": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tagsEntryCount": "{count, plural, =1{1 entry} other{{count} entries}}",
+  "@tagsEntryCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tagsSearchIncluded": "Search includes tag names"
+}
