@@ -112,11 +112,11 @@ Future<void> _pump(
           routes: [
             GoRoute(
               path: '/tags',
-              builder: (_, __) => const ManageTagsScreen(),
+              builder: (_, _) => const ManageTagsScreen(),
             ),
             GoRoute(
               path: '/entries',
-              builder: (_, __) => const SizedBox(),
+              builder: (_, _) => const SizedBox(),
             ),
           ],
         ),
