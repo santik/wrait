@@ -50,7 +50,7 @@ void main() {
       ''');
       rawDb.execute('PRAGMA user_version = 1;');
     } finally {
-      rawDb.dispose();
+      rawDb.close();
     }
   }
 
@@ -70,7 +70,7 @@ void main() {
         VALUES ('draft text', 'draft', 'de', 1700000100000, 2);
       ''');
     } finally {
-      rawDb.dispose();
+      rawDb.close();
     }
 
     // Open with the current schema (v2), which triggers migration.

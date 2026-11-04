@@ -619,7 +619,7 @@ class _FakeEntryRepository implements EntryRepository {
     return List.generate(entries.length, (i) => _nextId + i);
   }
 
-  int _nextId = 1;
+  final int _nextId = 1;
 
   @override
   Stream<List<Entry>> watchAllEntries() => const Stream<List<Entry>>.empty();

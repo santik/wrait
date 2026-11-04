@@ -123,13 +123,13 @@ Future<void> _pump(
           routes: [
             GoRoute(
               path: '/',
-              builder: (_, __) => const Scaffold(
+              builder: (_, _) => const Scaffold(
                 body: TagFilterChipRow(),
               ),
             ),
             GoRoute(
               path: '/tags',
-              builder: (_, __) => const SizedBox(),
+              builder: (_, _) => const SizedBox(),
             ),
           ],
         ),
