@@ -38,10 +38,11 @@ node_modules
 .pub-cache/
 .pub/
 /build/
+build/
 /coverage/
 
 # OpenAPI generator output
-/tool/openapi-generator/output/backend_api/
+/tool/openapi-generator/output/
 
 # Symbolication related
 app.*.symbols
