@@ -3,7 +3,14 @@
 Localized Play Store screenshots. The app screens are recreated in plain
 HTML/CSS (`html/`), based on the real device captures in
 `../real_screenshots/android/`, then dropped into a Pixel 9 Pro frame by
-[Telephone](https://sneas.github.io/telephone) with a caption.
+[Telephone](https://sneas.github.io/telephone) on a subtle gradient background
+with a benefit-first headline + subheadline above (see spec 057).
+
+The uploaded set is **6 phone screenshots, dark app theme**:
+`01-main`, `02-listening`, `03-entries`, `04-languages`, `05-app-lock`
+(settings with the lock on, `?applock=on`), `06-privacy` (entries, for the
+export message). Light variants are also rendered (for A/B / a future iOS
+listing) but not uploaded.
 
 ```bash
 cd store-screenshots
@@ -24,10 +31,10 @@ Output: `out/<device>/<theme>/<locale>/<locale>_<device>_<theme>_0N-<screen>.png
 
 | Path | What |
 |---|---|
-| `html/*.html` | One page per screen: main, listening, entries, settings, feedback. Open directly in a browser (English). Units are Android dp; phone viewport is 411.43 x 914.29, tablet 800 x 1280 (`?w=&h=`). |
+| `html/*.html` | One page per screen: main, listening, entries, languages, settings, feedback. The render set uses main/listening/entries/languages + settings (as app-lock) + entries (as privacy); settings/feedback are no longer standalone shots but remain as replicas (settings is reused). Open directly in a browser (English). Units are Android dp; phone viewport is 411.43 x 914.29, tablet 800 x 1280 (`?w=&h=`). |
 | `html/app.css` | Shared styles; colors mirror `lib/presentation/theme/wrait_colors.dart` (dark scheme). |
-| `html/app.js` | Optional hooks: `?theme=light`, swaps `[data-i18n]` text from `window.WRAIT_STRINGS`, formats `[data-date]` with `Intl` for `window.WRAIT_LOCALE`. Query params: `?pulse=0..1&progress=0..1&system=1`. |
-| `locales/<tag>.json` | Strings, sample entries and captions per language. |
+| `html/app.js` | Optional hooks: `?theme=light`, swaps `[data-i18n]` text from `window.WRAIT_STRINGS`, formats `[data-date]` with `Intl` for `window.WRAIT_LOCALE`. Query params: `?pulse=0..1&progress=0..1&system=1&applock=on`. |
+| `locales/<tag>.json` | Strings, sample entries, and `headlines`/`subheadlines` (keyed by the 6 screen ids) per language. |
 | `render.mjs` | Localized + framed output. |
 | `compare.mjs` | Replica next to the real screenshot, for checking fidelity. |
 
@@ -45,8 +52,11 @@ captures.
 ## Adding a language
 
 Copy `locales/en-US.json` to `locales/<tag>.json` (tag is a BCP 47 locale such
-as `fr-FR`) and translate every value, including the 8 `entryN` samples and
-`captions`. App strings can be copied from `lib/l10n/app_*.arb` where they exist.
+as `fr-FR`) and translate every value, including the 8 `entryN` samples and the
+6 `headlines` / `subheadlines`. Keep headlines ≤ 8 words (shorter for CJK —
+`scripts/validate-locales.mjs` enforces this). App strings can be copied from
+`lib/l10n/app_*.arb` where they exist. Then add the locale to the screenshot
+set in `render.mjs` only if it needs different gradients; otherwise just rerun.
 
 ## When the app UI changes
 

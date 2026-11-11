@@ -1,0 +1,7 @@
+# Google Play service account key (gitignored — keep it that way).
+# Path is resolved relative to this Appfile, so the key lives at the Flutter
+# project root: write-flutter/wrait-511808-27075caf39ea.json
+json_key_file(File.expand_path("../wrait-511808-27075caf39ea.json", __dir__))
+
+# Android applicationId from android/app/build.gradle.kts
+package_name("com.wrait.flutter")

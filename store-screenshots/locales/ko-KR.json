@@ -29,12 +29,21 @@
   "fbPrivacy": "직접 메시지에 입력하지 않는 한 일기 내용은 포함하지 마세요.",
   "cancel": "취소",
   "submit": "보내기",
-  "captions": {
-    "main": "말만 하세요. Wrait가 적어요.",
-    "listening": "편하게 말하세요. Wrait가 듣습니다.",
-    "entries": "모든 생각을 검색 한 번에",
-    "settings": "처음부터 비공개",
-    "feedback": "당신의 목소리가 Wrait를 만듭니다"
+  "headlines": {
+    "main": "말하면 Wrait가 기록해요",
+    "listening": "탭하고 말하기만 하세요",
+    "entries": "검색되는 나의 일기",
+    "languages": "어떤 언어로든 일기를",
+    "app-lock": "잠그고 암호화",
+    "privacy": "내 데이터는 내 것"
+  },
+  "subheadlines": {
+    "main": "AI 음성 일기 — 비공개·암호화",
+    "listening": "AI가 음성을 바로 문자로",
+    "entries": "지난 기록을 보고 검색하세요",
+    "languages": "60개 이상 언어 자동 감지",
+    "app-lock": "지문·얼굴·PIN으로 보호",
+    "privacy": "클라우드 없음. 계정 없음. 언제든 내보내기."
   },
   "entry1": "강변을 걸으니 드디어 머리가 맑아졌다.",
   "entry2": "오전 팀 기획 회의가 정말 좋았다.",

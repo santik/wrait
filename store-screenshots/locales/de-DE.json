@@ -29,12 +29,21 @@
   "fbPrivacy": "Füge keine privaten Tagebuchinhalte hinzu, außer du schreibst sie bewusst in deine Nachricht.",
   "cancel": "abbrechen",
   "submit": "senden",
-  "captions": {
-    "main": "Einfach sprechen. Wrait schreibt.",
-    "listening": "Sprich frei. Wrait hört zu.",
-    "entries": "Jeder Gedanke nur eine Suche entfernt",
-    "settings": "Privat von Grund auf",
-    "feedback": "Deine Stimme formt Wrait"
+  "headlines": {
+    "main": "Sprich. Wrait schreibt mit.",
+    "listening": "Einfach tippen und sprechen",
+    "entries": "Dein Tagebuch, durchsuchbar",
+    "languages": "Tagebuch in jeder Sprache",
+    "app-lock": "Gesperrt und verschlüsselt",
+    "privacy": "Deine Daten bleiben deine"
+  },
+  "subheadlines": {
+    "main": "KI-Sprachtagebuch – privat & verschlüsselt",
+    "listening": "KI transkribiert deine Stimme sofort",
+    "entries": "Frühere Einträge durchsuchen und ansehen",
+    "languages": "60+ Sprachen, automatisch erkannt",
+    "app-lock": "Schutz per Fingerabdruck, Gesicht oder PIN",
+    "privacy": "Keine Cloud. Kein Konto. Jederzeit exportieren."
   },
   "entry1": "Am Fluss spaziert, endlich einen klaren Kopf.",
   "entry2": "Tolles Planungsgespräch mit dem Team heute früh.",

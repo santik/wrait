@@ -1,0 +1,133 @@
+default_platform(:android)
+
+# Paths (resolved relative to this Fastfile's parent = Flutter project root)
+PROJECT_ROOT    = File.expand_path("..", __dir__)
+LISTINGS_PATH   = File.join(PROJECT_ROOT, "app-listings")
+LISTING_STAGING = File.join(PROJECT_ROOT, "build", "fastlane-listing")
+SHOTS_SRC       = File.join(PROJECT_ROOT, "store-screenshots", "out")
+SHOTS_STAGING   = File.join(PROJECT_ROOT, "build", "fastlane-screenshots")
+
+# A Play locale dir looks like "en-US", "es-419", "pt-BR" — always lang-REGION.
+# This filters out non-locale dirs at the app-listings root (e.g. changelogs/),
+# which supply would otherwise misread as a language and reject.
+LOCALE_RE = /\A[a-z]{2,3}-[A-Za-z0-9]+\z/
+
+# Locales that actually have a published listing (a title). Play rejects
+# screenshots for any language without an existing listing, so screenshots are
+# filtered to this set.
+def listing_locales
+  Dir.children(LISTINGS_PATH).select do |name|
+    name =~ LOCALE_RE &&
+      File.file?(File.join(LISTINGS_PATH, name, "title.txt"))
+  end.sort
+end
+
+# Copy only valid locale folders from app-listings into a clean staging tree.
+def stage_listing
+  require "fileutils"
+  FileUtils.rm_rf(LISTING_STAGING)
+  locales = Dir.children(LISTINGS_PATH).select do |name|
+    name =~ LOCALE_RE && File.directory?(File.join(LISTINGS_PATH, name))
+  end.sort
+  UI.user_error!("No locale folders found in #{LISTINGS_PATH}") if locales.empty?
+  locales.each do |loc|
+    FileUtils.mkdir_p(LISTING_STAGING)
+    FileUtils.cp_r(File.join(LISTINGS_PATH, loc), File.join(LISTING_STAGING, loc))
+  end
+  UI.message("Staged listing for: #{locales.join(', ')}")
+  LISTING_STAGING
+end
+
+platform :android do
+  # ---------------------------------------------------------------------------
+  # Primary: store listing TEXT + FEATURE GRAPHIC only. No binary, no
+  # screenshots, no changelogs.
+  # ---------------------------------------------------------------------------
+  desc "Upload listing text + feature graphic to Play (no binary/screenshots)"
+  lane :listing do
+    upload_to_play_store(
+      metadata_path:           stage_listing,
+      skip_upload_apk:         true,
+      skip_upload_aab:         true,
+      skip_upload_metadata:    false,  # title / short+full description
+      skip_upload_images:      false,  # images/featureGraphic.png
+      skip_upload_screenshots: true,   # handled by the :screenshots lane
+      skip_upload_changelogs:  true    # changelogs tie to a release/versionCode
+    )
+  end
+
+  # ---------------------------------------------------------------------------
+  # Dry run: validates the same upload against the Play API without committing.
+  # ---------------------------------------------------------------------------
+  desc "Validate the listing upload without publishing (dry run)"
+  lane :validate do
+    upload_to_play_store(
+      metadata_path:           stage_listing,
+      validate_only:           true,
+      skip_upload_apk:         true,
+      skip_upload_aab:         true,
+      skip_upload_screenshots: true,
+      skip_upload_changelogs:  true
+    )
+  end
+
+  # ---------------------------------------------------------------------------
+  # Optional: SCREENSHOTS only (dark theme, phone + tablet).
+  # store-screenshots/out/{phone,tablet}/dark/<locale>/*.png
+  #   phone  -> phoneScreenshots
+  #   tablet -> tenInchScreenshots
+  # Staged into build/fastlane-screenshots so app-listings/ stays clean.
+  # Replaces existing screenshots for each locale it finds.
+  # ---------------------------------------------------------------------------
+  desc "Upload dark-theme phone + tablet screenshots to Play"
+  lane :screenshots do
+    require "fileutils"
+
+    theme = "dark"
+    device_map = { "phone" => "phoneScreenshots", "tablet" => "tenInchScreenshots" }
+
+    FileUtils.rm_rf(SHOTS_STAGING)
+
+    valid_locales = listing_locales  # only languages that have a listing
+    locales_seen = []
+    skipped = []
+    device_map.each do |device, supply_dir|
+      src_root = File.join(SHOTS_SRC, device, theme)
+      next unless File.directory?(src_root)
+
+      Dir.children(src_root).sort.each do |locale|
+        next unless locale =~ LOCALE_RE
+        locale_dir = File.join(src_root, locale)
+        next unless File.directory?(locale_dir)
+
+        pngs = Dir.glob(File.join(locale_dir, "*.png")).sort
+        next if pngs.empty?
+
+        # Play rejects screenshots for a language with no existing listing.
+        unless valid_locales.include?(locale)
+          skipped << locale
+          next
+        end
+
+        dest = File.join(SHOTS_STAGING, locale, "images", supply_dir)
+        FileUtils.mkdir_p(dest)
+        pngs.each { |p| FileUtils.cp(p, File.join(dest, File.basename(p))) }
+        locales_seen << locale
+      end
+    end
+
+    UI.important("Skipped (no listing in app-listings/): #{skipped.uniq.sort.join(', ')}") unless skipped.empty?
+    UI.user_error!("No #{theme} screenshots found for a listed locale under #{SHOTS_SRC}") if locales_seen.empty?
+    UI.message("Staging screenshots for: #{locales_seen.uniq.sort.join(', ')}")
+
+    upload_to_play_store(
+      metadata_path:           SHOTS_STAGING,
+      skip_upload_apk:         true,
+      skip_upload_aab:         true,
+      skip_upload_metadata:    true,
+      skip_upload_images:      true,   # feature graphic handled by :listing
+      skip_upload_changelogs:  true,
+      skip_upload_screenshots: false
+    )
+  end
+end

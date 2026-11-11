@@ -29,12 +29,21 @@
   "fbPrivacy": "Do not include private journal content unless you choose to type it into your message.",
   "cancel": "cancel",
   "submit": "submit",
-  "captions": {
-    "main": "Just talk. Wrait writes.",
-    "listening": "Speak freely. It listens.",
-    "entries": "Every thought, one search away",
-    "settings": "Private by design",
-    "feedback": "Your voice shapes Wrait"
+  "headlines": {
+    "main": "Speak. Wrait writes it down.",
+    "listening": "Just tap and talk",
+    "entries": "Your diary, searchable",
+    "languages": "Journal in any language",
+    "app-lock": "Locked and encrypted",
+    "privacy": "Your data stays yours"
+  },
+  "subheadlines": {
+    "main": "AI voice diary — private & encrypted",
+    "listening": "AI transcribes your voice instantly",
+    "entries": "Browse and search past entries",
+    "languages": "60+ languages, auto-detected",
+    "app-lock": "Fingerprint, face, or PIN protection",
+    "privacy": "No cloud. No account. Export anytime."
   },
   "entry1": "Walked by the river, finally felt clear-headed today.",
   "entry2": "Great planning call with the team this morning.",

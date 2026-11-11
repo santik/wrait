@@ -8,6 +8,15 @@
 *.jks
 *.keystore
 play-service-account.json
+# Google Play service account keys (fastlane supply)
+wrait-511808-27075caf39ea.json
+*-service-account*.json
+
+# fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/screenshots.html
+fastlane/test_output
 .DS_Store
 .atom/
 .build/
