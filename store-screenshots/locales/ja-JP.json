@@ -29,12 +29,21 @@
   "fbPrivacy": "日記の内容は、ご自身でメッセージに入力しない限り含めないでください。",
   "cancel": "キャンセル",
   "submit": "送信",
-  "captions": {
-    "main": "話すだけ。Wraitが書きます。",
-    "listening": "自由に話して。Wraitが聞きます。",
-    "entries": "どんな思いも検索ひとつで",
-    "settings": "プライバシーを最優先",
-    "feedback": "あなたの声がWraitを育てます"
+  "headlines": {
+    "main": "話すだけ。Wraitが記録。",
+    "listening": "タップして話すだけ",
+    "entries": "日記を検索できる",
+    "languages": "どの言語でも日記に",
+    "app-lock": "ロックして暗号化",
+    "privacy": "データはあなたのもの"
+  },
+  "subheadlines": {
+    "main": "AI音声日記 — 非公開・暗号化",
+    "listening": "AIが声をすぐに文字起こし",
+    "entries": "過去の記録を見て検索",
+    "languages": "60以上の言語を自動検出",
+    "app-lock": "指紋・顔・PINで保護",
+    "privacy": "クラウドなし。アカウントなし。いつでも書き出し。"
   },
   "entry1": "川沿いを散歩して、やっと頭がすっきりした。",
   "entry2": "朝のチームとの計画会議がとても良かった。",

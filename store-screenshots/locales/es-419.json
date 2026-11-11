@@ -29,12 +29,21 @@
   "fbPrivacy": "No incluyas contenido privado de tu diario a menos que decidas escribirlo en tu mensaje.",
   "cancel": "cancelar",
   "submit": "enviar",
-  "captions": {
-    "main": "Solo habla. Wrait escribe.",
-    "listening": "Habla con libertad. Wrait escucha.",
-    "entries": "Cada idea, a una búsqueda",
-    "settings": "Privado por diseño",
-    "feedback": "Tu voz da forma a Wrait"
+  "headlines": {
+    "main": "Habla. Wrait lo escribe.",
+    "listening": "Solo toca y habla",
+    "entries": "Tu diario, con búsqueda",
+    "languages": "Escribe en cualquier idioma",
+    "app-lock": "Bloqueado y cifrado",
+    "privacy": "Tus datos son tuyos"
+  },
+  "subheadlines": {
+    "main": "Diario de voz con IA, privado y cifrado",
+    "listening": "La IA transcribe tu voz al instante",
+    "entries": "Explora y busca entradas pasadas",
+    "languages": "60+ idiomas, detección automática",
+    "app-lock": "Protección con huella, rostro o PIN",
+    "privacy": "Sin nube. Sin cuenta. Exporta cuando quieras."
   },
   "entry1": "Paseé junto al río, por fin con la mente despejada.",
   "entry2": "Gran llamada de planificación con el equipo.",

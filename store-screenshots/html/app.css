@@ -90,9 +90,18 @@ body { font-family: Roboto, 'Noto Sans', system-ui, sans-serif; color: var(--tex
 .desc.on { color: var(--text); }
 .switch { left: calc(100% - 80.4px); top: 190px; width: 52px; height: 32px; border-radius: 16px; border: 2px solid var(--text-low); background: var(--surface-hi); }
 .switch::after { content: ''; position: absolute; left: 6px; top: 6px; width: 16px; height: 16px; border-radius: 50%; background: var(--text-low); }
+/* On state (?applock=on, app.js): knob slides right and fills with the accent. */
+.switch.on { border-color: var(--primary); background: var(--primary); }
+.switch.on::after { left: 26px; top: 4px; width: 20px; height: 20px; background: var(--on-primary); }
 .select { left: 24px; top: 371px; width: calc(100% - 48px); height: 55px; border: 1px solid var(--text-low); border-radius: 4px; }
 .select .legend { position: absolute; left: 12px; top: -9px; padding: 0 4px; background: var(--bg); font-size: 12px; color: var(--text-mid); line-height: 16px; }
 .select .value { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+
+/* ---- languages (transcription-language picker, open) ---- */
+.lang-list { left: 0; top: 118px; width: 100%; height: calc(var(--h) - 118px); overflow: hidden; }
+.lang-row { position: relative; display: flex; align-items: center; height: 56px; padding: 0 24px; font-size: 16px; color: var(--text); }
+.lang-row.sel { color: var(--primary); font-weight: 500; }
+.lang-check { position: absolute; right: 22px; top: 50%; width: 22px; height: 22px; transform: translateY(-50%); fill: var(--primary); }
 
 /* ---- entries ---- */
 .search-line { left: 56px; top: 130px; width: calc(100% - 160.4px); height: 1px; background: var(--text-low); }

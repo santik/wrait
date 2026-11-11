@@ -2,6 +2,7 @@
 //   window.WRAIT_STRINGS  { key: text }  replaces [data-i18n="key"] text
 //   window.WRAIT_LOCALE   'de-DE'        formats [data-date="ISO"] with Intl
 //   ?pulse=0..1 &progress=0..1 &system=1 tweak the listening/preview state
+//   ?applock=on turns the settings App-lock switch on (slot-5 app-lock shot)
 //   ?theme=light selects the light scheme (dark is the default)
 //   ?w=800&h=1280 lays the screen out for another viewport size (dp)
 (() => {
@@ -32,4 +33,6 @@
   }
   if (query.get('theme') === 'light') document.documentElement.dataset.theme = 'light';
   if (query.has('system')) document.body.classList.add('system');
+  // ?applock=on turns the App-lock switch on (settings screen, slot-5 app-lock shot).
+  if (query.get('applock') === 'on') document.querySelector('.switch')?.classList.add('on');
 })();
