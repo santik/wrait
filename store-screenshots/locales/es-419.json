@@ -35,7 +35,8 @@
     "entries": "Tu diario, con búsqueda",
     "languages": "Escribe en cualquier idioma",
     "app-lock": "Bloqueado y cifrado",
-    "privacy": "Tus datos son tuyos"
+    "privacy": "Tus datos son tuyos",
+    "calendar": "Tu mes de un vistazo"
   },
   "subheadlines": {
     "main": "Diario de voz con IA, privado y cifrado",
@@ -43,7 +44,8 @@
     "entries": "Explora y busca entradas pasadas",
     "languages": "60+ idiomas, detección automática",
     "app-lock": "Protección con huella, rostro o PIN",
-    "privacy": "Sin nube. Sin cuenta. Exporta cuando quieras."
+    "privacy": "Sin nube. Sin cuenta. Exporta cuando quieras.",
+    "calendar": "Salta a cualquier día del calendario"
   },
   "entry1": "Paseé junto al río, por fin con la mente despejada.",
   "entry2": "Gran llamada de planificación con el equipo.",
@@ -52,5 +54,6 @@
   "entry5": "Terminé el libro que empecé en primavera. Gran final.",
   "entry6": "Cansado pero feliz tras la primera carrera del año.",
   "entry7": "No olvidar llamar al dentista el lunes.",
-  "entry8": "Agradecido por mañanas tranquilas y buen café."
+  "entry8": "Agradecido por mañanas tranquilas y buen café.",
+  "calToday": "Hoy"
 }

@@ -193,5 +193,13 @@
   "tagsAssignDone": "Tamam",
   "tagsAssignCreate": "\"{name}\" oluştur",
   "tagsEntryCount": "{count, plural, =1{1 giriş} other{{count} giriş}}",
-  "tagsSearchIncluded": "Arama etiket adlarını da içerir"
+  "tagsSearchIncluded": "Arama etiket adlarını da içerir",
+  "entryListCalendar": "Takvim",
+  "entryListCalendarSemanticsLabel": "Takvimi aç",
+  "calendarToday": "Bugün",
+  "calendarBackSemanticsLabel": "Kayıtlara dön",
+  "calendarPreviousMonthSemanticsLabel": "Önceki ay",
+  "calendarNextMonthSemanticsLabel": "Sonraki ay",
+  "calendarMonthEmpty": "bu ay kayıt yok",
+  "calendarLoadError": "Takvimin yüklenemedi"
 }

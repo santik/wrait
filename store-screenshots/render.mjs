@@ -52,6 +52,7 @@ const backgrounds = {
   'languages': { dark: '#EDE7DD, #CEC4B2', light: '#2C302F, #121413' },
   'app-lock':  { dark: '#EAE4DA, #CBC1AF', light: '#2A2926, #121110' },
   'privacy':   { dark: '#F4EFE8, #DDD5C7', light: '#302F2B, #15140F' },
+  'calendar':  { dark: '#F2ECE3, #D7CDBC', light: '#2E302C, #141613' },
 };
 
 // id, html file (+query). 4-slot set (spec 057, revised). `listening` is the
@@ -66,6 +67,7 @@ const screens = [
   { id: 'entries', file: 'entries.html' },
   { id: 'languages', file: 'languages.html' },
   { id: 'app-lock', file: 'settings.html?applock=on' },
+  { id: 'calendar', file: 'calendar.html' },
 ];
 
 const args = process.argv.slice(2);

@@ -657,4 +657,28 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => '検索にはタグ名も含まれます';
+
+  @override
+  String get entryListCalendar => 'カレンダー';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'カレンダーを開く';
+
+  @override
+  String get calendarToday => '今日';
+
+  @override
+  String get calendarBackSemanticsLabel => 'エントリー一覧に戻る';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => '前の月';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => '次の月';
+
+  @override
+  String get calendarMonthEmpty => '今月のエントリーはありません';
+
+  @override
+  String get calendarLoadError => 'カレンダーを読み込めませんでした';
 }

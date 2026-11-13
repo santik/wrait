@@ -702,4 +702,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => 'La recherche inclut les noms de tags';
+
+  @override
+  String get entryListCalendar => 'Calendrier';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'Ouvrir le calendrier';
+
+  @override
+  String get calendarToday => 'Aujourd’hui';
+
+  @override
+  String get calendarBackSemanticsLabel => 'Retour aux entrées';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => 'Mois précédent';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => 'Mois suivant';
+
+  @override
+  String get calendarMonthEmpty => 'aucune entrée ce mois-ci';
+
+  @override
+  String get calendarLoadError => 'Impossible de charger votre calendrier';
 }

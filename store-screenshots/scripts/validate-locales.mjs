@@ -20,7 +20,7 @@ const [EXP_W, EXP_H] = DIMS[device] ?? DIMS.phone;
 
 // Active render set (spec 057, revised to 4). Retired ids (main, privacy) may
 // still have copy in the locale files — that's allowed, just not rendered.
-const SCREENS = ['listening', 'entries', 'languages', 'app-lock'];
+const SCREENS = ['listening', 'entries', 'languages', 'app-lock', 'calendar'];
 const MAX_WORDS = 8;      // non-CJK headlines
 const MAX_CJK_CHARS = 16; // CJK headlines (no word spaces)
 const CJK = new Set(['ja-JP', 'ko-KR', 'zh-CN', 'zh-TW']);

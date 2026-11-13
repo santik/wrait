@@ -35,7 +35,8 @@
     "entries": "Dein Tagebuch, durchsuchbar",
     "languages": "Tagebuch in jeder Sprache",
     "app-lock": "Gesperrt und verschlüsselt",
-    "privacy": "Deine Daten bleiben deine"
+    "privacy": "Deine Daten bleiben deine",
+    "calendar": "Dein Monat auf einen Blick"
   },
   "subheadlines": {
     "main": "KI-Sprachtagebuch – privat & verschlüsselt",
@@ -43,7 +44,8 @@
     "entries": "Frühere Einträge durchsuchen und ansehen",
     "languages": "60+ Sprachen, automatisch erkannt",
     "app-lock": "Schutz per Fingerabdruck, Gesicht oder PIN",
-    "privacy": "Keine Cloud. Kein Konto. Jederzeit exportieren."
+    "privacy": "Keine Cloud. Kein Konto. Jederzeit exportieren.",
+    "calendar": "Zu jedem Tag im Kalender springen"
   },
   "entry1": "Am Fluss spaziert, endlich einen klaren Kopf.",
   "entry2": "Tolles Planungsgespräch mit dem Team heute früh.",
@@ -52,5 +54,6 @@
   "entry5": "Das im Frühling begonnene Buch beendet. Tolles Ende.",
   "entry6": "Müde, aber glücklich nach dem ersten Lauf der Saison.",
   "entry7": "Montag beim Zahnarzt anrufen nicht vergessen.",
-  "entry8": "Dankbar für ruhige Morgen und guten Kaffee."
+  "entry8": "Dankbar für ruhige Morgen und guten Kaffee.",
+  "calToday": "Heute"
 }

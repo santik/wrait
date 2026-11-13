@@ -692,4 +692,28 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => 'Arama etiket adlarını da içerir';
+
+  @override
+  String get entryListCalendar => 'Takvim';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'Takvimi aç';
+
+  @override
+  String get calendarToday => 'Bugün';
+
+  @override
+  String get calendarBackSemanticsLabel => 'Kayıtlara dön';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => 'Önceki ay';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => 'Sonraki ay';
+
+  @override
+  String get calendarMonthEmpty => 'bu ay kayıt yok';
+
+  @override
+  String get calendarLoadError => 'Takvimin yüklenemedi';
 }

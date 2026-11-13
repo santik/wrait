@@ -704,6 +704,30 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => 'La búsqueda incluye nombres de etiquetas';
+
+  @override
+  String get entryListCalendar => 'Calendario';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'Abrir calendario';
+
+  @override
+  String get calendarToday => 'Hoy';
+
+  @override
+  String get calendarBackSemanticsLabel => 'Volver a las entradas';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => 'Mes anterior';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => 'Mes siguiente';
+
+  @override
+  String get calendarMonthEmpty => 'no hay entradas este mes';
+
+  @override
+  String get calendarLoadError => 'No se pudo cargar tu calendario';
 }
 
 /// The translations for Spanish Castilian, as used in Latin America and the Caribbean (`es_419`).
@@ -1405,4 +1429,28 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
 
   @override
   String get tagsSearchIncluded => 'La búsqueda incluye nombres de etiquetas';
+
+  @override
+  String get entryListCalendar => 'Calendario';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'Abrir calendario';
+
+  @override
+  String get calendarToday => 'Hoy';
+
+  @override
+  String get calendarBackSemanticsLabel => 'Volver a las entradas';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => 'Mes anterior';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => 'Mes siguiente';
+
+  @override
+  String get calendarMonthEmpty => 'no hay entradas este mes';
+
+  @override
+  String get calendarLoadError => 'No se pudo cargar tu calendario';
 }

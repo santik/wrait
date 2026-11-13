@@ -28,6 +28,7 @@ import 'package:wrait/presentation/main/main_screen_test_keys.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
 
 import '../test/test_doubles/fake_secure_storage.dart';
+import 'support/screenshot_support.dart';
 import 'support/managed_audio_files.dart';
 import 'support/microphone_test_overrides.dart';
 
@@ -669,10 +670,7 @@ void main() {
 Future<void> _prepareScreenshots(
   IntegrationTestWidgetsFlutterBinding binding,
   WidgetTester tester,
-) async {
-  await binding.convertFlutterSurfaceToImage();
-  await tester.pump();
-}
+) => prepareScreenshots(binding, tester);
 
 class _Harness {
   _Harness({

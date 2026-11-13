@@ -193,5 +193,13 @@
   "tagsAssignDone": "Terminé",
   "tagsAssignCreate": "Créer \"{name}\"",
   "tagsEntryCount": "{count, plural, =1{1 entrée} other{{count} entrées}}",
-  "tagsSearchIncluded": "La recherche inclut les noms de tags"
+  "tagsSearchIncluded": "La recherche inclut les noms de tags",
+  "entryListCalendar": "Calendrier",
+  "entryListCalendarSemanticsLabel": "Ouvrir le calendrier",
+  "calendarToday": "Aujourd’hui",
+  "calendarBackSemanticsLabel": "Retour aux entrées",
+  "calendarPreviousMonthSemanticsLabel": "Mois précédent",
+  "calendarNextMonthSemanticsLabel": "Mois suivant",
+  "calendarMonthEmpty": "aucune entrée ce mois-ci",
+  "calendarLoadError": "Impossible de charger votre calendrier"
 }

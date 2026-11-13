@@ -660,4 +660,28 @@ class AppLocalizationsKo extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => '검색에 태그 이름이 포함됩니다';
+
+  @override
+  String get entryListCalendar => '캘린더';
+
+  @override
+  String get entryListCalendarSemanticsLabel => '캘린더 열기';
+
+  @override
+  String get calendarToday => '오늘';
+
+  @override
+  String get calendarBackSemanticsLabel => '기록 목록으로 돌아가기';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => '이전 달';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => '다음 달';
+
+  @override
+  String get calendarMonthEmpty => '이번 달 기록이 없어요';
+
+  @override
+  String get calendarLoadError => '캘린더를 불러오지 못했어요';
 }

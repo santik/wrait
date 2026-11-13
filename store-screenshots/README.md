@@ -31,7 +31,7 @@ Output: `out/<device>/<theme>/<locale>/<locale>_<device>_<theme>_0N-<screen>.png
 
 | Path | What |
 |---|---|
-| `html/*.html` | One page per screen: main, listening, entries, languages, settings, feedback. The render set uses main/listening/entries/languages + settings (as app-lock) + entries (as privacy); settings/feedback are no longer standalone shots but remain as replicas (settings is reused). Open directly in a browser (English). Units are Android dp; phone viewport is 411.43 x 914.29, tablet 800 x 1280 (`?w=&h=`). |
+| `html/*.html` | One page per screen: main, listening, entries, languages, settings, feedback, calendar (spec 054, rendered as slot `05-calendar`). The render set uses main/listening/entries/languages + settings (as app-lock) + entries (as privacy); settings/feedback are no longer standalone shots but remain as replicas (settings is reused). Open directly in a browser (English). Units are Android dp; phone viewport is 411.43 x 914.29, tablet 800 x 1280 (`?w=&h=`). |
 | `html/app.css` | Shared styles; colors mirror `lib/presentation/theme/wrait_colors.dart` (dark scheme). |
 | `html/app.js` | Optional hooks: `?theme=light`, swaps `[data-i18n]` text from `window.WRAIT_STRINGS`, formats `[data-date]` with `Intl` for `window.WRAIT_LOCALE`. Query params: `?pulse=0..1&progress=0..1&system=1&applock=on`. |
 | `locales/<tag>.json` | Strings, sample entries, and `headlines`/`subheadlines` (keyed by the 6 screen ids) per language. |

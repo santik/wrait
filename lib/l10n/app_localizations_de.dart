@@ -705,4 +705,28 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => 'Suche umfasst Tag-Namen';
+
+  @override
+  String get entryListCalendar => 'Kalender';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'Kalender öffnen';
+
+  @override
+  String get calendarToday => 'Heute';
+
+  @override
+  String get calendarBackSemanticsLabel => 'Zurück zu den Einträgen';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => 'Vorheriger Monat';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => 'Nächster Monat';
+
+  @override
+  String get calendarMonthEmpty => 'keine einträge in diesem monat';
+
+  @override
+  String get calendarLoadError => 'Dein Kalender konnte nicht geladen werden';
 }

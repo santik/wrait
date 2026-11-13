@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../presentation/calendar/calendar_screen.dart';
 import '../../presentation/entries/entry_detail_screen.dart';
 import '../../presentation/entries/entry_list_screen.dart';
 import '../../presentation/main/main_screen.dart';
@@ -22,6 +23,10 @@ GoRouter buildAppRouter({String? initialLocation}) {
       GoRoute(
         path: '/entries',
         builder: (context, state) => const EntryListScreen(),
+      ),
+      GoRoute(
+        path: '/calendar',
+        builder: (context, state) => const CalendarScreen(),
       ),
       GoRoute(
         path: '/entry/:id',

@@ -25,6 +25,7 @@ import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
 
 import '../test/test_doubles/fake_secure_storage.dart';
+import 'support/screenshot_support.dart';
 import 'support/managed_audio_files.dart';
 
 void main() {
@@ -385,10 +386,7 @@ String _expectedShareText(String body) {
 Future<void> _prepareScreenshots(
   IntegrationTestWidgetsFlutterBinding binding,
   WidgetTester tester,
-) async {
-  await binding.convertFlutterSurfaceToImage();
-  await tester.pump();
-}
+) => prepareScreenshots(binding, tester);
 
 String _longText() {
   return List<String>.generate(

@@ -1280,6 +1280,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search includes tag names'**
   String get tagsSearchIncluded;
+
+  /// No description provided for @entryListCalendar.
+  ///
+  /// In en, this message translates to:
+  /// **'Calendar'**
+  String get entryListCalendar;
+
+  /// No description provided for @entryListCalendarSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Open calendar'**
+  String get entryListCalendarSemanticsLabel;
+
+  /// No description provided for @calendarToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get calendarToday;
+
+  /// No description provided for @calendarBackSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to entries'**
+  String get calendarBackSemanticsLabel;
+
+  /// No description provided for @calendarPreviousMonthSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get calendarPreviousMonthSemanticsLabel;
+
+  /// No description provided for @calendarNextMonthSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get calendarNextMonthSemanticsLabel;
+
+  /// No description provided for @calendarMonthEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No entries this month'**
+  String get calendarMonthEmpty;
+
+  /// No description provided for @calendarLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your calendar'**
+  String get calendarLoadError;
 }
 
 class _AppLocalizationsDelegate

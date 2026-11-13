@@ -193,5 +193,13 @@
   "tagsAssignDone": "Fertig",
   "tagsAssignCreate": "\"{name}\" erstellen",
   "tagsEntryCount": "{count, plural, =1{1 Eintrag} other{{count} Einträge}}",
-  "tagsSearchIncluded": "Suche umfasst Tag-Namen"
+  "tagsSearchIncluded": "Suche umfasst Tag-Namen",
+  "entryListCalendar": "Kalender",
+  "entryListCalendarSemanticsLabel": "Kalender öffnen",
+  "calendarToday": "Heute",
+  "calendarBackSemanticsLabel": "Zurück zu den Einträgen",
+  "calendarPreviousMonthSemanticsLabel": "Vorheriger Monat",
+  "calendarNextMonthSemanticsLabel": "Nächster Monat",
+  "calendarMonthEmpty": "keine einträge in diesem monat",
+  "calendarLoadError": "Dein Kalender konnte nicht geladen werden"
 }

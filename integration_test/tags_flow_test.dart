@@ -26,6 +26,7 @@ import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
 
 import '../test/test_doubles/fake_secure_storage.dart';
+import 'support/screenshot_support.dart';
 
 void main() {
   final binding = IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -652,10 +653,7 @@ void main() {
 Future<void> _prepareScreenshots(
   IntegrationTestWidgetsFlutterBinding binding,
   WidgetTester tester,
-) async {
-  await binding.convertFlutterSurfaceToImage();
-  await tester.pump();
-}
+) => prepareScreenshots(binding, tester);
 
 class _Harness {
   _Harness({
