@@ -193,5 +193,13 @@
   "tagsAssignDone": "完了",
   "tagsAssignCreate": "「{name}」を作成",
   "tagsEntryCount": "{count, plural, other{{count}件}}",
-  "tagsSearchIncluded": "検索にはタグ名も含まれます"
+  "tagsSearchIncluded": "検索にはタグ名も含まれます",
+  "entryListCalendar": "カレンダー",
+  "entryListCalendarSemanticsLabel": "カレンダーを開く",
+  "calendarToday": "今日",
+  "calendarBackSemanticsLabel": "エントリー一覧に戻る",
+  "calendarPreviousMonthSemanticsLabel": "前の月",
+  "calendarNextMonthSemanticsLabel": "次の月",
+  "calendarMonthEmpty": "今月のエントリーはありません",
+  "calendarLoadError": "カレンダーを読み込めませんでした"
 }

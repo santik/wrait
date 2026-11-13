@@ -193,5 +193,13 @@
   "tagsAssignDone": "완료",
   "tagsAssignCreate": "\"{name}\" 만들기",
   "tagsEntryCount": "{count, plural, other{{count}개 항목}}",
-  "tagsSearchIncluded": "검색에 태그 이름이 포함됩니다"
+  "tagsSearchIncluded": "검색에 태그 이름이 포함됩니다",
+  "entryListCalendar": "캘린더",
+  "entryListCalendarSemanticsLabel": "캘린더 열기",
+  "calendarToday": "오늘",
+  "calendarBackSemanticsLabel": "기록 목록으로 돌아가기",
+  "calendarPreviousMonthSemanticsLabel": "이전 달",
+  "calendarNextMonthSemanticsLabel": "다음 달",
+  "calendarMonthEmpty": "이번 달 기록이 없어요",
+  "calendarLoadError": "캘린더를 불러오지 못했어요"
 }

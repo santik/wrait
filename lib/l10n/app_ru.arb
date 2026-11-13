@@ -193,5 +193,13 @@
   "tagsAssignDone": "Готово",
   "tagsAssignCreate": "Создать «{name}»",
   "tagsEntryCount": "{count, plural, =1{1 запись} few{{count} записи} many{{count} записей} other{{count} записей}}",
-  "tagsSearchIncluded": "Поиск включает названия тегов"
+  "tagsSearchIncluded": "Поиск включает названия тегов",
+  "entryListCalendar": "Календарь",
+  "entryListCalendarSemanticsLabel": "Открыть календарь",
+  "calendarToday": "Сегодня",
+  "calendarBackSemanticsLabel": "Назад к записям",
+  "calendarPreviousMonthSemanticsLabel": "Предыдущий месяц",
+  "calendarNextMonthSemanticsLabel": "Следующий месяц",
+  "calendarMonthEmpty": "в этом месяце записей нет",
+  "calendarLoadError": "Не удалось загрузить календарь"
 }

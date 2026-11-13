@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=411.43, initial-scale=1">
+<title>Wrait · calendar</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  /* Calendar screen (spec 054): own minimal header with the Today button
+     between the < > month arrows, a locale-aware month grid with per-day
+     indicators, and the month's entries inline below. */
+  .cal { position: absolute; inset: 0; display: flex; flex-direction: column; }
+  .cal-head { display: flex; align-items: center; gap: 2px; padding: 60px 10px 6px; }
+  .cal-back { width: 24px; height: 24px; color: var(--text); flex: 0 0 auto; }
+  .cal-title { flex: 1; min-width: 0; text-align: center; font-size: 20px; font-weight: 500;
+               color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+               text-transform: capitalize; }
+  .cal-chev { width: 38px; height: 38px; display: grid; place-items: center; color: var(--text-mid); flex: 0 0 auto; }
+  .cal-chev svg { width: 24px; height: 24px; }
+  .cal-today { padding: 0 8px; height: 34px; display: grid; place-items: center; font-size: 15px;
+               font-weight: 500; color: var(--primary); white-space: nowrap; flex: 0 0 auto; }
+  .weekrow, .grid { display: grid; grid-template-columns: repeat(7, 1fr); padding: 0 6px; }
+  .wd { text-align: center; font-size: 12.5px; color: var(--text-mid); padding: 6px 0 2px; text-transform: capitalize; }
+  .cell { position: relative; height: 50px; display: grid; place-items: center; }
+  .cell .num { font-size: 15px; color: var(--text); display: grid; place-items: center;
+               width: 34px; height: 34px; border-radius: 50%; }
+  .cell.today .num { border: 1px solid var(--primary); color: var(--primary); }
+  .cell .dots { position: absolute; bottom: 5px; left: 0; right: 0; display: flex; gap: 3px; justify-content: center; }
+  .cell .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--primary); }
+  .cell .dot.draft { background: transparent; border: 1.2px solid var(--text-mid); }
+  .cal-div { height: 1px; background: var(--surface-hi); margin: 8px 16px 0; }
+  .cal-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+</style>
+</head><body>
+<main class="screen flat">
+  <div class="cal">
+    <div class="cal-head">
+      <svg class="cal-back" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+      <div class="cal-title" id="cal-title">May 2026</div>
+      <div class="cal-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></div>
+      <div class="cal-today" data-i18n="calToday">Today</div>
+      <div class="cal-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+    </div>
+    <div class="weekrow" id="cal-weekrow"></div>
+    <div class="grid" id="cal-grid"></div>
+    <div class="cal-div"></div>
+    <div class="cal-list">
+      <div class="card"><div class="date" data-date="2026-05-19T08:12">Tue, 5/19/2026 · 8:12 AM</div><div class="text" data-i18n="entry1">Walked by the river, finally felt clear-headed today.</div><div class="lang" data-i18n="langName">English</div></div>
+      <div class="card"><div class="date" data-date="2026-05-18T19:40">Mon, 5/18/2026 · 7:40 PM</div><div class="text" data-i18n="entry2">Great planning call with the team this morning.</div><div class="lang" data-i18n="langName">English</div></div>
+      <div class="card"><div class="date" data-date="2026-05-14T07:22">Thu, 5/14/2026 · 7:22 AM</div><div class="text" data-i18n="entry3">Dinner with Mom, she told the old house story again.</div><div class="lang" data-i18n="langName">English</div></div>
+    </div>
+  </div>
+  <div class="sys"><div class="sys-top">09:48</div><div class="sys-nav"><i class="back"></i><i class="home"></i></div></div>
+</main>
+<script src="app.js"></script>
+<script>
+  // Builds a locale-correct month grid (first day of week, weekday and month
+  // names from Intl) so every language reads naturally. Static sample month.
+  (() => {
+    const locale = (window.WRAIT_LOCALE) || 'en-US';
+    const year = 2026, month = 4; // May (0-based)
+    const today = 19;
+    // day -> { c: entry count (1..3 dots), draft: outline dot for draft-only days }
+    const marks = {
+      3: { c: 1 }, 7: { c: 2 }, 10: { c: 1 }, 14: { c: 1 }, 18: { c: 2 },
+      19: { c: 1 }, 21: { c: 1, draft: true }, 24: { c: 1 }, 28: { c: 1 },
+    };
+
+    // Month/year title.
+    try {
+      document.getElementById('cal-title').textContent =
+        new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'long' }).format(new Date(year, month, 1));
+    } catch (_) {}
+
+    // First day of week: 1=Mon … 7=Sun (Intl.Locale weekInfo; fall back to Sunday).
+    let firstDay = 7;
+    try {
+      const loc = new Intl.Locale(locale);
+      const wi = (typeof loc.getWeekInfo === 'function') ? loc.getWeekInfo() : loc.weekInfo;
+      if (wi && wi.firstDay) firstDay = wi.firstDay;
+    } catch (_) {}
+
+    // Column order as JS getDay() values (0=Sun … 6=Sat).
+    const order = [];
+    for (let i = 0; i < 7; i++) order.push((firstDay % 7 + i) % 7);
+
+    // Short weekday names indexed by getDay().
+    const wdFmt = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    const anchor = new Date(2026, 0, 4);
+    const wdName = [];
+    for (let g = 0; g < 7; g++) {
+      const ref = new Date(2026, 0, 4 + ((g - anchor.getDay() + 7) % 7));
+      wdName[g] = wdFmt.format(ref);
+    }
+    const weekrow = document.getElementById('cal-weekrow');
+    for (const g of order) {
+      const el = document.createElement('div');
+      el.className = 'wd';
+      el.textContent = wdName[g];
+      weekrow.appendChild(el);
+    }
+
+    // Day cells (outside days hidden, as in the app).
+    const grid = document.getElementById('cal-grid');
+    const firstDow = new Date(year, month, 1).getDay();
+    const lead = order.indexOf(firstDow);
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let i = 0; i < lead; i++) grid.appendChild(Object.assign(document.createElement('div'), { className: 'cell' }));
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (d === today ? ' today' : '');
+      const num = document.createElement('div');
+      num.className = 'num';
+      num.textContent = d;
+      cell.appendChild(num);
+      const m = marks[d];
+      if (m) {
+        const dots = document.createElement('div');
+        dots.className = 'dots';
+        const n = Math.min(m.c, 3);
+        for (let k = 0; k < n; k++) {
+          const dot = document.createElement('div');
+          dot.className = 'dot' + (m.draft ? ' draft' : '');
+          dots.appendChild(dot);
+        }
+        cell.appendChild(dots);
+      }
+      grid.appendChild(cell);
+    }
+  })();
+</script>
+</body></html>

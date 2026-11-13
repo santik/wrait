@@ -22,6 +22,7 @@ import 'package:wrait/domain/repository/entry_repository.dart';
 import 'package:wrait/domain/repository/preferences_repository.dart';
 import 'package:wrait/domain/service/entry_export_service.dart';
 import 'package:wrait/domain/service/entry_import_service.dart';
+import 'package:wrait/presentation/calendar/calendar_test_keys.dart';
 import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
 
@@ -50,6 +51,20 @@ void main() {
     expect(find.byKey(const ValueKey('entryListView')), findsNothing);
     expect(find.byKey(const ValueKey('entryListExportButton')), findsOneWidget);
     expect(find.byKey(const ValueKey('entryListImportButton')), findsOneWidget);
+  });
+
+  testWidgets('calendar button opens the calendar screen', (tester) async {
+    await _pumpEntryListApp(tester, entryRepository: entryRepository);
+
+    expect(
+      find.byKey(const ValueKey('entryListCalendarButton')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('entryListCalendarButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(CalendarTestKeys.grid), findsOneWidget);
   });
 
   testWidgets('uses a compact single-row entry-list header', (tester) async {

@@ -337,5 +337,13 @@
       }
     }
   },
-  "tagsSearchIncluded": "Search includes tag names"
+  "tagsSearchIncluded": "Search includes tag names",
+  "entryListCalendar": "Calendar",
+  "entryListCalendarSemanticsLabel": "Open calendar",
+  "calendarToday": "Today",
+  "calendarBackSemanticsLabel": "Back to entries",
+  "calendarPreviousMonthSemanticsLabel": "Previous month",
+  "calendarNextMonthSemanticsLabel": "Next month",
+  "calendarMonthEmpty": "No entries this month",
+  "calendarLoadError": "Couldn't load your calendar"
 }

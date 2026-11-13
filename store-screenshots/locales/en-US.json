@@ -35,7 +35,8 @@
     "entries": "Your diary, searchable",
     "languages": "Journal in any language",
     "app-lock": "Locked and encrypted",
-    "privacy": "Your data stays yours"
+    "privacy": "Your data stays yours",
+    "calendar": "Your month at a glance"
   },
   "subheadlines": {
     "main": "AI voice diary — private & encrypted",
@@ -43,7 +44,8 @@
     "entries": "Browse and search past entries",
     "languages": "60+ languages, auto-detected",
     "app-lock": "Fingerprint, face, or PIN protection",
-    "privacy": "No cloud. No account. Export anytime."
+    "privacy": "No cloud. No account. Export anytime.",
+    "calendar": "Jump to any day you journaled"
   },
   "entry1": "Walked by the river, finally felt clear-headed today.",
   "entry2": "Great planning call with the team this morning.",
@@ -52,5 +54,6 @@
   "entry5": "Finished the book I started in spring. Loved the end.",
   "entry6": "Tired but happy after the first run of the season.",
   "entry7": "Need to remember to call the dentist on Monday.",
-  "entry8": "Grateful for slow mornings and good coffee."
+  "entry8": "Grateful for slow mornings and good coffee.",
+  "calToday": "Today"
 }

@@ -12,6 +12,7 @@ import 'package:wrait/data/preferences/preferences_providers.dart';
 import 'package:wrait/domain/model/entry.dart';
 import 'package:wrait/domain/repository/entry_repository.dart';
 import 'package:wrait/domain/repository/preferences_repository.dart';
+import 'package:wrait/presentation/calendar/calendar_test_keys.dart';
 import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
 import 'package:wrait/presentation/settings/settings_test_keys.dart';
@@ -23,6 +24,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('no entries yet'), findsOneWidget);
+  });
+
+  testWidgets('renders the calendar route directly', (tester) async {
+    await tester.pumpWidget(_buildTestApp(initialLocation: '/calendar'));
+
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(CalendarTestKeys.grid), findsOneWidget);
+    expect(find.text('No entries this month'), findsOneWidget);
   });
 
   testWidgets('renders Settings directly and returns to main', (tester) async {

@@ -690,4 +690,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => 'Search includes tag names';
+
+  @override
+  String get entryListCalendar => 'Calendar';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'Open calendar';
+
+  @override
+  String get calendarToday => 'Today';
+
+  @override
+  String get calendarBackSemanticsLabel => 'Back to entries';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => 'Previous month';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => 'Next month';
+
+  @override
+  String get calendarMonthEmpty => 'No entries this month';
+
+  @override
+  String get calendarLoadError => 'Couldn\'t load your calendar';
 }

@@ -107,6 +107,16 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
                       ),
                       const SizedBox(width: WraitSpacingTokens.xs),
                       Semantics(
+                        button: true,
+                        label: l10n.entryListCalendarSemanticsLabel,
+                        child: IconButton(
+                          key: const ValueKey('entryListCalendarButton'),
+                          onPressed: () => context.push('/calendar'),
+                          icon: const Icon(Icons.calendar_month_outlined),
+                          tooltip: l10n.entryListCalendar,
+                        ),
+                      ),
+                      Semantics(
                         button: !controllerState.isImporting,
                         enabled: !controllerState.isImporting,
                         label: controllerState.isImporting

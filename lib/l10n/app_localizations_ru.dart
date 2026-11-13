@@ -705,4 +705,28 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => 'Поиск включает названия тегов';
+
+  @override
+  String get entryListCalendar => 'Календарь';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'Открыть календарь';
+
+  @override
+  String get calendarToday => 'Сегодня';
+
+  @override
+  String get calendarBackSemanticsLabel => 'Назад к записям';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => 'Предыдущий месяц';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => 'Следующий месяц';
+
+  @override
+  String get calendarMonthEmpty => 'в этом месяце записей нет';
+
+  @override
+  String get calendarLoadError => 'Не удалось загрузить календарь';
 }

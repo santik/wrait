@@ -697,4 +697,28 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => 'A pesquisa inclui nomes de tags';
+
+  @override
+  String get entryListCalendar => 'Calendário';
+
+  @override
+  String get entryListCalendarSemanticsLabel => 'Abrir calendário';
+
+  @override
+  String get calendarToday => 'Hoje';
+
+  @override
+  String get calendarBackSemanticsLabel => 'Voltar para as entradas';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => 'Mês anterior';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => 'Próximo mês';
+
+  @override
+  String get calendarMonthEmpty => 'nenhuma entrada neste mês';
+
+  @override
+  String get calendarLoadError => 'Não foi possível carregar seu calendário';
 }

@@ -652,4 +652,28 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get tagsSearchIncluded => '搜索包含标签名称';
+
+  @override
+  String get entryListCalendar => '日历';
+
+  @override
+  String get entryListCalendarSemanticsLabel => '打开日历';
+
+  @override
+  String get calendarToday => '今天';
+
+  @override
+  String get calendarBackSemanticsLabel => '返回日记列表';
+
+  @override
+  String get calendarPreviousMonthSemanticsLabel => '上个月';
+
+  @override
+  String get calendarNextMonthSemanticsLabel => '下个月';
+
+  @override
+  String get calendarMonthEmpty => '本月还没有日记';
+
+  @override
+  String get calendarLoadError => '无法加载你的日历';
 }

@@ -193,5 +193,13 @@
   "tagsAssignDone": "完成",
   "tagsAssignCreate": "创建「{name}」",
   "tagsEntryCount": "{count, plural, other{{count}条}}",
-  "tagsSearchIncluded": "搜索包含标签名称"
+  "tagsSearchIncluded": "搜索包含标签名称",
+  "entryListCalendar": "日历",
+  "entryListCalendarSemanticsLabel": "打开日历",
+  "calendarToday": "今天",
+  "calendarBackSemanticsLabel": "返回日记列表",
+  "calendarPreviousMonthSemanticsLabel": "上个月",
+  "calendarNextMonthSemanticsLabel": "下个月",
+  "calendarMonthEmpty": "本月还没有日记",
+  "calendarLoadError": "无法加载你的日历"
 }

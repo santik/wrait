@@ -193,5 +193,13 @@
   "tagsAssignDone": "Listo",
   "tagsAssignCreate": "Crear \"{name}\"",
   "tagsEntryCount": "{count, plural, =1{1 entrada} other{{count} entradas}}",
-  "tagsSearchIncluded": "La búsqueda incluye nombres de etiquetas"
+  "tagsSearchIncluded": "La búsqueda incluye nombres de etiquetas",
+  "entryListCalendar": "Calendario",
+  "entryListCalendarSemanticsLabel": "Abrir calendario",
+  "calendarToday": "Hoy",
+  "calendarBackSemanticsLabel": "Volver a las entradas",
+  "calendarPreviousMonthSemanticsLabel": "Mes anterior",
+  "calendarNextMonthSemanticsLabel": "Mes siguiente",
+  "calendarMonthEmpty": "no hay entradas este mes",
+  "calendarLoadError": "No se pudo cargar tu calendario"
 }
