@@ -80,19 +80,35 @@ android {
     }
 
     buildTypes {
-        getByName("debug") {
-            applicationIdSuffix = ".dev"
-        }
-
-        getByName("profile") {
-            applicationIdSuffix = ".dev"
-        }
-
         getByName("release") {
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
+    }
+}
+
+// Apply the ".dev" application id for local builds via the variant API rather
+// than `buildTypes.applicationIdSuffix`. The Flutter Gradle plugin copies
+// build-type `applicationIdSuffix` onto plugin *library* modules, which the
+// Android Gradle Plugin bundled with Flutter 3.50 rejects ("Library projects
+// cannot set applicationIdSuffix"). Setting the final applicationId on the
+// application variants keeps debug/profile installable alongside a release
+// build (com.wrait.flutter.dev) without touching any library module.
+//
+// The selector matches by build type (debug/profile), so it only rewrites the
+// application module's id. The integration-test instrumentation host derives its
+// id from this (com.wrait.flutter.dev.test) — see tool/run_integration_tests.sh,
+// which grants RECORD_AUDIO to both the app and its `.test` package.
+androidComponents {
+    // Derived from the single source (defaultConfig.applicationId) so the ".dev"
+    // id can never silently drift from the base id.
+    val devApplicationId = "${requireNotNull(android.defaultConfig.applicationId)}.dev"
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.applicationId.set(devApplicationId)
+    }
+    onVariants(selector().withBuildType("profile")) { variant ->
+        variant.applicationId.set(devApplicationId)
     }
 }
 

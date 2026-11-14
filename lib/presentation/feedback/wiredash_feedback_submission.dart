@@ -1,6 +1,6 @@
 // ignore_for_file: depend_on_referenced_packages, implementation_imports
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:wiredash/src/core/services/services.dart' show WiredashServices;
 import 'package:wiredash/src/feedback/data/feedback_submitter.dart'
