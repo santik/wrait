@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 const TextTheme wraitTextTheme = TextTheme(
   bodyLarge: TextStyle(fontSize: 16, height: 1.5, letterSpacing: 0),

@@ -124,8 +124,10 @@ committed to this repository.
 
 ### Requirements
 
-- Flutter `3.44.3`
-- Dart SDK compatible with `^3.12.2`
+- Flutter `3.50.0` — install by any means; `.fvmrc` pins this version for
+  [FVM](https://fvm.app) users (`fvm install && fvm use`), and it matches CI.
+  FVM is optional; non-FVM users just need Flutter `3.50.0` on `PATH`.
+- Dart SDK `3.14.x` (bundled with Flutter 3.50.0)
 - Xcode for iOS builds
 - Android Studio and Android SDK for Android builds
 - Node.js and npm for OpenAPI client generation

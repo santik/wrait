@@ -2,6 +2,19 @@
 
 All notable changes to wrait are documented here.
 
+## [1.0.5] - 2026-11-14
+
+### Changed
+
+- Upgraded to Flutter 3.50 (Dart 3.14) and pinned the SDK version in CI and
+  `.fvmrc` for reproducible builds.
+- Migrated off the deprecated `package:flutter/material.dart` to the standalone
+  `material_ui` and `cupertino_ui` packages. This is a like-for-like migration
+  with no intended change to appearance or behavior.
+- Localization delegates provide both the new `material_ui`/`cupertino_ui` and
+  the legacy Material/Cupertino families, so dependencies that still use the
+  legacy library (e.g. the feedback SDK) keep working.
+
 ## [1.0.4] - 2026-10-10
 
 ### Added

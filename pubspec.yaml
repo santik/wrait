@@ -16,11 +16,14 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.4+16
+version: 1.0.5+17
 
 environment:
   sdk: ^3.13.4
-  flutter: ">=3.47.5 <3.48.0"
+  # Upper-bounded to the next minor until it is deliberately re-verified: the
+  # exact material_ui/cupertino_ui pins and the flutter_localizations delegate
+  # setup below are only verified on 3.50.x (mirrors the prior pin's tightness).
+  flutter: ">=3.50.0 <3.51.0"
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -33,6 +36,15 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+  # Standalone Material + Cupertino libraries; replace the deprecated
+  # package:flutter/material.dart (and the relocated Global*Localizations
+  # delegates) on Flutter 3.50+. Pinned to the exact resolved versions for
+  # CI/local reproducibility (material_ui 1.11.0 requires a newer SDK patch).
+  # Re-pin to the latest compatible versions when the Flutter line is bumped
+  # (see the `environment.flutter` upper bound) — `pub upgrade` will not move
+  # these exact pins on its own.
+  material_ui: 1.5.0
+  cupertino_ui: 1.1.1
 
   drift: ^2.35.0
   flutter_riverpod: ^3.4.3
@@ -57,7 +69,9 @@ dependencies:
   timezone: ^0.10.0
   flutter_timezone: ^3.0.1
   # Pinned: the feedback adapter uses Wiredash's internal submission service
-  # graph, which is verified against this exact SDK version.
+  # graph. 2.6.1 is the latest published version (no 2.7.x exists) and builds
+  # cleanly against Flutter 3.50 + material_ui — its `child: Widget` API accepts
+  # the migrated tree, so no MaterialUiCompatibilityBridge is required.
   wiredash: 2.6.1
   wrait_backend_api:
     path: tool/openapi-generator/output/backend_api

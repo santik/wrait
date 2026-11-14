@@ -4,7 +4,8 @@ Thanks for considering a contribution to wrait, the voice-first diary app.
 
 ## Development Setup
 
-You need the Flutter SDK (stable channel) and Node.js 20+.
+You need Flutter `3.50.0` (stable channel; pinned in `.fvmrc` and CI — FVM is
+optional, any install of that version works) and Node.js 20+.
 
 ```sh
 npm install
