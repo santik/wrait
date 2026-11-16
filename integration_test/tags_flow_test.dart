@@ -10,6 +10,7 @@ import 'package:wrait/app.dart';
 import 'package:wrait/core/config/app_config.dart';
 import 'package:wrait/core/router/app_router.dart';
 import 'package:wrait/core/time/system_clock.dart';
+import 'package:wrait/presentation/settings/settings_test_keys.dart';
 import 'package:wrait/data/auth/app_lock_providers.dart';
 import 'package:wrait/data/api/backend_providers.dart';
 import 'package:wrait/data/api/record_quota_state.dart';
@@ -26,6 +27,7 @@ import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
 
 import '../test/test_doubles/fake_secure_storage.dart';
+import 'support/backup_support.dart';
 import 'support/screenshot_support.dart';
 
 void main() {
@@ -539,8 +541,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-    await tester.pumpAndSettle();
+    // Export now lives in Settings (feature 058).
+    await openSettings(tester, harness.container);
+    await tapBackup(tester, backupExportButtonKey);
 
     expect(
       exportWriter.contents,

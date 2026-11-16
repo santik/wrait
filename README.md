@@ -24,7 +24,7 @@ The current Flutter app includes:
 - retryable local drafts when backend work cannot finish immediately
 - entry list and entry detail screens
 - entry editing, sharing, and deletion
-- CSV export and import from the entries screen
+- CSV backup and restore (whole-library export and import) from the Settings screen
 - app-wide privacy lock using device authentication
 - Android screenshot, screen recording, and recent-app protection
 - iOS background/app-switch privacy cover

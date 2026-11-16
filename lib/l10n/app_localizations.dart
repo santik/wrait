@@ -651,53 +651,41 @@ abstract class AppLocalizations {
   /// **'Clear search'**
   String get entryListClearSearch;
 
-  /// No description provided for @entryListImportCsv.
+  /// No description provided for @settingsBackup.
   ///
   /// In en, this message translates to:
-  /// **'Import CSV'**
-  String get entryListImportCsv;
+  /// **'Backup & restore'**
+  String get settingsBackup;
 
-  /// No description provided for @entryListExportCsv.
+  /// No description provided for @settingsBackupExportLabel.
   ///
   /// In en, this message translates to:
-  /// **'Export CSV'**
-  String get entryListExportCsv;
+  /// **'Export'**
+  String get settingsBackupExportLabel;
 
-  /// No description provided for @entryListImporting.
+  /// No description provided for @settingsBackupDescription.
   ///
   /// In en, this message translates to:
-  /// **'Importing CSV'**
-  String get entryListImporting;
+  /// **'Save all your entries to a CSV file, or add entries from one you exported before.'**
+  String get settingsBackupDescription;
 
-  /// No description provided for @entryListExporting.
+  /// No description provided for @settingsBackupImportLabel.
   ///
   /// In en, this message translates to:
-  /// **'Exporting CSV'**
-  String get entryListExporting;
+  /// **'Import'**
+  String get settingsBackupImportLabel;
 
-  /// No description provided for @entryListImportingSemanticsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Importing entries'**
-  String get entryListImportingSemanticsLabel;
-
-  /// No description provided for @entryListExportingSemanticsLabel.
+  /// No description provided for @settingsBackupExporting.
   ///
   /// In en, this message translates to:
   /// **'Exporting entries'**
-  String get entryListExportingSemanticsLabel;
+  String get settingsBackupExporting;
 
-  /// No description provided for @entryListImportSemanticsLabel.
+  /// No description provided for @settingsBackupImporting.
   ///
   /// In en, this message translates to:
-  /// **'Import entries'**
-  String get entryListImportSemanticsLabel;
-
-  /// No description provided for @entryListExportSemanticsLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Export entries'**
-  String get entryListExportSemanticsLabel;
+  /// **'Importing entries'**
+  String get settingsBackupImporting;
 
   /// No description provided for @entryListEmpty.
   ///

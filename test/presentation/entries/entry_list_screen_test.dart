@@ -11,17 +11,11 @@ import 'package:wrait/core/router/app_router.dart';
 import 'package:wrait/data/auth/app_lock_providers.dart';
 import 'package:wrait/data/api/backend_providers.dart';
 import 'package:wrait/data/api/record_quota_state.dart';
-import 'package:wrait/data/entries/entry_export_file_writer.dart';
-import 'package:wrait/data/entries/entry_export_providers.dart';
-import 'package:wrait/data/entries/entry_import_file_reader.dart';
-import 'package:wrait/data/entries/entry_import_providers.dart';
 import 'package:wrait/data/entries/entry_providers.dart';
 import 'package:wrait/data/preferences/preferences_providers.dart';
 import 'package:wrait/domain/model/entry.dart';
 import 'package:wrait/domain/repository/entry_repository.dart';
 import 'package:wrait/domain/repository/preferences_repository.dart';
-import 'package:wrait/domain/service/entry_export_service.dart';
-import 'package:wrait/domain/service/entry_import_service.dart';
 import 'package:wrait/presentation/calendar/calendar_test_keys.dart';
 import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
@@ -30,12 +24,10 @@ import '../../test_doubles/l10n_test_helper.dart';
 
 void main() {
   late _TestEntryRepository entryRepository;
-  late _CapturingExportFileWriter exportFileWriter;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues(const <String, Object>{});
     entryRepository = _TestEntryRepository();
-    exportFileWriter = _CapturingExportFileWriter();
   });
 
   tearDown(() async {
@@ -49,8 +41,21 @@ void main() {
 
     expect(find.text('no entries yet'), findsOneWidget);
     expect(find.byKey(const ValueKey('entryListView')), findsNothing);
-    expect(find.byKey(const ValueKey('entryListExportButton')), findsOneWidget);
-    expect(find.byKey(const ValueKey('entryListImportButton')), findsOneWidget);
+  });
+
+  testWidgets('entry list header shows only browsing controls', (tester) async {
+    await _pumpEntryListApp(tester, entryRepository: entryRepository);
+
+    // Import/Export relocated to Settings (feature 058); the header keeps only
+    // browsing controls.
+    expect(find.byKey(const ValueKey('entryListExportButton')), findsNothing);
+    expect(find.byKey(const ValueKey('entryListImportButton')), findsNothing);
+    expect(find.byKey(const ValueKey('entryListBackButton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('entryListSearchField')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('entryListCalendarButton')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('calendar button opens the calendar screen', (tester) async {
@@ -76,20 +81,16 @@ void main() {
     final searchRect = tester.getRect(
       find.byKey(const ValueKey('entryListSearchField')),
     );
-    final importRect = tester.getRect(
-      find.byKey(const ValueKey('entryListImportButton')),
-    );
-    final exportRect = tester.getRect(
-      find.byKey(const ValueKey('entryListExportButton')),
+    final calendarRect = tester.getRect(
+      find.byKey(const ValueKey('entryListCalendarButton')),
     );
     final screenWidth = tester.getSize(find.byType(Scaffold)).width;
 
     expect(backRect.left, lessThanOrEqualTo(4));
     expect(searchRect.left, greaterThan(backRect.right));
-    expect(searchRect.right, lessThan(importRect.left));
+    expect(searchRect.right, lessThan(calendarRect.left));
     expect(searchRect.center.dy, closeTo(backRect.center.dy, 0.01));
-    expect(importRect.right, closeTo(exportRect.left, 0.01));
-    expect(exportRect.right, greaterThan(screenWidth - 8));
+    expect(calendarRect.right, greaterThan(screenWidth - 8));
   });
 
   testWidgets('renders populated entries newest first with language labels', (
@@ -454,350 +455,11 @@ void main() {
 
     semanticsHandle.dispose();
   });
-
-  testWidgets('export success shows destination feedback and CSV content', (
-    tester,
-  ) async {
-    entryRepository.emitEntries([
-      _entry(id: 2, createdAt: DateTime(2026, 6, 15, 9), type: EntryType.draft),
-      _entry(id: 1, createdAt: DateTime(2026, 6, 14, 9)),
-    ]);
-
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      exportService: EntryExportService(
-        fileWriter: exportFileWriter,
-        now: () => DateTime.utc(2026, 6, 30, 12, 34, 56),
-      ),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
-        'Exported wrait-entries-20260630-123456.csv to Downloads/Wrait.',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      exportFileWriter.lastContents,
-      contains(
-        'type,created_at,language,word_count,raw_transcript,cleaned_text,tags',
-      ),
-    );
-    expect(exportFileWriter.lastContents, contains('draft,'));
-    expect(exportFileWriter.lastContents, isNot(contains('audioPath')));
-  });
-
-  testWidgets('export includes nonmatching entries while search is active', (
-    tester,
-  ) async {
-    entryRepository.emitEntries([
-      _entry(id: 2, rawTranscript: 'matching record'),
-      _entry(id: 1, rawTranscript: 'outside record'),
-    ]);
-
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      exportService: EntryExportService(
-        fileWriter: exportFileWriter,
-        now: () => DateTime.utc(2026, 6, 30, 12),
-      ),
-    );
-
-    await tester.enterText(
-      find.byKey(const ValueKey('entryListSearchField')),
-      'matching',
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byKey(const ValueKey('entryRow-2')), findsOneWidget);
-    expect(find.byKey(const ValueKey('entryRow-1')), findsNothing);
-
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-    await tester.pumpAndSettle();
-
-    expect(exportFileWriter.lastContents, contains('matching record'));
-    expect(exportFileWriter.lastContents, contains('outside record'));
-  });
-
-  testWidgets('export failure shows an error and keeps the list visible', (
-    tester,
-  ) async {
-    entryRepository.emitEntries([_entry(id: 4)]);
-
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      exportService: EntryExportService(
-        fileWriter: const _ThrowingExportFileWriter(),
-        now: () => DateTime.utc(2026, 6, 30, 12),
-      ),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Could not export entries.'), findsOneWidget);
-    expect(find.byKey(const ValueKey('entryListView')), findsOneWidget);
-    expect(find.byKey(const ValueKey('entryRow-4')), findsOneWidget);
-  });
-
-  testWidgets('export works from the empty state', (tester) async {
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      exportService: EntryExportService(
-        fileWriter: exportFileWriter,
-        now: () => DateTime.utc(2026, 6, 30, 13),
-      ),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
-        'Exported wrait-entries-20260630-130000.csv to Downloads/Wrait.',
-      ),
-      findsOneWidget,
-    );
-    expect(
-      exportFileWriter.lastContents,
-      'type,created_at,language,word_count,raw_transcript,cleaned_text,tags\n',
-    );
-  });
-
-  testWidgets('export button shows progress and prevents duplicate taps', (
-    tester,
-  ) async {
-    final semanticsHandle = tester.ensureSemantics();
-    entryRepository.emitEntries([_entry(id: 6)]);
-    final exportCompleter = Completer<EntryExportFileWriteResult>();
-    final delayedWriter = _CapturingExportFileWriter(
-      completer: exportCompleter,
-    );
-
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      exportService: EntryExportService(
-        fileWriter: delayedWriter,
-        now: () => DateTime.utc(2026, 6, 30, 14),
-      ),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-    await tester.pump();
-
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.bySemanticsLabel('Exporting entries'), findsWidgets);
-    expect(delayedWriter.callCount, 1);
-
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-    await tester.pump();
-
-    expect(delayedWriter.callCount, 1);
-
-    exportCompleter.complete(
-      const EntryExportFileWriteResult(
-        fileName: 'wrait-entries-20260630-140000.csv',
-        pathLabel: 'Downloads/Wrait',
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-    semanticsHandle.dispose();
-  });
-
-  testWidgets(
-    'import success shows added-count feedback and renders new rows',
-    (tester) async {
-      await _pumpEntryListApp(
-        tester,
-        entryRepository: entryRepository,
-        importService: EntryImportService(
-          fileReader: _TestImportFileReader(
-            result: EntryImportFileReadResult(
-              fileName: 'import.csv',
-              contents: _validImportCsv(),
-            ),
-          ),
-          entryRepository: entryRepository,
-        ),
-      );
-
-      await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Imported 2 records from import.csv.'), findsOneWidget);
-      expect(find.byKey(const ValueKey('entryListView')), findsOneWidget);
-      expect(find.text('clean entry 21'), findsOneWidget);
-      expect(find.text('imported draft entry'), findsOneWidget);
-    },
-  );
-
-  testWidgets('import refreshes matching results while a query is active', (
-    tester,
-  ) async {
-    entryRepository.emitEntries([
-      _entry(id: 1, rawTranscript: 'existing entry'),
-    ]);
-
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      importService: EntryImportService(
-        fileReader: _TestImportFileReader(
-          result: EntryImportFileReadResult(
-            fileName: 'import.csv',
-            contents: _validImportCsv(),
-          ),
-        ),
-        entryRepository: entryRepository,
-      ),
-    );
-
-    await tester.enterText(
-      find.byKey(const ValueKey('entryListSearchField')),
-      'imported',
-    );
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('entryListNoSearchResults')),
-      findsOneWidget,
-    );
-
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.byKey(const ValueKey('entryListNoSearchResults')),
-      findsNothing,
-    );
-    expect(find.text('clean entry 21'), findsOneWidget);
-    expect(find.text('imported draft entry'), findsOneWidget);
-    expect(find.text('existing entry'), findsNothing);
-  });
-
-  testWidgets(
-    'import cancellation shows no snackbar and keeps the list unchanged',
-    (tester) async {
-      entryRepository.emitEntries([_entry(id: 8)]);
-
-      await _pumpEntryListApp(
-        tester,
-        entryRepository: entryRepository,
-        importService: EntryImportService(
-          fileReader: _TestImportFileReader(result: null),
-          entryRepository: entryRepository,
-        ),
-      );
-
-      await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('Imported '), findsNothing);
-      expect(find.text('Could not read the selected CSV file.'), findsNothing);
-      expect(find.byKey(const ValueKey('entryRow-8')), findsOneWidget);
-    },
-  );
-
-  testWidgets('import failure shows an error and keeps the list visible', (
-    tester,
-  ) async {
-    entryRepository.emitEntries([_entry(id: 4)]);
-
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      importService: EntryImportService(
-        fileReader: const _ThrowingImportFileReader(),
-        entryRepository: entryRepository,
-      ),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Could not read the selected CSV file.'), findsOneWidget);
-    expect(find.byKey(const ValueKey('entryListView')), findsOneWidget);
-    expect(find.byKey(const ValueKey('entryRow-4')), findsOneWidget);
-  });
-
-  testWidgets('import works from a valid header-only csv', (tester) async {
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      importService: EntryImportService(
-        fileReader: _TestImportFileReader(
-          result: EntryImportFileReadResult(
-            fileName: 'empty.csv',
-            contents:
-                'type,created_at,language,word_count,raw_transcript,cleaned_text\n',
-          ),
-        ),
-        entryRepository: entryRepository,
-      ),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Imported 0 records from empty.csv.'), findsOneWidget);
-    expect(find.text('no entries yet'), findsOneWidget);
-  });
-
-  testWidgets('import button shows progress and prevents duplicate taps', (
-    tester,
-  ) async {
-    final semanticsHandle = tester.ensureSemantics();
-    final importCompleter = Completer<EntryImportFileReadResult?>();
-    final delayedReader = _TestImportFileReader(completer: importCompleter);
-
-    await _pumpEntryListApp(
-      tester,
-      entryRepository: entryRepository,
-      importService: EntryImportService(
-        fileReader: delayedReader,
-        entryRepository: entryRepository,
-      ),
-    );
-
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pump();
-
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    expect(find.bySemanticsLabel('Importing entries'), findsWidgets);
-    expect(delayedReader.callCount, 1);
-
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pump();
-
-    expect(delayedReader.callCount, 1);
-
-    importCompleter.complete(
-      EntryImportFileReadResult(
-        fileName: 'import.csv',
-        contents: _validImportCsv(),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.byType(CircularProgressIndicator), findsNothing);
-    semanticsHandle.dispose();
-  });
 }
 
 Future<void> _pumpEntryListApp(
   WidgetTester tester, {
   required _TestEntryRepository entryRepository,
-  EntryExportService? exportService,
-  EntryImportService? importService,
 }) async {
   final sharedPreferences = await SharedPreferences.getInstance();
 
@@ -820,10 +482,6 @@ Future<void> _pumpEntryListApp(
           const _TestPreferencesRepository(),
         ),
         entryRepositoryProvider.overrideWithValue(entryRepository),
-        if (exportService != null)
-          entryExportServiceProvider.overrideWithValue(exportService),
-        if (importService != null)
-          entryImportServiceProvider.overrideWithValue(importService),
         mainRecordingControllerProvider.overrideWith(
           _TestMainRecordingController.new,
         ),
@@ -1009,72 +667,4 @@ Entry _audioDraftEntry({required int id}) {
     wordCount: 0,
     audioPath: '/tmp/pending.m4a',
   );
-}
-
-class _CapturingExportFileWriter implements EntryExportFileWriter {
-  _CapturingExportFileWriter({this._completer});
-
-  final Completer<EntryExportFileWriteResult>? _completer;
-  int callCount = 0;
-  String lastContents = '';
-
-  @override
-  Future<EntryExportFileWriteResult> writeCsvExport({
-    required String fileName,
-    required String contents,
-  }) {
-    callCount += 1;
-    lastContents = contents;
-    return _completer?.future ??
-        Future<EntryExportFileWriteResult>.value(
-          EntryExportFileWriteResult(
-            fileName: fileName,
-            pathLabel: 'Downloads/Wrait',
-          ),
-        );
-  }
-}
-
-class _ThrowingExportFileWriter implements EntryExportFileWriter {
-  const _ThrowingExportFileWriter();
-
-  @override
-  Future<EntryExportFileWriteResult> writeCsvExport({
-    required String fileName,
-    required String contents,
-  }) async {
-    throw StateError('export failed');
-  }
-}
-
-class _TestImportFileReader implements EntryImportFileReader {
-  _TestImportFileReader({this.result, this.completer});
-
-  final EntryImportFileReadResult? result;
-  final Completer<EntryImportFileReadResult?>? completer;
-  int callCount = 0;
-
-  @override
-  Future<EntryImportFileReadResult?> pickCsvImport() async {
-    callCount += 1;
-    return completer?.future ?? result;
-  }
-}
-
-class _ThrowingImportFileReader implements EntryImportFileReader {
-  const _ThrowingImportFileReader();
-
-  @override
-  Future<EntryImportFileReadResult?> pickCsvImport() async {
-    throw const EntryImportFileReaderException('import failed');
-  }
-}
-
-String _validImportCsv() {
-  final createdAtMs = DateTime.utc(2026, 6, 30, 12).millisecondsSinceEpoch;
-  return [
-    'type,created_at,language,word_count,raw_transcript,cleaned_text',
-    'saved,$createdAtMs,en-US,3,imported saved entry,clean entry 21',
-    'draft,$createdAtMs,fr-FR,3,imported draft entry,',
-  ].join('\n');
 }

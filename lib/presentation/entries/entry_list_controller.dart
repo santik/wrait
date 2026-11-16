@@ -135,6 +135,12 @@ class EntryListController extends Notifier<EntryListControllerState> {
     );
   }
 
+  /// Exports the given entries as CSV.
+  ///
+  /// Callers pass the full, unfiltered library snapshot (see
+  /// [entryListEntriesProvider]); the Backup UI only enables Export once that
+  /// snapshot is available, so this never writes an empty, header-only CSV
+  /// while the entries stream is still cold or has errored.
   Future<EntryExportResult> exportEntries(List<Entry> entries) async {
     if (state.isExporting) {
       return const EntryExportResult.failure();
@@ -145,7 +151,7 @@ class EntryListController extends Notifier<EntryListControllerState> {
       final result = await _entryExportService.exportEntries(entries);
       if (!result.didExport) {
         _logWarning(
-          'Failed to export entries from the entry list.',
+          'Failed to export entries.',
           error: result.error,
           stackTrace: result.stackTrace,
         );
@@ -166,7 +172,7 @@ class EntryListController extends Notifier<EntryListControllerState> {
       final result = await _entryImportService.importEntries();
       if (!result.didImport && !result.wasCancelled) {
         _logWarning(
-          'Failed to import entries from the entry list.',
+          'Failed to import entries.',
           error: result.error,
           stackTrace: result.stackTrace,
         );

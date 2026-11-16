@@ -335,28 +335,23 @@ class AppLocalizationsRu extends AppLocalizations {
   String get entryListClearSearch => 'Очистить поиск';
 
   @override
-  String get entryListImportCsv => 'Импорт CSV';
+  String get settingsBackup => 'Резервное копирование и восстановление';
 
   @override
-  String get entryListExportCsv => 'Экспорт CSV';
+  String get settingsBackupExportLabel => 'Экспорт';
 
   @override
-  String get entryListImporting => 'Импорт CSV';
+  String get settingsBackupDescription =>
+      'Сохраните все свои записи в файл CSV или добавьте записи из ранее экспортированного файла.';
 
   @override
-  String get entryListExporting => 'Экспорт CSV';
+  String get settingsBackupImportLabel => 'Импорт';
 
   @override
-  String get entryListImportingSemanticsLabel => 'Импорт записей';
+  String get settingsBackupExporting => 'Экспорт записей';
 
   @override
-  String get entryListExportingSemanticsLabel => 'Экспорт записей';
-
-  @override
-  String get entryListImportSemanticsLabel => 'Импортировать записи';
-
-  @override
-  String get entryListExportSemanticsLabel => 'Экспортировать записи';
+  String get settingsBackupImporting => 'Импорт записей';
 
   @override
   String get entryListEmpty => 'записей пока нет';

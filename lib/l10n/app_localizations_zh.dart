@@ -306,28 +306,22 @@ class AppLocalizationsZh extends AppLocalizations {
   String get entryListClearSearch => '清除搜索';
 
   @override
-  String get entryListImportCsv => '导入 CSV';
+  String get settingsBackup => '备份与恢复';
 
   @override
-  String get entryListExportCsv => '导出 CSV';
+  String get settingsBackupExportLabel => '导出';
 
   @override
-  String get entryListImporting => '正在导入 CSV';
+  String get settingsBackupDescription => '将所有日记保存为 CSV 文件，或从之前导出的文件添加日记。';
 
   @override
-  String get entryListExporting => '正在导出 CSV';
+  String get settingsBackupImportLabel => '导入';
 
   @override
-  String get entryListImportingSemanticsLabel => '正在导入日记';
+  String get settingsBackupExporting => '正在导出日记';
 
   @override
-  String get entryListExportingSemanticsLabel => '正在导出日记';
-
-  @override
-  String get entryListImportSemanticsLabel => '导入日记';
-
-  @override
-  String get entryListExportSemanticsLabel => '导出日记';
+  String get settingsBackupImporting => '正在导入日记';
 
   @override
   String get entryListEmpty => '还没有日记';

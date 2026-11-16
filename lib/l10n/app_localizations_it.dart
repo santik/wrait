@@ -330,28 +330,23 @@ class AppLocalizationsIt extends AppLocalizations {
   String get entryListClearSearch => 'Cancella ricerca';
 
   @override
-  String get entryListImportCsv => 'Importa CSV';
+  String get settingsBackup => 'Backup e ripristino';
 
   @override
-  String get entryListExportCsv => 'Esporta CSV';
+  String get settingsBackupExportLabel => 'Esporta';
 
   @override
-  String get entryListImporting => 'Importazione CSV';
+  String get settingsBackupDescription =>
+      'Salva tutte le tue voci in un file CSV o aggiungi voci da uno esportato in precedenza.';
 
   @override
-  String get entryListExporting => 'Esportazione CSV';
+  String get settingsBackupImportLabel => 'Importa';
 
   @override
-  String get entryListImportingSemanticsLabel => 'Importazione delle voci';
+  String get settingsBackupExporting => 'Esportazione delle voci';
 
   @override
-  String get entryListExportingSemanticsLabel => 'Esportazione delle voci';
-
-  @override
-  String get entryListImportSemanticsLabel => 'Importa voci';
-
-  @override
-  String get entryListExportSemanticsLabel => 'Esporta voci';
+  String get settingsBackupImporting => 'Importazione delle voci';
 
   @override
   String get entryListEmpty => 'ancora nessuna voce';

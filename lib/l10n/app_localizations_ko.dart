@@ -311,28 +311,23 @@ class AppLocalizationsKo extends AppLocalizations {
   String get entryListClearSearch => '검색어 지우기';
 
   @override
-  String get entryListImportCsv => 'CSV 가져오기';
+  String get settingsBackup => '백업 및 복원';
 
   @override
-  String get entryListExportCsv => 'CSV 내보내기';
+  String get settingsBackupExportLabel => '내보내기';
 
   @override
-  String get entryListImporting => 'CSV 가져오는 중';
+  String get settingsBackupDescription =>
+      '모든 기록을 CSV 파일로 저장하거나 이전에 내보낸 파일에서 기록을 추가합니다.';
 
   @override
-  String get entryListExporting => 'CSV 내보내는 중';
+  String get settingsBackupImportLabel => '가져오기';
 
   @override
-  String get entryListImportingSemanticsLabel => '기록을 가져오는 중';
+  String get settingsBackupExporting => '기록을 내보내는 중';
 
   @override
-  String get entryListExportingSemanticsLabel => '기록을 내보내는 중';
-
-  @override
-  String get entryListImportSemanticsLabel => '기록 가져오기';
-
-  @override
-  String get entryListExportSemanticsLabel => '기록 내보내기';
+  String get settingsBackupImporting => '기록을 가져오는 중';
 
   @override
   String get entryListEmpty => '아직 기록이 없어요';

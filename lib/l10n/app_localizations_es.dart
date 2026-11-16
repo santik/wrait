@@ -332,28 +332,23 @@ class AppLocalizationsEs extends AppLocalizations {
   String get entryListClearSearch => 'Borrar búsqueda';
 
   @override
-  String get entryListImportCsv => 'Importar CSV';
+  String get settingsBackup => 'Copia de seguridad y restauración';
 
   @override
-  String get entryListExportCsv => 'Exportar CSV';
+  String get settingsBackupExportLabel => 'Exportar';
 
   @override
-  String get entryListImporting => 'Importando CSV';
+  String get settingsBackupDescription =>
+      'Guarda todas tus entradas en un archivo CSV o añade entradas desde uno que exportaste antes.';
 
   @override
-  String get entryListExporting => 'Exportando CSV';
+  String get settingsBackupImportLabel => 'Importar';
 
   @override
-  String get entryListImportingSemanticsLabel => 'Importando entradas';
+  String get settingsBackupExporting => 'Exportando entradas';
 
   @override
-  String get entryListExportingSemanticsLabel => 'Exportando entradas';
-
-  @override
-  String get entryListImportSemanticsLabel => 'Importar entradas';
-
-  @override
-  String get entryListExportSemanticsLabel => 'Exportar entradas';
+  String get settingsBackupImporting => 'Importando entradas';
 
   @override
   String get entryListEmpty => 'aún no hay entradas';
@@ -1057,28 +1052,23 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
   String get entryListClearSearch => 'Borrar búsqueda';
 
   @override
-  String get entryListImportCsv => 'Importar CSV';
+  String get settingsBackup => 'Copia de seguridad y restauración';
 
   @override
-  String get entryListExportCsv => 'Exportar CSV';
+  String get settingsBackupExportLabel => 'Exportar';
 
   @override
-  String get entryListImporting => 'Importando CSV';
+  String get settingsBackupDescription =>
+      'Guarda todas tus entradas en un archivo CSV o agrega entradas desde uno que exportaste antes.';
 
   @override
-  String get entryListExporting => 'Exportando CSV';
+  String get settingsBackupImportLabel => 'Importar';
 
   @override
-  String get entryListImportingSemanticsLabel => 'Importando entradas';
+  String get settingsBackupExporting => 'Exportando entradas';
 
   @override
-  String get entryListExportingSemanticsLabel => 'Exportando entradas';
-
-  @override
-  String get entryListImportSemanticsLabel => 'Importar entradas';
-
-  @override
-  String get entryListExportSemanticsLabel => 'Exportar entradas';
+  String get settingsBackupImporting => 'Importando entradas';
 
   @override
   String get entryListEmpty => 'aún no hay entradas';

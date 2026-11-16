@@ -40,3 +40,7 @@ const remindersPermissionDeniedKey = ValueKey<String>(
   'remindersPermissionDenied',
 );
 const remindersOpenSettingsKey = ValueKey<String>('remindersOpenSettings');
+
+const backupSectionKey = ValueKey<String>('backupSection');
+const backupExportButtonKey = ValueKey<String>('backupExportButton');
+const backupImportButtonKey = ValueKey<String>('backupImportButton');
