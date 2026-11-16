@@ -309,28 +309,23 @@ class AppLocalizationsJa extends AppLocalizations {
   String get entryListClearSearch => '検索をクリア';
 
   @override
-  String get entryListImportCsv => 'CSV をインポート';
+  String get settingsBackup => 'バックアップと復元';
 
   @override
-  String get entryListExportCsv => 'CSV をエクスポート';
+  String get settingsBackupExportLabel => 'エクスポート';
 
   @override
-  String get entryListImporting => 'CSV をインポート中';
+  String get settingsBackupDescription =>
+      'すべてのエントリーを CSV ファイルに保存するか、以前にエクスポートしたファイルからエントリーを追加します。';
 
   @override
-  String get entryListExporting => 'CSV をエクスポート中';
+  String get settingsBackupImportLabel => 'インポート';
 
   @override
-  String get entryListImportingSemanticsLabel => 'エントリーをインポート中';
+  String get settingsBackupExporting => 'エントリーをエクスポート中';
 
   @override
-  String get entryListExportingSemanticsLabel => 'エントリーをエクスポート中';
-
-  @override
-  String get entryListImportSemanticsLabel => 'エントリーをインポート';
-
-  @override
-  String get entryListExportSemanticsLabel => 'エントリーをエクスポート';
+  String get settingsBackupImporting => 'エントリーをインポート中';
 
   @override
   String get entryListEmpty => 'エントリーはまだありません';

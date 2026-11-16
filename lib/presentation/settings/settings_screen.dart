@@ -12,8 +12,11 @@ import '../../data/preferences/reminders_enabled_controller.dart';
 import '../../data/preferences/theme_mode_controller.dart';
 import '../../data/preferences/transcription_language_controller.dart';
 import '../../data/transcription/transcription_providers.dart';
+import '../../domain/model/entry.dart';
 import '../../domain/model/supported_language.dart';
 import '../../l10n/app_localizations.dart';
+import '../entries/backup_feedback.dart';
+import '../entries/entry_list_controller.dart';
 import '../main/main_recording_controller.dart';
 import '../theme/design_tokens.dart';
 import 'settings_test_keys.dart';
@@ -432,6 +435,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
                 key: const ValueKey<String>('settingsActivityMessage'),
                 text: l10n.settingsActivityMessage,
               ),
+            const SizedBox(height: WraitSpacingTokens.lg),
+            const _BackupSection(),
           ],
         ),
       ),
@@ -566,6 +571,143 @@ class _ThemeSection extends ConsumerWidget {
           _Message(key: themeSaveFailedKey, text: l10n.settingsThemeSaveFailed),
       ],
     );
+  }
+}
+
+/// Backup & restore section: whole-library CSV export and import.
+///
+/// Reuses [entryListControllerProvider] (the same screen-agnostic controller
+/// the entry list used) so the in-progress guard and feedback are identical.
+/// Intentionally **not** gated by the recording/transcription activity state —
+/// these actions stay available regardless, matching the previous entry-list
+/// behavior.
+///
+/// Export deliberately watches [entryListEntriesProvider] (the full, unfiltered
+/// library): this keeps the snapshot warm and, crucially, lets Export stay
+/// disabled until the snapshot is actually available — so a tap can never
+/// silently write an empty, header-only CSV with a success message while the
+/// entries stream is still cold or has errored.
+class _BackupSection extends ConsumerWidget {
+  const _BackupSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
+    final controllerState = ref.watch(entryListControllerProvider);
+    final entriesAsync = ref.watch(entryListEntriesProvider);
+    // Only allow Export once the full library snapshot has loaded (not while
+    // the stream is cold or in an error state with no data).
+    final exportEntries = entriesAsync.value;
+    final canExport = !controllerState.isExporting && exportEntries != null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        KeyedSubtree(
+          key: backupSectionKey,
+          child: Text(
+            l10n.settingsBackup,
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+        ),
+        const SizedBox(height: WraitSpacingTokens.xs),
+        Text(l10n.settingsBackupDescription),
+        const SizedBox(height: WraitSpacingTokens.sm),
+        Row(
+          children: [
+            Expanded(
+              child: Semantics(
+                button: canExport,
+                enabled: canExport,
+                liveRegion: controllerState.isExporting,
+                // Keep the action name in the busy announcement so it is not
+                // confused with Import's "Importing entries".
+                label: controllerState.isExporting
+                    ? '${l10n.settingsBackupExportLabel}: '
+                        '${l10n.settingsBackupExporting}'
+                    : null,
+                child: OutlinedButton.icon(
+                  key: backupExportButtonKey,
+                  onPressed: canExport
+                      ? () => _exportEntries(context, ref, exportEntries)
+                      : null,
+                  icon: controllerState.isExporting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.file_download_outlined),
+                  label: Text(l10n.settingsBackupExportLabel),
+                ),
+              ),
+            ),
+            const SizedBox(width: WraitSpacingTokens.sm),
+            Expanded(
+              child: Semantics(
+                button: !controllerState.isImporting,
+                enabled: !controllerState.isImporting,
+                liveRegion: controllerState.isImporting,
+                label: controllerState.isImporting
+                    ? '${l10n.settingsBackupImportLabel}: '
+                        '${l10n.settingsBackupImporting}'
+                    : null,
+                child: OutlinedButton.icon(
+                  key: backupImportButtonKey,
+                  onPressed: controllerState.isImporting
+                      ? null
+                      : () => _importEntries(context, ref),
+                  icon: controllerState.isImporting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.file_upload_outlined),
+                  label: Text(l10n.settingsBackupImportLabel),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _exportEntries(
+    BuildContext context,
+    WidgetRef ref,
+    List<Entry> entries,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(entryListControllerProvider.notifier)
+        .exportEntries(entries);
+    if (!context.mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(exportResultMessage(l10n, result))),
+      );
+  }
+
+  Future<void> _importEntries(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final result = await ref
+        .read(entryListControllerProvider.notifier)
+        .importEntries();
+    if (!context.mounted || result.wasCancelled) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(importResultMessage(l10n, result))),
+      );
   }
 }
 

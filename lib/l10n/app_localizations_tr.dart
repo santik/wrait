@@ -330,28 +330,23 @@ class AppLocalizationsTr extends AppLocalizations {
   String get entryListClearSearch => 'Aramayı temizle';
 
   @override
-  String get entryListImportCsv => 'CSV içe aktar';
+  String get settingsBackup => 'Yedekleme ve geri yükleme';
 
   @override
-  String get entryListExportCsv => 'CSV dışa aktar';
+  String get settingsBackupExportLabel => 'Dışa aktar';
 
   @override
-  String get entryListImporting => 'CSV içe aktarılıyor';
+  String get settingsBackupDescription =>
+      'Tüm kayıtlarını bir CSV dosyasına kaydet veya daha önce dışa aktardığın bir dosyadan kayıt ekle.';
 
   @override
-  String get entryListExporting => 'CSV dışa aktarılıyor';
+  String get settingsBackupImportLabel => 'İçe aktar';
 
   @override
-  String get entryListImportingSemanticsLabel => 'Kayıtlar içe aktarılıyor';
+  String get settingsBackupExporting => 'Kayıtlar dışa aktarılıyor';
 
   @override
-  String get entryListExportingSemanticsLabel => 'Kayıtlar dışa aktarılıyor';
-
-  @override
-  String get entryListImportSemanticsLabel => 'Kayıtları içe aktar';
-
-  @override
-  String get entryListExportSemanticsLabel => 'Kayıtları dışa aktar';
+  String get settingsBackupImporting => 'Kayıtlar içe aktarılıyor';
 
   @override
   String get entryListEmpty => 'henüz kayıt yok';

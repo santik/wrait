@@ -9,7 +9,6 @@ import 'entry_delete_confirmation.dart';
 import 'entry_list_controller.dart';
 import 'entry_list_row.dart';
 import '../../domain/model/entry.dart';
-import '../../domain/service/entry_import_service.dart';
 
 class EntryListScreen extends ConsumerStatefulWidget {
   const EntryListScreen({super.key});
@@ -32,7 +31,6 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
     final allEntries = ref.watch(entryListEntriesProvider).value ?? const [];
     final filteredEntries = ref.watch(entryListFilteredEntriesProvider);
     final searchQuery = ref.watch(entryListSearchQueryProvider);
-    final controllerState = ref.watch(entryListControllerProvider);
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
     final canPopRoute = Navigator.of(context).canPop();
@@ -114,64 +112,6 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
                           onPressed: () => context.push('/calendar'),
                           icon: const Icon(Icons.calendar_month_outlined),
                           tooltip: l10n.entryListCalendar,
-                        ),
-                      ),
-                      Semantics(
-                        button: !controllerState.isImporting,
-                        enabled: !controllerState.isImporting,
-                        label: controllerState.isImporting
-                            ? l10n.entryListImportingSemanticsLabel
-                            : l10n.entryListImportSemanticsLabel,
-                        liveRegion: controllerState.isImporting,
-                        child: IconButton(
-                          key: const ValueKey('entryListImportButton'),
-                          onPressed: controllerState.isImporting
-                              ? null
-                              : () => _importEntries(context),
-                          icon: controllerState.isImporting
-                              ? Semantics(
-                                  label: l10n.entryListImportingSemanticsLabel,
-                                  child: const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                )
-                              : const Icon(Icons.file_upload_outlined),
-                          tooltip: controllerState.isImporting
-                              ? l10n.entryListImporting
-                              : l10n.entryListImportCsv,
-                        ),
-                      ),
-                      Semantics(
-                        button: !controllerState.isExporting,
-                        enabled: !controllerState.isExporting,
-                        label: controllerState.isExporting
-                            ? l10n.entryListExportingSemanticsLabel
-                            : l10n.entryListExportSemanticsLabel,
-                        liveRegion: controllerState.isExporting,
-                        child: IconButton(
-                          key: const ValueKey('entryListExportButton'),
-                          onPressed: controllerState.isExporting
-                              ? null
-                              : () => _exportEntries(context, allEntries),
-                          icon: controllerState.isExporting
-                              ? Semantics(
-                                  label: l10n.entryListExportingSemanticsLabel,
-                                  child: const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                )
-                              : const Icon(Icons.file_download_outlined),
-                          tooltip: controllerState.isExporting
-                              ? l10n.entryListExporting
-                              : l10n.entryListExportCsv,
                         ),
                       ),
                     ],
@@ -318,67 +258,5 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
     }
 
     await ref.read(entryListControllerProvider.notifier).deleteEntry(entryId);
-  }
-
-  Future<void> _exportEntries(BuildContext context, List<Entry> entries) async {
-    final l10n = AppLocalizations.of(context);
-    final result = await ref
-        .read(entryListControllerProvider.notifier)
-        .exportEntries(entries);
-    if (!context.mounted) {
-      return;
-    }
-
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    if (result.didExport) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.entryListExportSuccess(result.fileName!, result.pathLabel!),
-          ),
-        ),
-      );
-      return;
-    }
-
-    messenger.showSnackBar(SnackBar(content: Text(l10n.entryListExportFailed)));
-  }
-
-  Future<void> _importEntries(BuildContext context) async {
-    final l10n = AppLocalizations.of(context);
-    final result = await ref
-        .read(entryListControllerProvider.notifier)
-        .importEntries();
-    if (!context.mounted || result.wasCancelled) {
-      return;
-    }
-
-    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
-    if (result.didImport) {
-      messenger.showSnackBar(
-        SnackBar(
-          content: Text(
-            l10n.entryListImportSuccess(result.importedCount, result.fileName!),
-          ),
-        ),
-      );
-      return;
-    }
-
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(switch (result.failureCategory) {
-          EntryImportFailureCategory.invalidFormat =>
-            l10n.entryListImportInvalidFormat,
-          EntryImportFailureCategory.unreadableFile =>
-            l10n.entryListImportUnreadableFile,
-          EntryImportFailureCategory.fileTooLarge =>
-            l10n.entryListImportFileTooLarge,
-          EntryImportFailureCategory.storageFailure =>
-            l10n.entryListImportStorageFailure,
-          null => l10n.entryListImportFailed,
-        }),
-      ),
-    );
   }
 }

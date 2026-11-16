@@ -2,6 +2,18 @@
 
 All notable changes to wrait are documented here.
 
+## [Unreleased]
+
+### Changed
+
+- Moved CSV import and export out of the entry-list header into a new
+  "Backup & restore" section on the Settings screen. Backing up and restoring
+  your journal now lives with your other data settings, and the entry list
+  header keeps only its browsing controls (search and calendar). The CSV format
+  and behavior are unchanged, so existing exports remain importable. Export
+  continues to cover your entire library regardless of any active search or tag
+  filter.
+
 ## [1.0.5] - 2026-11-14
 
 ### Changed

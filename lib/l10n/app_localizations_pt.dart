@@ -331,28 +331,23 @@ class AppLocalizationsPt extends AppLocalizations {
   String get entryListClearSearch => 'Limpar busca';
 
   @override
-  String get entryListImportCsv => 'Importar CSV';
+  String get settingsBackup => 'Backup e restauração';
 
   @override
-  String get entryListExportCsv => 'Exportar CSV';
+  String get settingsBackupExportLabel => 'Exportar';
 
   @override
-  String get entryListImporting => 'Importando CSV';
+  String get settingsBackupDescription =>
+      'Salve todas as suas entradas em um arquivo CSV ou adicione entradas de um que você exportou antes.';
 
   @override
-  String get entryListExporting => 'Exportando CSV';
+  String get settingsBackupImportLabel => 'Importar';
 
   @override
-  String get entryListImportingSemanticsLabel => 'Importando entradas';
+  String get settingsBackupExporting => 'Exportando entradas';
 
   @override
-  String get entryListExportingSemanticsLabel => 'Exportando entradas';
-
-  @override
-  String get entryListImportSemanticsLabel => 'Importar entradas';
-
-  @override
-  String get entryListExportSemanticsLabel => 'Exportar entradas';
+  String get settingsBackupImporting => 'Importando entradas';
 
   @override
   String get entryListEmpty => 'nenhuma entrada ainda';

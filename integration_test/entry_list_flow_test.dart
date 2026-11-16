@@ -26,8 +26,10 @@ import 'package:wrait/domain/service/entry_export_service.dart';
 import 'package:wrait/presentation/main/main_recording_controller.dart';
 import 'package:wrait/presentation/main/main_screen_test_keys.dart';
 import 'package:wrait/presentation/main/recording_state.dart';
+import 'package:wrait/presentation/settings/settings_test_keys.dart';
 
 import '../test/test_doubles/fake_secure_storage.dart';
+import 'support/backup_support.dart';
 import 'support/screenshot_support.dart';
 import 'support/managed_audio_files.dart';
 import 'support/microphone_test_overrides.dart';
@@ -131,11 +133,15 @@ void main() {
       expect(find.byKey(ValueKey('entryRow-$matchingId')), findsOneWidget);
       expect(find.byKey(ValueKey('entryRow-$otherId')), findsNothing);
 
-      await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-      await tester.pumpAndSettle();
+      // Export now lives in Settings (feature 058). Drive it from there and
+      // confirm the whole library is exported regardless of the active search.
+      await openSettings(tester, harness.container);
+      await tapBackup(tester, backupExportButtonKey);
 
       expect(exportWriter.contents, contains('Monday planning session'));
       expect(exportWriter.contents, contains('unrelated record'));
+
+      await returnToEntries(tester, harness.container);
 
       await tester.tap(find.byKey(ValueKey('entryCard-$matchingId')));
       await tester.pumpAndSettle();
@@ -378,8 +384,8 @@ void main() {
     await _prepareScreenshots(binding, tester);
     await binding.takeScreenshot('entry-list-export-success');
 
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
-    await tester.pumpAndSettle();
+    await openSettings(tester, harness.container);
+    await tapBackup(tester, backupExportButtonKey);
 
     expect(
       exportWriter.contents,
@@ -392,6 +398,8 @@ void main() {
     expect(exportWriter.contents, isNot(contains('id,')));
     expect(exportWriter.contents, isNot(contains('created_at_epoch_ms')));
     expect(exportWriter.contents, isNot(contains('audioPath')));
+    // The success snackbar is shown on Settings (the host screen).
+    expect(find.textContaining('Exported '), findsOneWidget);
     expect(find.text('Could not export entries.'), findsNothing);
   });
 
@@ -412,10 +420,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('entryListExportButton')));
+    await openSettings(tester, harness.container);
+    await tester.dragUntilVisible(
+      find.byKey(backupExportButtonKey),
+      find.byType(ListView),
+      const Offset(0, -200),
+    );
+    await tester.tap(find.byKey(backupExportButtonKey));
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
 
+    await returnToEntries(tester, harness.container);
     expect(find.byKey(const ValueKey('entryListView')), findsOneWidget);
   });
 
@@ -446,10 +461,12 @@ void main() {
     await _prepareScreenshots(binding, tester);
     await binding.takeScreenshot('entry-list-import-success');
 
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
+    await openSettings(tester, harness.container);
+    await tapBackup(tester, backupImportButtonKey);
 
     expect(find.text('Imported 2 records from import.csv.'), findsOneWidget);
+
+    await returnToEntries(tester, harness.container);
     expect(find.text('clean entry 21'), findsOneWidget);
     expect(find.text('imported draft entry'), findsOneWidget);
   });
@@ -475,10 +492,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
+    await openSettings(tester, harness.container);
+    await tapBackup(tester, backupImportButtonKey);
 
     expect(find.text('Imported 0 records from empty.csv.'), findsOneWidget);
+
+    await returnToEntries(tester, harness.container);
     expect(find.byKey(const ValueKey('entryListEmptyState')), findsOneWidget);
   });
 
@@ -500,10 +519,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
+    // Two separate round-trips so the first import's snackbar never overlaps
+    // the second tap.
+    await openSettings(tester, harness.container);
+    await tapBackup(tester, backupImportButtonKey);
+    await returnToEntries(tester, harness.container);
+
+    await openSettings(tester, harness.container);
+    await tapBackup(tester, backupImportButtonKey);
+    await returnToEntries(tester, harness.container);
 
     expect(find.text('clean entry 21'), findsNWidgets(2));
     expect(find.text('imported draft entry'), findsNWidgets(2));
@@ -532,13 +556,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
+    await openSettings(tester, harness.container);
+    await tapBackup(tester, backupImportButtonKey);
 
     expect(
       find.text('Selected CSV is not a valid Wrait export.'),
       findsOneWidget,
     );
+
+    await returnToEntries(tester, harness.container);
     expect(find.text('existing entry'), findsOneWidget);
     expect(find.text('clean entry 21'), findsNothing);
   });
@@ -559,10 +585,12 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const ValueKey('entryListImportButton')));
-    await tester.pumpAndSettle();
+    await openSettings(tester, harness.container);
+    await tapBackup(tester, backupImportButtonKey);
 
     expect(find.text('Could not read the selected CSV file.'), findsOneWidget);
+
+    await returnToEntries(tester, harness.container);
     expect(find.text('existing entry'), findsOneWidget);
     expect(find.text('clean entry 21'), findsNothing);
   });
