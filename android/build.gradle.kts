@@ -28,9 +28,15 @@ subprojects {
             }
         }
         if (this is org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper) {
-            project.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
-                compilerOptions {
-                    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            // The home_widget plugin pins BOTH its Java and Kotlin targets to
+            // 1.8 (consistent on its own). Forcing only its Kotlin to 17 here
+            // would leave Java at 1.8 and fail AGP 9's JVM-target validation,
+            // so leave that module at its own consistent 1.8 target.
+            if (project.name != "home_widget") {
+                project.tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+                    compilerOptions {
+                        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+                    }
                 }
             }
         }

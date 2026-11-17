@@ -19,6 +19,7 @@ import 'data/preferences/preferences_providers.dart';
 import 'data/preferences/reminders_enabled_controller.dart';
 import 'data/reminders/notification_scheduler.dart';
 import 'data/reminders/reminder_providers.dart';
+import 'data/widget/widget_sync_provider.dart';
 import 'presentation/theme/wrait_theme.dart';
 
 const _captureValidationMode = bool.fromEnvironment(
@@ -86,6 +87,8 @@ Future<AppBootstrapRuntime> bootstrapAppRuntime(AppConfig appConfig) async {
   developer.log('Launch registration started.', name: 'AppBootstrap');
   _scheduleRemindersOnLaunch(appContainer);
   startQuotaReminderSync(appContainer);
+  startWidgetSync(appContainer);
+  developer.log('Home-screen widget sync started.', name: 'AppBootstrap');
 
   return AppBootstrapRuntime(
     container: appContainer,

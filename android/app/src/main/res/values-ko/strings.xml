@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wrait_widget_quota">오늘 %1$d / %2$d</string>
+    <string name="wrait_widget_description">녹음을 시작하고 저널링 통계를 확인하세요.</string>
+    <plurals name="wrait_widget_entries">
+        <item quantity="other">기록 %1$d개</item>
+    </plurals>
+    <plurals name="wrait_widget_days">
+        <item quantity="other">%1$d일</item>
+    </plurals>
+</resources>

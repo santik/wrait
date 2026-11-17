@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wrait_widget_quota">%1$d / %2$d aujourd’hui</string>
+    <string name="wrait_widget_description">Lancez un enregistrement et consultez vos statistiques de journal.</string>
+    <plurals name="wrait_widget_entries">
+        <item quantity="one">%1$d entrée</item>
+        <item quantity="other">%1$d entrées</item>
+    </plurals>
+    <plurals name="wrait_widget_days">
+        <item quantity="one">%1$d jour</item>
+        <item quantity="other">%1$d jours</item>
+    </plurals>
+</resources>

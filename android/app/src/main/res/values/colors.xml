@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget colors — light (spec 055 plan D-9). Mirrors the app's
+     wrait_colors tokens: warm background + charcoal text. -->
+<resources>
+    <color name="wrait_widget_background">#FAF9F7</color>
+    <color name="wrait_widget_text">#2C2B27</color>
+    <color name="wrait_widget_muted">#5C5953</color>
+    <color name="wrait_widget_accent">#2C2B27</color>
+</resources>

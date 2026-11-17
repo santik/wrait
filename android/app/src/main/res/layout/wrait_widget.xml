@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget layout (spec 055). Large brand glyph on the left,
+     wordmark + stacked stats + quota on the right. Stats/quota are bound at
+     runtime by WraitWidgetProvider. No entry content. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/wrait_widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@drawable/wrait_widget_background"
+    android:gravity="center_vertical"
+    android:padding="4dp">
+
+    <ImageView
+        android:layout_width="62dp"
+        android:layout_height="62dp"
+        android:layout_marginEnd="8dp"
+        android:src="@drawable/wrait_widget_brand_icon"
+        android:contentDescription="@string/wrait_widget_title" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/wrait_widget_title"
+            android:textColor="@color/wrait_widget_text"
+            android:textStyle="bold"
+            android:textSize="17sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/wrait_widget_entry_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/wrait_widget_text"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            tools:ignore="HardcodedText"
+            android:text="0 entries" />
+
+        <TextView
+            android:id="@+id/wrait_widget_active_days"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/wrait_widget_text"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            tools:ignore="HardcodedText"
+            android:text="0 days" />
+
+        <TextView
+            android:id="@+id/wrait_widget_quota"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/wrait_widget_muted"
+            android:textSize="12sp"
+            android:maxLines="1"
+            android:visibility="gone"
+            tools:ignore="HardcodedText"
+            android:text="0 / 0" />
+    </LinearLayout>
+
+</LinearLayout>

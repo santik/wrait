@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wrait_widget_quota">今天 %1$d / %2$d</string>
+    <string name="wrait_widget_description">开始录音并查看你的日记统计。</string>
+    <plurals name="wrait_widget_entries">
+        <item quantity="other">%1$d 条</item>
+    </plurals>
+    <plurals name="wrait_widget_days">
+        <item quantity="other">%1$d 天</item>
+    </plurals>
+</resources>
