@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget strings (spec 055). English base; see values-*/ for the
+     app's other shipped locales. "wrait" is the brand wordmark and is not
+     translated. -->
+<resources>
+    <string name="wrait_widget_title">wrait</string>
+    <!-- used / total for the current day, e.g. "3 / 10 today" -->
+    <string name="wrait_widget_quota">%1$d / %2$d today</string>
+    <string name="wrait_widget_description">Start recording and see your journaling stats.</string>
+    <plurals name="wrait_widget_entries">
+        <item quantity="one">%1$d entry</item>
+        <item quantity="other">%1$d entries</item>
+    </plurals>
+    <plurals name="wrait_widget_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+</resources>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="wrait_widget_quota">bugün %1$d / %2$d</string>
+    <string name="wrait_widget_description">Kayda başlayın ve günlük istatistiklerinizi görün.</string>
+    <plurals name="wrait_widget_entries">
+        <item quantity="one">%1$d kayıt</item>
+        <item quantity="other">%1$d kayıt</item>
+    </plurals>
+    <plurals name="wrait_widget_days">
+        <item quantity="one">%1$d gün</item>
+        <item quantity="other">%1$d gün</item>
+    </plurals>
+</resources>

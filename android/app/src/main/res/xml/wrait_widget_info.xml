@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 2x1 minimum, resizable (spec 055 Android AC). ~110x40dp ≈ 2x1 cells. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="80dp"
+    android:targetCellWidth="2"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:initialLayout="@layout/wrait_widget"
+    android:previewLayout="@layout/wrait_widget"
+    android:previewImage="@mipmap/ic_launcher"
+    android:updatePeriodMillis="1800000"
+    android:description="@string/wrait_widget_description" />

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Home-screen widget colors — dark (spec 055 plan D-9). Mirrors the app's
+     wrait_colors dark tokens: dark background + cream text. -->
+<resources>
+    <color name="wrait_widget_background">#1A1917</color>
+    <color name="wrait_widget_text">#E8E4DD</color>
+    <color name="wrait_widget_muted">#A8A4A0</color>
+    <color name="wrait_widget_accent">#E8E4DD</color>
+</resources>
