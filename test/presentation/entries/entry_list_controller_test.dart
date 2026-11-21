@@ -7,6 +7,7 @@ import 'package:wrait/data/entries/entry_export_providers.dart';
 import 'package:wrait/data/entries/entry_import_file_reader.dart';
 import 'package:wrait/data/entries/entry_import_providers.dart';
 import 'package:wrait/data/entries/entry_providers.dart';
+import 'package:wrait/data/preferences/transcription_language_controller.dart';
 import 'package:wrait/domain/model/entry.dart';
 import 'package:wrait/domain/repository/entry_repository.dart';
 import 'package:wrait/domain/service/entry_export_service.dart';
@@ -47,6 +48,58 @@ void main() {
 
     expect(entries.map((entry) => entry.id), [2, 1]);
     expect(entries.first.type, EntryType.draft);
+  });
+
+  test('createManualEntry saves an empty entry with the preferred language',
+      () async {
+    final repository = _FakeEntryRepository(entries: const <Entry>[]);
+    final container = ProviderContainer(
+      overrides: [
+        entryRepositoryProvider.overrideWithValue(repository),
+        transcriptionLanguageControllerProvider.overrideWith(
+          () => _StubLanguageController(
+            const TranscriptionLanguageState(
+              status: TranscriptionLanguageStatus.ready,
+              language: 'fr-FR',
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final id = await container
+        .read(entryListControllerProvider.notifier)
+        .createManualEntry();
+
+    expect(id, 100);
+    expect(repository.savedEntries, hasLength(1));
+    expect(repository.savedEntries.single.transcript, isEmpty);
+    expect(repository.savedEntries.single.language, 'fr-FR');
+  });
+
+  test('createManualEntry falls back to the default language when unset',
+      () async {
+    final repository = _FakeEntryRepository(entries: const <Entry>[]);
+    final container = ProviderContainer(
+      overrides: [
+        entryRepositoryProvider.overrideWithValue(repository),
+        transcriptionLanguageControllerProvider.overrideWith(
+          () => _StubLanguageController(
+            const TranscriptionLanguageState(
+              status: TranscriptionLanguageStatus.ready,
+            ),
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(entryListControllerProvider.notifier)
+        .createManualEntry();
+
+    expect(repository.savedEntries.single.language, 'en-US');
   });
 
   test('delete success calls the repository', () async {
@@ -377,6 +430,9 @@ class _FakeEntryRepository implements EntryRepository {
 
   final bool throwsOnDelete;
   final List<int> deletedIds = <int>[];
+  final List<({String transcript, String language})> savedEntries =
+      <({String transcript, String language})>[];
+  int _nextSaveId = 100;
   final List<Entry> _entries;
 
   List<Entry> get entriesSnapshot => List<Entry>.from(_entries);
@@ -409,7 +465,10 @@ class _FakeEntryRepository implements EntryRepository {
   Future<int> saveDraft(String transcript, String language) async => 1;
 
   @override
-  Future<int> saveEntry(String transcript, String language) async => 1;
+  Future<int> saveEntry(String transcript, String language) async {
+    savedEntries.add((transcript: transcript, language: language));
+    return _nextSaveId++;
+  }
 
   @override
   Future<int> saveAudioDraft(String audioPath, String language) async => 1;
@@ -464,6 +523,15 @@ class _FakeEntryRepository implements EntryRepository {
 
   @override
   Future<void> deleteStaleDrafts({int daysOld = 7}) async {}
+}
+
+class _StubLanguageController extends TranscriptionLanguageController {
+  _StubLanguageController(this._initial);
+
+  final TranscriptionLanguageState _initial;
+
+  @override
+  TranscriptionLanguageState build() => _initial;
 }
 
 class _TestFileWriter implements EntryExportFileWriter {

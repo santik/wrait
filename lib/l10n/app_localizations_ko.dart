@@ -663,6 +663,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => '캘린더 열기';
 
   @override
+  String get entryListAddEntry => '새 항목';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => '새 항목 추가';
+
+  @override
   String get calendarToday => '오늘';
 
   @override

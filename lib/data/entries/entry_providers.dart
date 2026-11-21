@@ -46,6 +46,7 @@ class LocalEntryStartupBootstrap {
       resolveDraftAudioPath: resolveDraftAudioPath,
     );
     await repository.deleteStaleDrafts();
+    await repository.deleteEmptySavedEntries();
     return database;
   }
 }

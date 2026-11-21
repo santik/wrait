@@ -660,6 +660,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => 'カレンダーを開く';
 
   @override
+  String get entryListAddEntry => '新しいエントリ';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => '新しいエントリを追加';
+
+  @override
   String get calendarToday => '今日';
 
   @override

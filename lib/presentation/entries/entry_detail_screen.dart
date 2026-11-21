@@ -15,9 +15,18 @@ import 'entry_detail_controller.dart';
 import 'entry_detail_formatters.dart';
 
 class EntryDetailScreen extends ConsumerStatefulWidget {
-  const EntryDetailScreen({required this.entryId, super.key});
+  const EntryDetailScreen({
+    required this.entryId,
+    this.isNew = false,
+    super.key,
+  });
 
   final int entryId;
+
+  /// When true, this screen was opened to compose a freshly created, still-empty
+  /// manual entry: it starts in edit mode, does not redirect away while empty,
+  /// and discards the entry on exit if no text was typed.
+  final bool isNew;
 
   @override
   ConsumerState<EntryDetailScreen> createState() => _EntryDetailScreenState();
@@ -27,6 +36,10 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
   final TextEditingController _textController = TextEditingController();
   final FocusNode _editorFocusNode = FocusNode();
   bool _redirectScheduled = false;
+  bool _composeEditingStarted = false;
+  // True once this screen has entered compose mode for a genuine blank
+  // placeholder it is responsible for. Only then may back-out discard the row.
+  bool _composeActivated = false;
 
   @override
   void initState() {
@@ -66,13 +79,29 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
             loading: _buildLoadingState,
             error: (error, stackTrace) => _buildErrorState(),
             data: (entry) {
-              if (!entryDetailIsReadable(entry)) {
+              // In compose mode a freshly created entry is legitimately empty,
+              // so do not treat an empty body as "unreadable" and redirect.
+              // Compose behaviour is gated on the entry actually being a blank
+              // manual placeholder this screen can own: `?new=true` on any other
+              // id (a real entry, an audio draft) must not suppress the redirect,
+              // enter edit mode, or become eligible for discard-on-exit.
+              final composeBlankEntry =
+                  widget.isNew &&
+                  entry != null &&
+                  _isBlankManualPlaceholder(entry);
+              if (!entryDetailIsReadable(entry) && !composeBlankEntry) {
                 _scheduleRedirectToEntries();
                 return _buildLoadingState();
+              }
+              if (composeBlankEntry) {
+                _composeActivated = true;
               }
 
               final l10n = AppLocalizations.of(context);
               final displayText = entryDetailDisplayText(entry!);
+              if (composeBlankEntry) {
+                _ensureComposeEditing(displayText);
+              }
               _scheduleSyncFromEntry(
                 detailController,
                 displayText,
@@ -93,6 +122,7 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
                   isDebugDevice &&
                   entry.type == EntryType.saved &&
                   entry.cleanedText != null &&
+                  entry.rawTranscript.trim().isNotEmpty &&
                   entry.rawTranscript != entry.cleanedText;
               final saveMessage = detailState.isSaving
                   ? l10n.entryDetailSaving
@@ -340,6 +370,42 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
     }
   }
 
+  /// Whether [entry] is a genuine blank manual placeholder — the exact shape
+  /// `createManualEntry` produces and `deleteEmptySavedEntries` sweeps: a
+  /// `saved`, audio-less row with no body text. Compose mode only engages for
+  /// these, so `?new=true` on any other entry is inert.
+  bool _isBlankManualPlaceholder(Entry entry) {
+    final cleaned = entry.cleanedText;
+    return entry.type == EntryType.saved &&
+        entry.audioPath == null &&
+        entry.rawTranscript.trim().isEmpty &&
+        (cleaned == null || cleaned.trim().isEmpty);
+  }
+
+  void _ensureComposeEditing(String displayText) {
+    if (_composeEditingStarted) {
+      return;
+    }
+    _composeEditingStarted = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      final controller = ref.read(
+        entryDetailControllerProvider(widget.entryId).notifier,
+      );
+      if (!ref.read(entryDetailControllerProvider(widget.entryId)).isEditing) {
+        controller.startEditing(displayText);
+        _syncTextController(
+          ref.read(entryDetailControllerProvider(widget.entryId)).draftText,
+          true,
+        );
+      }
+      _editorFocusNode.requestFocus();
+    });
+  }
+
   void _scheduleRedirectToEntries() {
     if (_redirectScheduled) {
       return;
@@ -465,6 +531,23 @@ class _EntryDetailScreenState extends ConsumerState<EntryDetailScreen> {
     if (!didFlush) {
       _showMessage(AppLocalizations.of(context).entryDetailSaveFailed);
       return false;
+    }
+
+    // Compose mode: a blank placeholder was created up front. If the user
+    // leaves without typing any non-whitespace text, discard it so no blank
+    // entry survives. Guarded by `_composeActivated` (not `widget.isNew`) so a
+    // crafted `?new=true` on an unrelated entry can never trigger deletion.
+    if (_composeActivated) {
+      final draftText = ref
+          .read(entryDetailControllerProvider(widget.entryId))
+          .draftText;
+      if (draftText.trim().isEmpty) {
+        _redirectScheduled = true;
+        await detailController.deleteEntry();
+        if (!mounted) {
+          return false;
+        }
+      }
     }
 
     _editorFocusNode.unfocus();

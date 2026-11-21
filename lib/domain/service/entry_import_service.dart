@@ -290,7 +290,20 @@ class EntryImportService {
       );
     }
 
+    final rawTranscript = row[4];
     final cleanedText = row[5].isEmpty ? null : row[5];
+
+    // A `saved` entry always carries body text. Importing one with empty text
+    // fields would produce a blank, audio-less saved row that the startup
+    // sweep (`deleteEmptySavedEntries`) deletes on the next launch — silent
+    // data loss. Reject such rows up front instead.
+    if (entryType == EntryType.saved &&
+        rawTranscript.trim().isEmpty &&
+        (cleanedText == null || cleanedText.trim().isEmpty)) {
+      throw const FormatException(
+        'Entry import CSV contains a saved entry with no body text.',
+      );
+    }
 
     final tagNames = hasTags && row.length > 6
         ? _parseTagNames(row[6])
@@ -298,7 +311,7 @@ class EntryImportService {
 
     return ParsedImportEntry(
       entry: Entry(
-        rawTranscript: row[4],
+        rawTranscript: rawTranscript,
         cleanedText: cleanedText,
         type: entryType,
         language: resolvedLanguage,

@@ -295,6 +295,16 @@ class EntryRepositoryImpl implements EntryRepository {
     await _deleteFileIfPresent(await _resolveAudioPath(existing.audioPath));
   }
 
+  /// Removes empty, audio-less saved entries orphaned by an abandoned manual
+  /// compose session (e.g. the app killed before discard-on-exit ran).
+  ///
+  /// Intentionally not part of [EntryRepository]: it is a startup-only cleanup
+  /// invoked by the bootstrap via the concrete implementation, so it does not
+  /// belong in the shared interface (and keeps the many test doubles untouched).
+  Future<int> deleteEmptySavedEntries() {
+    return entryDao.deleteEmptySavedEntries();
+  }
+
   @override
   Future<void> deleteStaleDrafts({int daysOld = 7}) async {
     if (daysOld < 0) {

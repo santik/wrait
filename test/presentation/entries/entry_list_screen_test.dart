@@ -43,6 +43,106 @@ void main() {
     expect(find.byKey(const ValueKey('entryListView')), findsNothing);
   });
 
+  testWidgets('shows the add-entry button on the empty state', (tester) async {
+    await _pumpEntryListApp(tester, entryRepository: entryRepository);
+
+    expect(find.text('no entries yet'), findsOneWidget);
+    expect(find.byKey(const ValueKey('entryListAddButton')), findsOneWidget);
+  });
+
+  testWidgets('shows the add-entry button when entries exist', (tester) async {
+    entryRepository.emitEntries([_entry(id: 1)]);
+
+    await _pumpEntryListApp(tester, entryRepository: entryRepository);
+
+    expect(find.byKey(const ValueKey('entryListAddButton')), findsOneWidget);
+  });
+
+  testWidgets('add-entry button opens a new entry in edit mode', (tester) async {
+    await _pumpEntryListApp(tester, entryRepository: entryRepository);
+
+    await tester.tap(find.byKey(const ValueKey('entryListAddButton')));
+    await tester.pumpAndSettle();
+
+    // The detail screen opened directly in edit mode (the editor is present).
+    expect(find.byKey(const ValueKey('entryDetailEditor')), findsOneWidget);
+  });
+
+  testWidgets('rapid double-tap on add creates only one entry', (
+    tester,
+  ) async {
+    // Hold the first create open so it is genuinely in-flight when the second
+    // tap arrives — otherwise the test harness drains the first future (and its
+    // navigation) between taps and the guard is never exercised.
+    final gate = Completer<void>();
+    entryRepository.saveEntryGate = gate;
+
+    await _pumpEntryListApp(tester, entryRepository: entryRepository);
+
+    await tester.tap(find.byKey(const ValueKey('entryListAddButton')));
+    await tester.tap(find.byKey(const ValueKey('entryListAddButton')));
+
+    // The in-flight guard dropped the second tap.
+    expect(entryRepository.saveEntryCallCount, 1);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+
+    expect(entryRepository.saveEntryCallCount, 1);
+    expect(find.byKey(const ValueKey('entryDetailEditor')), findsOneWidget);
+  });
+
+  testWidgets('typing in a new entry keeps it at the top of the list', (
+    tester,
+  ) async {
+    entryRepository.emitEntries([
+      _entry(id: 1, createdAt: DateTime(2026, 6, 15, 9)),
+    ]);
+
+    await _pumpEntryListApp(tester, entryRepository: entryRepository);
+
+    await tester.tap(find.byKey(const ValueKey('entryListAddButton')));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('entryDetailEditor')),
+      'typed thought',
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('entryDetailBackButton')));
+    await tester.pumpAndSettle();
+
+    // The new manual entry (id 2) persists and sorts above the older entry 1.
+    final newRowTop = tester
+        .getTopLeft(find.byKey(const ValueKey('entryRow-2')))
+        .dy;
+    final oldRowTop = tester
+        .getTopLeft(find.byKey(const ValueKey('entryRow-1')))
+        .dy;
+    expect(newRowTop, lessThan(oldRowTop));
+    expect(find.text('typed thought'), findsOneWidget);
+  });
+
+  testWidgets('leaving a new entry empty discards it', (tester) async {
+    entryRepository.emitEntries([
+      _entry(id: 1, createdAt: DateTime(2026, 6, 15, 9)),
+    ]);
+
+    await _pumpEntryListApp(tester, entryRepository: entryRepository);
+
+    await tester.tap(find.byKey(const ValueKey('entryListAddButton')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('entryDetailBackButton')));
+    await tester.pumpAndSettle();
+
+    // Back on the list with no blank entry left behind.
+    expect(find.byKey(const ValueKey('entryListView')), findsOneWidget);
+    expect(find.byKey(const ValueKey('entryRow-2')), findsNothing);
+    expect(find.byKey(const ValueKey('entryRow-1')), findsOneWidget);
+  });
+
   testWidgets('entry list header shows only browsing controls', (tester) async {
     await _pumpEntryListApp(tester, entryRepository: entryRepository);
 
@@ -512,6 +612,8 @@ class _TestEntryRepository implements EntryRepository {
       StreamController<List<Entry>>.broadcast();
   List<Entry> _entries = const <Entry>[];
   bool throwsOnDelete = false;
+  int saveEntryCallCount = 0;
+  Completer<void>? saveEntryGate;
 
   void emitEntries(List<Entry> entries) {
     _entries = List<Entry>.from(entries);
@@ -557,13 +659,51 @@ class _TestEntryRepository implements EntryRepository {
   Future<int> saveDraft(String transcript, String language) async => 1;
 
   @override
-  Future<int> saveEntry(String transcript, String language) async => 1;
+  Future<int> saveEntry(String transcript, String language) async {
+    saveEntryCallCount += 1;
+    final gate = saveEntryGate;
+    if (gate != null) {
+      await gate.future;
+    }
+    final id = _entries.fold<int>(
+          0,
+          (current, entry) => entry.id > current ? entry.id : current,
+        ) +
+        1;
+    _entries = [
+      ..._entries,
+      Entry(
+        id: id,
+        rawTranscript: transcript,
+        cleanedText: null,
+        type: EntryType.saved,
+        // Newest timestamp so a manual entry sorts to the top of the list.
+        language: language,
+        createdAt: DateTime(2030, 1, 1).millisecondsSinceEpoch,
+        wordCount: 0,
+      ),
+    ];
+    _controller.add(_entries);
+    return id;
+  }
 
   @override
   Future<int> saveAudioDraft(String audioPath, String language) async => 1;
 
   @override
-  Future<void> updateEditedCleanedText(int id, String cleanedText) async {}
+  Future<void> updateEditedCleanedText(int id, String cleanedText) async {
+    _entries = _entries.map((entry) {
+      if (entry.id != id) {
+        return entry;
+      }
+      final trimmed = cleanedText.trim();
+      return entry.copyWith(
+        cleanedText: cleanedText,
+        wordCount: trimmed.isEmpty ? 0 : trimmed.split(RegExp(r'\s+')).length,
+      );
+    }).toList();
+    _controller.add(_entries);
+  }
 
   @override
   Future<void> updateWithCleanedText(

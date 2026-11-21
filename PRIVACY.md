@@ -49,6 +49,10 @@ wrait-operated servers after it is saved locally.
 The app sends `X-Device-Id` with backend requests. Debug and release builds may
 also send `X-Proxy-Secret` when configured.
 
+Manually typed entries do not use this flow. They are created entirely
+on-device, with no recording, transcription, or cleanup request, so the text of
+a typed entry never leaves your device.
+
 ## 3. What Stays On Your Device
 
 - Saved diary entries

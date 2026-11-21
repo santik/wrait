@@ -4,12 +4,22 @@ All notable changes to wrait are documented here.
 
 ## [Unreleased]
 
+### Added
+
+- Manual text entries: a new add (+) button on the entries list (next to the
+  calendar, and available even when the list is empty) opens a blank entry in
+  edit mode so you can type a diary entry without recording. Typed entries
+  behave exactly like recorded ones — they appear in the list, calendar,
+  search, stats, export, and the home-screen widget, and support editing,
+  tagging, sharing, and deletion. Opening a new entry and leaving without typing
+  any text discards it, so the list is never left with blank records.
+
 ### Changed
 
 - Moved CSV import and export out of the entry-list header into a new
   "Backup & restore" section on the Settings screen. Backing up and restoring
   your journal now lives with your other data settings, and the entry list
-  header keeps only its browsing controls (search and calendar). The CSV format
+  header no longer carries import and export. The CSV format
   and behavior are unchanged, so existing exports remain importable. Export
   continues to cover your entire library regardless of any active search or tag
   filter.

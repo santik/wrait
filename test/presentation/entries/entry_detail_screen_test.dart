@@ -36,6 +36,122 @@ void main() {
     await entryRepository.dispose();
   });
 
+  testWidgets('compose mode opens a blank entry in focused edit mode', (
+    tester,
+  ) async {
+    entryRepository.seedEntries([
+      _entry(id: 1, rawTranscript: '', cleanedText: null, wordCount: 0),
+    ]);
+
+    await _pumpEntryDetailApp(
+      tester,
+      entryRepository: entryRepository,
+      shareService: shareService,
+      initialLocation: '/entry/1?new=true',
+    );
+
+    // Editor is shown (no redirect to the list despite the empty body) and
+    // focused, ready for typing.
+    final editor = find.byKey(const ValueKey('entryDetailEditor'));
+    expect(editor, findsOneWidget);
+    expect(tester.widget<TextField>(editor).focusNode!.hasFocus, isTrue);
+  });
+
+  testWidgets('compose mode discards the entry when left empty', (tester) async {
+    entryRepository.seedEntries([
+      _entry(id: 1, rawTranscript: '', cleanedText: null, wordCount: 0),
+    ]);
+
+    await _pumpEntryDetailApp(
+      tester,
+      entryRepository: entryRepository,
+      shareService: shareService,
+      initialLocation: '/entry/1?new=true',
+    );
+
+    await tester.tap(find.byKey(const ValueKey('entryDetailBackButton')));
+    await tester.pumpAndSettle();
+
+    // Back on the entries list with the blank entry discarded.
+    expect(find.text('no entries yet'), findsOneWidget);
+    expect(find.byKey(const ValueKey('entryDetailEditor')), findsNothing);
+    expect(await entryRepository.getEntryById(1), isNull);
+  });
+
+  testWidgets(
+      '?new=true on an existing readable entry neither composes nor deletes it',
+      (tester) async {
+    entryRepository.seedEntries([
+      _entry(id: 1, rawTranscript: 'raw', cleanedText: 'real thought'),
+    ]);
+
+    await _pumpEntryDetailApp(
+      tester,
+      entryRepository: entryRepository,
+      shareService: shareService,
+      initialLocation: '/entry/1?new=true',
+    );
+
+    // Rendered in read mode (not auto-composed), body intact.
+    expect(find.byKey(const ValueKey('entryDetailReadText')), findsOneWidget);
+    expect(find.text('real thought'), findsOneWidget);
+
+    // Backing out must not discard a real entry.
+    await tester.tap(find.byKey(const ValueKey('entryDetailBackButton')));
+    await tester.pumpAndSettle();
+    expect(await entryRepository.getEntryById(1), isNotNull);
+  });
+
+  testWidgets('?new=true on an audio draft redirects and keeps the draft', (
+    tester,
+  ) async {
+    entryRepository.seedEntries([
+      _entry(
+        id: 1,
+        rawTranscript: '',
+        cleanedText: null,
+        type: EntryType.draft,
+        audioPath: '/tmp/audio.m4a',
+        wordCount: 0,
+      ),
+    ]);
+
+    await _pumpEntryDetailApp(
+      tester,
+      entryRepository: entryRepository,
+      shareService: shareService,
+      initialLocation: '/entry/1?new=true',
+    );
+
+    // No compose editor, redirected to the list, and the draft (with its
+    // audio file) is left untouched — never eligible for discard-on-exit.
+    expect(find.byKey(const ValueKey('entryDetailEditor')), findsNothing);
+    expect(find.byKey(const ValueKey('entryListView')), findsOneWidget);
+    expect(await entryRepository.getEntryById(1), isNotNull);
+  });
+
+  testWidgets('hides the debug raw transcript panel for a manual entry', (
+    tester,
+  ) async {
+    // A manual entry stores its text in cleanedText with an empty rawTranscript.
+    entryRepository.seedEntries([
+      _entry(id: 1, rawTranscript: '', cleanedText: 'typed body'),
+    ]);
+
+    await _pumpEntryDetailApp(
+      tester,
+      entryRepository: entryRepository,
+      shareService: shareService,
+      isDebugDevice: true,
+    );
+
+    expect(
+      find.byKey(const ValueKey('entryDetailRawTranscriptLabel')),
+      findsNothing,
+    );
+    expect(find.text('typed body'), findsOneWidget);
+  });
+
   for (final variant in <String, String?>{
     'cleaned text': 'clean text',
     'raw transcript fallback': null,

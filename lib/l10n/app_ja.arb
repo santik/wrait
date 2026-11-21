@@ -194,6 +194,8 @@
   "tagsSearchIncluded": "検索にはタグ名も含まれます",
   "entryListCalendar": "カレンダー",
   "entryListCalendarSemanticsLabel": "カレンダーを開く",
+  "entryListAddEntry": "新しいエントリ",
+  "entryListAddEntrySemanticsLabel": "新しいエントリを追加",
   "calendarToday": "今日",
   "calendarBackSemanticsLabel": "エントリー一覧に戻る",
   "calendarPreviousMonthSemanticsLabel": "前の月",

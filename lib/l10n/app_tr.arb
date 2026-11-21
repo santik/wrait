@@ -194,6 +194,8 @@
   "tagsSearchIncluded": "Arama etiket adlarını da içerir",
   "entryListCalendar": "Takvim",
   "entryListCalendarSemanticsLabel": "Takvimi aç",
+  "entryListAddEntry": "Yeni giriş",
+  "entryListAddEntrySemanticsLabel": "Yeni giriş ekle",
   "calendarToday": "Bugün",
   "calendarBackSemanticsLabel": "Kayıtlara dön",
   "calendarPreviousMonthSemanticsLabel": "Önceki ay",

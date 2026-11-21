@@ -85,6 +85,30 @@ void main() {
     expect(find.text('router entry'), findsOneWidget);
   });
 
+  testWidgets('new=true opens a blank placeholder in edit mode', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildTestApp(initialLocation: '/entry/2?new=true'));
+
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('entryDetailEditor')), findsOneWidget);
+    expect(find.byKey(const ValueKey('entryDetailReadText')), findsNothing);
+  });
+
+  testWidgets('new=true on an existing readable entry stays in read mode', (
+    tester,
+  ) async {
+    // Guards finding #1: a crafted `?new=true` on a real entry must not force
+    // compose mode (which would make it eligible for discard-on-exit).
+    await tester.pumpWidget(_buildTestApp(initialLocation: '/entry/1?new=true'));
+
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('entryDetailReadText')), findsOneWidget);
+    expect(find.byKey(const ValueKey('entryDetailEditor')), findsNothing);
+  });
+
   testWidgets('redirects an empty entry id route back to entries', (
     tester,
   ) async {
@@ -176,11 +200,10 @@ class _RouterEntryRepository implements EntryRepository {
 
   @override
   Stream<Entry?> watchEntryById(int id) =>
-      Stream<Entry?>.value(id == 1 ? _routerEntry(id) : null);
+      Stream<Entry?>.value(_routerEntryOrNull(id));
 
   @override
-  Future<Entry?> getEntryById(int id) async =>
-      id == 1 ? _routerEntry(id) : null;
+  Future<Entry?> getEntryById(int id) async => _routerEntryOrNull(id);
 
   @override
   Future<List<int>> importEntries(List<Entry> entries) async => const [];
@@ -240,6 +263,18 @@ class _RouterEntryRepository implements EntryRepository {
   Future<void> deleteStaleDrafts({int daysOld = 7}) async {}
 }
 
+// id 1 is a real, readable entry; id 2 is a blank manual placeholder (the only
+// shape that may enter compose mode); everything else is absent.
+Entry? _routerEntryOrNull(int id) {
+  if (id == 1) {
+    return _routerEntry(id);
+  }
+  if (id == 2) {
+    return _routerBlankPlaceholder(id);
+  }
+  return null;
+}
+
 Entry _routerEntry(int id) {
   return Entry(
     id: id,
@@ -249,6 +284,18 @@ Entry _routerEntry(int id) {
     language: 'en-US',
     createdAt: DateTime(2026, 6, 16, 9).millisecondsSinceEpoch,
     wordCount: 2,
+  );
+}
+
+Entry _routerBlankPlaceholder(int id) {
+  return Entry(
+    id: id,
+    rawTranscript: '',
+    cleanedText: null,
+    type: EntryType.saved,
+    language: 'en-US',
+    createdAt: DateTime(2026, 6, 16, 9).millisecondsSinceEpoch,
+    wordCount: 0,
   );
 }
 

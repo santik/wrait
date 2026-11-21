@@ -19,6 +19,7 @@ class EntryListScreen extends ConsumerStatefulWidget {
 
 class _EntryListScreenState extends ConsumerState<EntryListScreen> {
   final TextEditingController _searchController = TextEditingController();
+  bool _creatingEntry = false;
 
   @override
   void dispose() {
@@ -104,6 +105,18 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
                         ),
                       ),
                       const SizedBox(width: WraitSpacingTokens.xs),
+                      Semantics(
+                        button: true,
+                        label: l10n.entryListAddEntrySemanticsLabel,
+                        child: IconButton(
+                          key: const ValueKey('entryListAddButton'),
+                          onPressed: _creatingEntry
+                              ? null
+                              : () => _createAndOpenEntry(context),
+                          icon: const Icon(Icons.add_rounded),
+                          tooltip: l10n.entryListAddEntry,
+                        ),
+                      ),
                       Semantics(
                         button: true,
                         label: l10n.entryListCalendarSemanticsLabel,
@@ -249,6 +262,26 @@ class _EntryListScreenState extends ConsumerState<EntryListScreen> {
     }
 
     context.go('/');
+  }
+
+  Future<void> _createAndOpenEntry(BuildContext context) async {
+    if (_creatingEntry) {
+      return;
+    }
+    setState(() => _creatingEntry = true);
+    try {
+      final entryId = await ref
+          .read(entryListControllerProvider.notifier)
+          .createManualEntry();
+      if (!context.mounted) {
+        return;
+      }
+      context.push('/entry/$entryId?new=true');
+    } finally {
+      if (mounted) {
+        setState(() => _creatingEntry = false);
+      }
+    }
   }
 
   Future<void> _confirmDelete(BuildContext context, int entryId) async {

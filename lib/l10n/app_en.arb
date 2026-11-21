@@ -338,6 +338,8 @@
   "tagsSearchIncluded": "Search includes tag names",
   "entryListCalendar": "Calendar",
   "entryListCalendarSemanticsLabel": "Open calendar",
+  "entryListAddEntry": "New entry",
+  "entryListAddEntrySemanticsLabel": "Add new entry",
   "calendarToday": "Today",
   "calendarBackSemanticsLabel": "Back to entries",
   "calendarPreviousMonthSemanticsLabel": "Previous month",

@@ -707,6 +707,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => 'Abrir calendario';
 
   @override
+  String get entryListAddEntry => 'Nueva entrada';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => 'Añadir nueva entrada';
+
+  @override
   String get calendarToday => 'Hoy';
 
   @override
@@ -1425,6 +1431,12 @@ class AppLocalizationsEs419 extends AppLocalizationsEs {
 
   @override
   String get entryListCalendarSemanticsLabel => 'Abrir calendario';
+
+  @override
+  String get entryListAddEntry => 'Nueva entrada';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => 'Agregar nueva entrada';
 
   @override
   String get calendarToday => 'Hoy';

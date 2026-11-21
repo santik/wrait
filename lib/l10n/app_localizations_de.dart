@@ -708,6 +708,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => 'Kalender öffnen';
 
   @override
+  String get entryListAddEntry => 'Neuer Eintrag';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => 'Neuen Eintrag hinzufügen';
+
+  @override
   String get calendarToday => 'Heute';
 
   @override
