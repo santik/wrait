@@ -14,11 +14,13 @@ This repository contains the Flutter mobile client.
 
 wrait records short spoken diary entries, sends the recording to the configured
 wrait backend for transcription, sends the raw transcript back to the backend
-for cleanup, and saves the result locally on the device.
+for cleanup, and saves the result locally on the device. Entries can also be
+typed directly from the entry list, with no recording involved.
 
 The current Flutter app includes:
 
 - one-button voice recording
+- manual text entries typed directly from the entry list (no recording)
 - cloud-backed transcription and transcript cleanup through the wrait backend
 - encrypted local entry storage
 - retryable local drafts when backend work cannot finish immediately
@@ -98,6 +100,9 @@ recording flow:
 
 The cleaned diary entry is not sent back to wrait-operated servers by the app.
 It is stored locally after cleanup completes.
+
+Manually typed entries are created entirely on-device: they involve no
+recording and no backend request, so their text never leaves the device.
 
 For the full disclosure, see [PRIVACY.md](PRIVACY.md).
 

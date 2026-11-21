@@ -148,6 +148,25 @@ class EntryDao extends DatabaseAccessor<LocalEntryDatabase>
     return (delete(entryRecords)..where((table) => table.id.equals(id))).go();
   }
 
+  /// Deletes empty, audio-less `saved` entries: rows left behind when a manual
+  /// compose session was abandoned without the discard-on-exit cleanup running
+  /// (e.g. the app was killed mid-compose). A valid saved entry always has body
+  /// text, so this only targets blank placeholders.
+  ///
+  /// Body fields are matched after trimming so a draft containing only
+  /// whitespace (persisted mid-compose as e.g. `'   '`) is still collected and
+  /// does not leave a permanently-unreadable ghost row behind.
+  Future<int> deleteEmptySavedEntries() {
+    return (delete(entryRecords)..where(
+          (table) =>
+              table.type.equals('saved') &
+              table.audioPath.isNull() &
+              table.rawTranscript.trim().equals('') &
+              (table.cleanedText.isNull() | table.cleanedText.trim().equals('')),
+        ))
+        .go();
+  }
+
   Future<int> deleteStaleDraftsOlderThan(int cutoffTimestamp) {
     return (delete(entryRecords)..where(
           (table) =>

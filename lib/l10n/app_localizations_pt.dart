@@ -700,6 +700,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => 'Abrir calendário';
 
   @override
+  String get entryListAddEntry => 'Nova entrada';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => 'Adicionar nova entrada';
+
+  @override
   String get calendarToday => 'Hoje';
 
   @override

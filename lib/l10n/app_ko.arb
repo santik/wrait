@@ -194,6 +194,8 @@
   "tagsSearchIncluded": "검색에 태그 이름이 포함됩니다",
   "entryListCalendar": "캘린더",
   "entryListCalendarSemanticsLabel": "캘린더 열기",
+  "entryListAddEntry": "새 항목",
+  "entryListAddEntrySemanticsLabel": "새 항목 추가",
   "calendarToday": "오늘",
   "calendarBackSemanticsLabel": "기록 목록으로 돌아가기",
   "calendarPreviousMonthSemanticsLabel": "이전 달",

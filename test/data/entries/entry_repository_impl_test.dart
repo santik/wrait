@@ -66,6 +66,54 @@ void main() {
     },
   );
 
+  test('saveEntry persists an empty, audio-less saved entry for manual compose',
+      () async {
+    final id = await repository!.saveEntry('', 'en-US');
+
+    final entry = await repository!.getEntryById(id);
+
+    expect(entry, isNotNull);
+    expect(entry!.type, EntryType.saved);
+    expect(entry.rawTranscript, isEmpty);
+    expect(entry.cleanedText, isNull);
+    expect(entry.audioPath, isNull);
+    expect(entry.wordCount, 0);
+  });
+
+  test('deleteEmptySavedEntries removes blanks but keeps real entries',
+      () async {
+    final emptyId = await repository!.saveEntry('', 'en-US');
+    final withBodyId = await repository!.saveEntry('real thought', 'en-US');
+    // A manual entry whose typed text lives in cleanedText (edited in detail).
+    final editedId = await repository!.saveEntry('', 'en-US');
+    await repository!.updateEditedCleanedText(editedId, 'typed body');
+
+    final removed = await repository!.deleteEmptySavedEntries();
+
+    expect(removed, 1);
+    expect(await repository!.getEntryById(emptyId), isNull);
+    expect(await repository!.getEntryById(withBodyId), isNotNull);
+    expect(await repository!.getEntryById(editedId), isNotNull);
+  });
+
+  test(
+      'deleteEmptySavedEntries removes a whitespace-only placeholder '
+      '(killed mid-compose)', () async {
+    // A manual entry where the user typed only spaces before the app was
+    // killed: cleanedText persists as whitespace and must not survive as a
+    // permanently-unreadable ghost row.
+    final whitespaceId = await repository!.saveEntry('', 'en-US');
+    await repository!.updateEditedCleanedText(whitespaceId, '   ');
+    final realId = await repository!.saveEntry('', 'en-US');
+    await repository!.updateEditedCleanedText(realId, 'kept thought');
+
+    final removed = await repository!.deleteEmptySavedEntries();
+
+    expect(removed, 1);
+    expect(await repository!.getEntryById(whitespaceId), isNull);
+    expect(await repository!.getEntryById(realId), isNotNull);
+  });
+
   test('stores and updates text drafts', () async {
     final id = await repository!.saveDraft('rough notes', 'en-US');
 

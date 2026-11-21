@@ -695,6 +695,12 @@ class AppLocalizationsTr extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => 'Takvimi aç';
 
   @override
+  String get entryListAddEntry => 'Yeni giriş';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => 'Yeni giriş ekle';
+
+  @override
   String get calendarToday => 'Bugün';
 
   @override

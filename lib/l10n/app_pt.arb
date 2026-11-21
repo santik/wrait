@@ -194,6 +194,8 @@
   "tagsSearchIncluded": "A pesquisa inclui nomes de tags",
   "entryListCalendar": "Calendário",
   "entryListCalendarSemanticsLabel": "Abrir calendário",
+  "entryListAddEntry": "Nova entrada",
+  "entryListAddEntrySemanticsLabel": "Adicionar nova entrada",
   "calendarToday": "Hoje",
   "calendarBackSemanticsLabel": "Voltar para as entradas",
   "calendarPreviousMonthSemanticsLabel": "Mês anterior",

@@ -654,6 +654,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => '打开日历';
 
   @override
+  String get entryListAddEntry => '新建条目';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => '添加新条目';
+
+  @override
   String get calendarToday => '今天';
 
   @override

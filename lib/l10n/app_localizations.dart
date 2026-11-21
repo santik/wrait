@@ -1281,6 +1281,18 @@ abstract class AppLocalizations {
   /// **'Open calendar'**
   String get entryListCalendarSemanticsLabel;
 
+  /// No description provided for @entryListAddEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'New entry'**
+  String get entryListAddEntry;
+
+  /// No description provided for @entryListAddEntrySemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add new entry'**
+  String get entryListAddEntrySemanticsLabel;
+
   /// No description provided for @calendarToday.
   ///
   /// In en, this message translates to:

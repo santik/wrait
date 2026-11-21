@@ -193,6 +193,30 @@ void main() {
   });
 
   test(
+    'rejects a saved row with empty body text (would be swept on launch)',
+    () async {
+      final repository = _FakeEntryRepository();
+      final csv = [
+        'type,created_at,language,word_count,raw_transcript,cleaned_text',
+        'saved,1700000000000,en-US,0,,',
+      ].join('\n');
+      final service = EntryImportService(
+        fileReader: _StaticImportFileReader(
+          EntryImportFileReadResult(fileName: 'empty-saved.csv', contents: csv),
+        ),
+        entryRepository: repository,
+      );
+
+      final result = await service.importEntries();
+
+      expect(result.didImport, isFalse);
+      expect(result.failureCategory, EntryImportFailureCategory.invalidFormat);
+      expect(result.error, isA<FormatException>());
+      expect(repository.importCallCount, 0);
+    },
+  );
+
+  test(
     'fails without repository mutation when created_at is invalid',
     () async {
       final repository = _FakeEntryRepository();

@@ -6,7 +6,10 @@ import '../../data/entries/entry_export_providers.dart';
 import '../../data/entries/entry_import_providers.dart';
 import '../../data/entries/entry_providers.dart';
 import '../../data/entries/tag_providers.dart';
+import '../../data/preferences/transcription_language_controller.dart';
 import '../../domain/model/entry.dart';
+import '../../domain/usecase/cleanup_transcript_use_case.dart'
+    show cleanupTranscriptFallbackLanguage;
 import '../../domain/model/tag.dart';
 import '../../domain/service/entry_export_service.dart';
 import '../../domain/service/entry_import_service.dart';
@@ -133,6 +136,21 @@ class EntryListController extends Notifier<EntryListControllerState> {
       id,
       failureContext: 'Failed to delete entry from the entry list.',
     );
+  }
+
+  /// Creates a new, empty, permanent (`saved`) entry with no audio for manual
+  /// (typed) composition and returns its id. The body text is filled in by the
+  /// entry detail screen's edit flow; if it is left empty the detail screen
+  /// discards the entry on exit.
+  ///
+  /// The language is not meaningful for a typed entry, so it reuses the current
+  /// transcription-language preference and falls back to the default when that
+  /// preference is unset (the stored entry still needs a supported code).
+  Future<int> createManualEntry() {
+    final language =
+        ref.read(transcriptionLanguageControllerProvider).language ??
+        cleanupTranscriptFallbackLanguage;
+    return ref.read(entryRepositoryProvider).saveEntry('', language);
   }
 
   /// Exports the given entries as CSV.

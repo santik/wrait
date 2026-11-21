@@ -39,7 +39,8 @@ GoRouter buildAppRouter({String? initialLocation}) {
             return const EntryListScreen();
           }
 
-          return EntryDetailScreen(entryId: entryId);
+          final isNew = state.uri.queryParameters['new'] == 'true';
+          return EntryDetailScreen(entryId: entryId, isNew: isNew);
         },
       ),
       GoRoute(

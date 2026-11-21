@@ -194,6 +194,8 @@
   "tagsSearchIncluded": "搜索包含标签名称",
   "entryListCalendar": "日历",
   "entryListCalendarSemanticsLabel": "打开日历",
+  "entryListAddEntry": "新建条目",
+  "entryListAddEntrySemanticsLabel": "添加新条目",
   "calendarToday": "今天",
   "calendarBackSemanticsLabel": "返回日记列表",
   "calendarPreviousMonthSemanticsLabel": "上个月",

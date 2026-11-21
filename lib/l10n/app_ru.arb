@@ -194,6 +194,8 @@
   "tagsSearchIncluded": "Поиск включает названия тегов",
   "entryListCalendar": "Календарь",
   "entryListCalendarSemanticsLabel": "Открыть календарь",
+  "entryListAddEntry": "Новая запись",
+  "entryListAddEntrySemanticsLabel": "Добавить новую запись",
   "calendarToday": "Сегодня",
   "calendarBackSemanticsLabel": "Назад к записям",
   "calendarPreviousMonthSemanticsLabel": "Предыдущий месяц",

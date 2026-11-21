@@ -696,6 +696,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => 'Apri calendario';
 
   @override
+  String get entryListAddEntry => 'Nuova voce';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => 'Aggiungi nuova voce';
+
+  @override
   String get calendarToday => 'Oggi';
 
   @override

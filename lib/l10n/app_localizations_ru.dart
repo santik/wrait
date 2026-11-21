@@ -708,6 +708,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get entryListCalendarSemanticsLabel => 'Открыть календарь';
 
   @override
+  String get entryListAddEntry => 'Новая запись';
+
+  @override
+  String get entryListAddEntrySemanticsLabel => 'Добавить новую запись';
+
+  @override
   String get calendarToday => 'Сегодня';
 
   @override
